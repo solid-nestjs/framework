@@ -7,10 +7,10 @@ import { IDataControllerClassStructure, IDataControllerStructure, IMethodStructu
 
 
 export interface ICrudControllerClassStructure<PrimaryKeyType> extends IDataControllerClassStructure<PrimaryKeyType> {
-    create?:IMethodStructure,
-    update?:IMethodStructure,
-    remove?:IMethodStructure,
-    hardRemove?:IMethodStructure,
+    create?:IMethodStructure|boolean,
+    update?:IMethodStructure|boolean,
+    remove?:IMethodStructure|boolean,
+    hardRemove?:IMethodStructure|boolean,
 }
 
 export interface ICrudControllerStructure<

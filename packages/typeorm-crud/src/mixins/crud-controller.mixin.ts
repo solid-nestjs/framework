@@ -90,41 +90,45 @@ export function CrudController<
     pipeTransforms = controllerStructure.primaryKey.pipeTransforms ?? [];
   }
 
-  const createRoute = controllerStructure.create?.route;
-  const createDecorators = controllerStructure.create?.decorators ?? [];
-  const createSummary = controllerStructure.create?.title ?? ('Create ' + entityType.name.toLowerCase() + ' record');
-  const createDescription = controllerStructure.create?.description ?? ('creation of ' + entityType.name.toLowerCase() + ' record');
-  const createOperationId = controllerStructure.create?.operationId;
-  const createSuccessCode = controllerStructure.create?.successCode ?? (controllerStructure.create?.successCodes ?? [])[0] ?? HttpStatus.CREATED;
-  const createSuccessCodes = controllerStructure.create?.successCodes ?? [createSuccessCode];
-  const findAllErrorCodes = controllerStructure.create?.errorCodes ?? [HttpStatus.BAD_REQUEST];
+  const createStructure = (typeof(controllerStructure.create) == 'object')?controllerStructure.create:null;
+  const createRoute = createStructure?.route;
+  const createDecorators = createStructure?.decorators ?? [];
+  const createSummary = createStructure?.title ?? ('Create ' + entityType.name.toLowerCase() + ' record');
+  const createDescription = createStructure?.description ?? ('creation of ' + entityType.name.toLowerCase() + ' record');
+  const createOperationId = createStructure?.operationId;
+  const createSuccessCode = createStructure?.successCode ?? (createStructure?.successCodes ?? [])[0] ?? HttpStatus.CREATED;
+  const createSuccessCodes = createStructure?.successCodes ?? [createSuccessCode];
+  const findAllErrorCodes = createStructure?.errorCodes ?? [HttpStatus.BAD_REQUEST];
 
-  const updateRoute = controllerStructure.update?.route ?? ':id';
-  const updateDecorators = controllerStructure.update?.decorators ?? [];
-  const updateSummary = controllerStructure.update?.title ?? ('Update ' + entityType.name.toLowerCase() + ' record');
-  const updateDescription = controllerStructure.update?.description ?? ('update of ' + entityType.name.toLowerCase() + ' record');
-  const updateOperationId = controllerStructure.update?.operationId;
-  const updateSuccessCode = controllerStructure.update?.successCode ?? (controllerStructure.update?.successCodes ?? [])[0] ?? HttpStatus.ACCEPTED;
-  const updateSuccessCodes = controllerStructure.update?.successCodes ?? [updateSuccessCode];
-  const findOneErrorCodes = controllerStructure.update?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
+  const updateStructure = (typeof(controllerStructure.update) == 'object')?controllerStructure.update:null;
+  const updateRoute = updateStructure?.route ?? ':id';
+  const updateDecorators = updateStructure?.decorators ?? [];
+  const updateSummary = updateStructure?.title ?? ('Update ' + entityType.name.toLowerCase() + ' record');
+  const updateDescription = updateStructure?.description ?? ('update of ' + entityType.name.toLowerCase() + ' record');
+  const updateOperationId = updateStructure?.operationId;
+  const updateSuccessCode = updateStructure?.successCode ?? (updateStructure?.successCodes ?? [])[0] ?? HttpStatus.ACCEPTED;
+  const updateSuccessCodes = updateStructure?.successCodes ?? [updateSuccessCode];
+  const findOneErrorCodes = updateStructure?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
   
-  const removeRoute = controllerStructure.remove?.route ?? ':id';
-  const removeDecorators = controllerStructure.remove?.decorators ?? [];
-  const removeSummary = controllerStructure.remove?.title ?? ('Remove ' + entityType.name.toLowerCase() + ' record');
-  const removeDescription = controllerStructure.remove?.description ?? ('removal of ' + entityType.name.toLowerCase() + ' record');
-  const removeOperationId = controllerStructure.remove?.operationId;
-  const removeSuccessCode = controllerStructure.remove?.successCode ?? (controllerStructure.remove?.successCodes ?? [])[0] ?? HttpStatus.ACCEPTED;
-  const removeSuccessCodes = controllerStructure.remove?.successCodes ?? [removeSuccessCode];
-  const removeErrorCodes = controllerStructure.remove?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
+  const removeStructure = (typeof(controllerStructure.remove) == 'object')?controllerStructure.remove:null;
+  const removeRoute = removeStructure?.route ?? ':id';
+  const removeDecorators = removeStructure?.decorators ?? [];
+  const removeSummary = removeStructure?.title ?? ('Remove ' + entityType.name.toLowerCase() + ' record');
+  const removeDescription = removeStructure?.description ?? ('removal of ' + entityType.name.toLowerCase() + ' record');
+  const removeOperationId = removeStructure?.operationId;
+  const removeSuccessCode = removeStructure?.successCode ?? (removeStructure?.successCodes ?? [])[0] ?? HttpStatus.ACCEPTED;
+  const removeSuccessCodes = removeStructure?.successCodes ?? [removeSuccessCode];
+  const removeErrorCodes = removeStructure?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
 
-  const hardRemoveRoute = controllerStructure.hardRemove?.route ?? 'hard/:id';
-  const hardRemoveDecorators = controllerStructure.hardRemove?.decorators ?? [];
-  const hardRemoveSummary = controllerStructure.hardRemove?.title ?? ('Remove (HARD) ' + entityType.name.toLowerCase() + ' record');
-  const hardRemoveDescription = controllerStructure.hardRemove?.description ?? ('removal (HARD) of ' + entityType.name.toLowerCase() + ' record');
-  const hardRemoveOperationId = controllerStructure.hardRemove?.operationId;
-  const hardRemoveSuccessCode = controllerStructure.hardRemove?.successCode ?? (controllerStructure.hardRemove?.successCodes ?? [])[0] ?? HttpStatus.ACCEPTED;
-  const hardRemoveSuccessCodes = controllerStructure.hardRemove?.successCodes ?? [hardRemoveSuccessCode];
-  const hardRemoveErrorCodes = controllerStructure.hardRemove?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
+  const hardRemoveStructure = (typeof(controllerStructure.hardRemove) == 'object')?controllerStructure.hardRemove:null;
+  const hardRemoveRoute = hardRemoveStructure?.route ?? 'hard/:id';
+  const hardRemoveDecorators = hardRemoveStructure?.decorators ?? [];
+  const hardRemoveSummary = hardRemoveStructure?.title ?? ('Remove (HARD) ' + entityType.name.toLowerCase() + ' record');
+  const hardRemoveDescription = hardRemoveStructure?.description ?? ('removal (HARD) of ' + entityType.name.toLowerCase() + ' record');
+  const hardRemoveOperationId = hardRemoveStructure?.operationId;
+  const hardRemoveSuccessCode = hardRemoveStructure?.successCode ?? (hardRemoveStructure?.successCodes ?? [])[0] ?? HttpStatus.ACCEPTED;
+  const hardRemoveSuccessCodes = hardRemoveStructure?.successCodes ?? [hardRemoveSuccessCode];
+  const hardRemoveErrorCodes = hardRemoveStructure?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
 
   const paramApiConfig = { name: 'id', description: 'ID of the ' + entityType.name + ' entity', required: true };
 
@@ -196,20 +200,18 @@ export function CrudController<
     } 
   }
 
-  if (!controllerStructure.create) {
-    // If create method is not defined in the structure, remove it from the class
+  //remove controller methods if they are disabled in the structure
+  if (controllerStructure.create === false) {
     delete CrudController.prototype.create;
   }
-  if (!controllerStructure.update) {
-    // If update method is not defined in the structure, remove it from the class
+  if (controllerStructure.update === false) {
     delete CrudController.prototype.update;
   }
-  if (!controllerStructure.remove) {
-    // If remove method is not defined in the structure, remove it from the class
+  if (controllerStructure.remove === false) {
     delete CrudController.prototype.remove;
   }
+  //this method is disabled by default
   if (!controllerStructure.hardRemove) {
-    // If hardRemove method is not defined in the structure, remove it from the class
     delete CrudController.prototype.hardRemove;
   }
 

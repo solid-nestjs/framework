@@ -28,10 +28,10 @@ export interface PrimaryKeyStructure<PrimaryKeyType>
     pipeTransforms?:Type<PipeTransform>[]
 }
 
-export interface IDataControllerClassStructure<PrimaryKeyType> {
-    findAll?:IMethodStructure,
-    findOne?:IMethodStructure,
-    count?:IMethodStructure,
+export interface IDataControllerClassStructure<PrimaryKeyType> {    
+    findAll?:IMethodStructure|boolean,
+    findOne?:IMethodStructure|boolean,
+    count?:IMethodStructure|boolean,
     route?:string;
     parameterDecorators?:IParameterDecorators,
     classDecorators?:(() => ClassDecorator)[],
