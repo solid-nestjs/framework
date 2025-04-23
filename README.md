@@ -103,7 +103,7 @@ Use the `@Transactional()` decorator to wrap operations in a transaction:
 
 ```typescript
 @Transactional()
-async yourMethod() {
+async controllerMethod() {
   // Operations will be executed in a transaction
 }
 ```
@@ -115,3 +115,41 @@ The package automatically generates OpenAPI (Swagger) documentation for your end
 ## License
 
 MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Roadmap
+
+### Current Progress
+- [x] Basic CRUD operations implementation
+- [x] Filtering capabilities
+- [x] Basic sorting functionality
+- [x] Basic pagination support
+- [x] OpenAPI (Swagger) documentation
+- [x] Transaction support
+- [x] Input validation
+- [x] Basic relation handling
+
+### [0.2.0] - Enhanced Data Retrieval
+- [ ] Entity Id Type automatic detection.
+  - currently If the PrimaryKeyType is not specified it's taken as int by default, it should be inferred by the EntityType.
+  - supporting PrimaryKeyType inference means that it also should be a mapper that resolves what pipeTransform must be used for the controller retrieval of the PK from the query.
+- [ ] Enhanced pagination
+  - Return both data and pagination metadata in single response
+  - Fix pagination calculations for relations with one-to-many/many-to-many cardinality
+- [ ] Advanced relation handling
+  - Configurable relation loading through request parameters
+  - Enable/disable specific relations at service level
+  - Optimize relation loading performance
+- [ ] Implement bulk operations
+- [ ] Query optimization improvements
+  - Query caching options
+
+### [0.3.0] - Architecture & GraphQL Support
+- [ ] Architecture enhancements
+  - Decouple data layer from presentation layer
+  - Create separate package for REST utilities (@nestjz/rest)
+  - Create separate package for TypeORM utilities (@nestjz/typeorm)
+- [ ] GraphQL support
+  - Create GraphQL-specific package (@nestjz/graphql)
+  - GraphQL-optimized resolvers
+  - GraphQL-specific decorators
+- [ ] Comprehensive documentation
