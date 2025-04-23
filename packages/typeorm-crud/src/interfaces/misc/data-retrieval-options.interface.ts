@@ -1,23 +1,23 @@
-export interface IRelation {
+export interface Relation {
     property:string;
     alias?:string;
 }
 
-export interface ILockMode
+export interface LockMode
 {
     lockMode: "pessimistic_read" | "pessimistic_write" | "dirty_read" | "pessimistic_partial_write" | "pessimistic_write_or_fail" | "for_no_key_update" | "for_key_share", 
     lockVersion?: undefined, 
     lockTables?: string[],
 }
 
-export interface ILockModeOptimistic
+export interface LockModeOptimistic
 {
     lockMode: "optimistic", 
     lockVersion: number | Date
 }
 
-export interface IDataRetrievalOptions{
+export interface DataRetrievalOptions{
     mainAlias?: string;
-    relations?: IRelation[];
-    lockMode?: ILockMode | ILockModeOptimistic;
+    relations?: Relation[];
+    lockMode?: LockMode | LockModeOptimistic;
 }

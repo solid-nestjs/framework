@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, HttpStatus, Inject, Param, ParseIntPipe, PipeTransform, Query, Type, ValidationPipe, mixin } from '@nestjs/common';
 import { ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiTags, getSchemaPath  } from '@nestjs/swagger';
 import { Constructable } from '../types';
-import { IContext, IdTypeFrom, IEntity, IFindArgs, IDataControllerClassStructure, IDataControllerStructure, IDataService } from '../interfaces';
+import { Context, IdTypeFrom, Entity, FindArgsInterface, DataControllerClassStructure, DataControllerStructure, DataServiceInterface } from '../interfaces';
 import { DefaultArgs, CountResult } from '../classes';
 import { ApiResponses, CurrentContext } from '../decorators';
 import { QueryTransformPipe } from '../pipes';
@@ -9,19 +9,19 @@ import { applyClassDecorators, applyMethodDecorators } from '../utils';
 
 
 export function DataControllerFrom<
-  PrimaryKeyType extends IdTypeFrom<EntityType>,
-  EntityType extends IEntity<unknown>,
-  ServiceType extends IDataService<
-    PrimaryKeyType,
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ServiceType extends DataServiceInterface<
+    IdType,
     EntityType,
     FindArgsType,
     ContextType
   >,
-  FindArgsType extends IFindArgs = DefaultArgs,
-  ContextType extends IContext = IContext,
+  FindArgsType extends FindArgsInterface = DefaultArgs,
+  ContextType extends Context = Context,
 >(
-  structure: IDataControllerStructure<
-    PrimaryKeyType,
+  structure: DataControllerStructure<
+    IdType,
     EntityType,
     ServiceType,
     FindArgsType,
@@ -45,20 +45,20 @@ export function DataControllerFrom<
 }
 
 export function DataController<
-  PrimaryKeyType extends IdTypeFrom<EntityType>,
-  EntityType extends IEntity<unknown>,
-  ServiceType extends IDataService<
-    PrimaryKeyType,
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ServiceType extends DataServiceInterface<
+    IdType,
     EntityType,
     FindArgsType,
     ContextType
   >,
-  FindArgsType extends IFindArgs = DefaultArgs,
-  ContextType extends IContext = IContext,
+  FindArgsType extends FindArgsInterface = DefaultArgs,
+  ContextType extends Context = Context,
 >(
   entityType: Constructable<EntityType>,
   serviceType: Constructable<ServiceType>,
-  controllerStructure: IDataControllerClassStructure<PrimaryKeyType>,
+  controllerStructure: DataControllerClassStructure<IdType>,
   findArgsType?: Constructable<FindArgsType>,
   contextType?: Constructable<ContextType>,
 ) {
@@ -68,13 +68,13 @@ export function DataController<
   const argsType = findArgsType ?? DefaultArgs;
 
 
-  let primaryKeyType:any = Number;
+  let idType:any = Number;
   let pipeTransforms:Type<PipeTransform>[] = [ParseIntPipe];
 
-  if(controllerStructure.primaryKey)
+  if(controllerStructure.idStructure)
   {
-    primaryKeyType = controllerStructure.primaryKey.type;
-    pipeTransforms = controllerStructure.primaryKey.pipeTransforms ?? [];
+    idType = controllerStructure.idStructure.type;
+    pipeTransforms = controllerStructure.idStructure.pipeTransforms ?? [];
   }
 
   const controllerApiTags = controllerStructure.route ?? entityType.name.toLowerCase()+'s';
@@ -187,7 +187,7 @@ export function DataController<
     @ApiResponses( { type: entityType, successCodes:findOneSuccessCodes, errorCodes: findOneErrorCodes })
     async findOne?(
       @ContextDecorator() context: ContextType,
-      @Param('id', ...pipeTransforms) id: PrimaryKeyType
+      @Param('id', ...pipeTransforms) id: IdType
     ) :Promise<EntityType> 
     {
       return await this.service.findOne(context, id, true);

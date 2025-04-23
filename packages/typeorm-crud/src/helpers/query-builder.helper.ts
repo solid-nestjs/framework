@@ -1,7 +1,7 @@
 import { And, Between, Brackets, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
 import { Constructable } from "../types";
-import { IDataRetrievalOptions, IRelation, IEntity, IdTypeFrom, IExtendedRelationInfo, IFindArgs } from "../interfaces";
+import { DataRetrievalOptions, Relation as RelationInterface, Entity, IdTypeFrom, ExtendedRelationInfo, FindArgsInterface } from "../interfaces";
 import { getEntityRelationsExtended } from "./entity-relations.helper";
 import { getPaginationArgs } from "./pagination.helper";
 
@@ -33,17 +33,17 @@ function fixBracketQueryBuilder(bracketQueryBuilder,queryBuilder)
     bracketQueryBuilder.expressionMap.joinAttributes = [...queryBuilder.expressionMap.joinAttributes] ;
 }
 
-class Relation implements IRelation
+class Relation implements RelationInterface
 {
     property:string;
     alias:string;
-    relationInfo?:IExtendedRelationInfo;
+    relationInfo?:ExtendedRelationInfo;
 }
 
 interface QueryContext<EntityType extends ObjectLiteral> {
     queryBuilder: SelectQueryBuilder<EntityType>;
     relations: Relation[];
-    relationsInfo: IExtendedRelationInfo[];
+    relationsInfo: ExtendedRelationInfo[];
 }
 
 interface whereContext<EntityType extends ObjectLiteral> extends QueryContext<EntityType> {
@@ -56,9 +56,9 @@ const MAX_RECURSIVE_DEPTH = 20;
 const RECURSIVE_DEPTH_ERROR = `Max recursive depth reached`;
 
 export function QueryBuilderHelper<
-                    PrimaryKeyType extends IdTypeFrom<EntityType>,
-                    EntityType extends IEntity<any>,
-                    FindArgsType extends IFindArgs
+                    IdType extends IdTypeFrom<EntityType>,
+                    EntityType extends Entity<any>,
+                    FindArgsType extends FindArgsInterface
                 >(
                     entityType:Constructable<EntityType>,
                     argsType:Constructable<FindArgsType>
@@ -66,9 +66,9 @@ export function QueryBuilderHelper<
 
     class QueryBuilderHelper {        
         
-        static _relationsInfo?: IExtendedRelationInfo[];
+        static _relationsInfo?: ExtendedRelationInfo[];
 
-        static getRelationsInfo(repository:Repository<EntityType>) : IExtendedRelationInfo[]
+        static getRelationsInfo(repository:Repository<EntityType>) : ExtendedRelationInfo[]
         {
             if(!this._relationsInfo)
                 this._relationsInfo = getEntityRelationsExtended(repository);
@@ -76,7 +76,7 @@ export function QueryBuilderHelper<
             return this._relationsInfo;
         }
 
-        static getQueryBuilder(repository:Repository<EntityType>,args?:FindArgsType,options?:IDataRetrievalOptions) : SelectQueryBuilder<EntityType>
+        static getQueryBuilder(repository:Repository<EntityType>,args?:FindArgsType,options?:DataRetrievalOptions) : SelectQueryBuilder<EntityType>
         {
             const mainAlias = options?.mainAlias ?? 'aa';
             const relationsList = options?.relations ?? [];

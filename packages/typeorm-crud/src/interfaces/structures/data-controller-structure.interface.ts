@@ -1,11 +1,11 @@
 import { HttpStatus, PipeTransform, Type } from "@nestjs/common";
 import { Constructable } from "../../types";
-import { IContext, IdTypeFrom, IEntity, IFindArgs } from "../misc";
-import { IDataService } from "../services";
-import { IDataServiceStructure } from "./data-service-structure.interface";
+import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
+import { DataServiceInterface } from "../services";
+import { DataServiceStructure } from "./data-service-structure.interface";
 
 
-export interface IMethodStructure {
+export interface MethodStructure {
     name:string;
     title?:string;
     description?:string;
@@ -17,47 +17,47 @@ export interface IMethodStructure {
     decorators?:(() => MethodDecorator)[];
 }
 
-export interface IParameterDecorators
+export interface ParameterDecorators
 {
     currentContext:() => ParameterDecorator;
 }
 
-export interface PrimaryKeyStructure<PrimaryKeyType>
+export interface IdStructure<IdType>
 {
-    type:Constructable<PrimaryKeyType>,
+    type:Constructable<IdType>,
     pipeTransforms?:Type<PipeTransform>[]
 }
 
-export interface IDataControllerClassStructure<PrimaryKeyType> {    
-    findAll?:IMethodStructure|boolean,
-    findOne?:IMethodStructure|boolean,
-    count?:IMethodStructure|boolean,
+export interface DataControllerClassStructure<IdType> {    
+    findAll?:MethodStructure|boolean,
+    findOne?:MethodStructure|boolean,
+    count?:MethodStructure|boolean,
     route?:string;
-    parameterDecorators?:IParameterDecorators,
+    parameterDecorators?:ParameterDecorators,
     classDecorators?:(() => ClassDecorator)[],
-    primaryKey?:PrimaryKeyStructure<PrimaryKeyType>,
+    idStructure?:IdStructure<IdType>,
 }
 
-export interface IDataControllerStructure<
-    PrimaryKeyType extends IdTypeFrom<EntityType>,
-    EntityType extends IEntity<unknown>,
-    ServiceType extends IDataService<PrimaryKeyType,EntityType,FindArgsType,ContextType>,
-    FindArgsType extends IFindArgs,
-    ContextType extends IContext,
+export interface DataControllerStructure<
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
+    ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
+    FindArgsType extends FindArgsInterface,
+    ContextType extends Context,
     > extends 
-        IDataServiceStructure<PrimaryKeyType,EntityType,FindArgsType,ContextType>, 
-        IDataControllerClassStructure<PrimaryKeyType>
+        DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>, 
+        DataControllerClassStructure<IdType>
     {
         serviceType:Constructable<ServiceType>
     }
 
 export function DataControllerStructure<
-    PrimaryKeyType extends IdTypeFrom<EntityType>,
-    EntityType extends IEntity<unknown>,
-    ServiceType extends IDataService<PrimaryKeyType,EntityType,FindArgsType,ContextType>,
-    FindArgsType extends IFindArgs,
-    ContextType extends IContext,
-    >(input:IDataControllerStructure<PrimaryKeyType,EntityType,ServiceType,FindArgsType,ContextType>):IDataControllerStructure<PrimaryKeyType,EntityType,ServiceType,FindArgsType,ContextType>
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
+    ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
+    FindArgsType extends FindArgsInterface,
+    ContextType extends Context,
+    >(input:DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>):DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>
     {
         return input;
     }

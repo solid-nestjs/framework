@@ -1,16 +1,16 @@
 import { DeepPartial } from "typeorm";
 import { Constructable } from "../../types";
-import { IContext, IdTypeFrom, IEntity, IFindArgs } from "../misc";
-import { IDataServiceStructure } from "./data-service-structure.interface";
+import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
+import { DataServiceStructure } from "./data-service-structure.interface";
 
-export interface ICrudServiceStructure<
-    PrimaryKeyType extends IdTypeFrom<EntityType>,
-    EntityType extends IEntity<unknown>,
+export interface CrudServiceStructure<
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
-    FindArgsType extends IFindArgs,
-    ContextType extends IContext
-    > extends IDataServiceStructure<PrimaryKeyType,EntityType,FindArgsType,ContextType> {
+    FindArgsType extends FindArgsInterface,
+    ContextType extends Context
+    > extends DataServiceStructure<IdType,EntityType,FindArgsType,ContextType> {
 
         createInputType:Constructable<CreateInputType>,
         updateInputType:Constructable<UpdateInputType>,
@@ -18,13 +18,13 @@ export interface ICrudServiceStructure<
 
 
 export function CrudServiceStructure<
-                        PrimaryKeyType extends IdTypeFrom<EntityType>,
-                        EntityType extends IEntity<unknown>,
+                        IdType extends IdTypeFrom<EntityType>,
+                        EntityType extends Entity<unknown>,
                         CreateInputType extends DeepPartial<EntityType>,
                         UpdateInputType extends DeepPartial<EntityType>,
-                        FindArgsType extends IFindArgs,
-                        ContextType extends IContext,
-                        >(input:ICrudServiceStructure<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>):ICrudServiceStructure<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
+                        FindArgsType extends FindArgsInterface,
+                        ContextType extends Context,
+                        >(input:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>):CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
                         {
                             return input;
                         }

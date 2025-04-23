@@ -1,6 +1,6 @@
 import { ExecutionContext, createParamDecorator } from "@nestjs/common";
 import { ContextUtils } from "../utils";
-import { IContext } from "../interfaces";
+import { Context } from "../interfaces";
 
 export const CurrentContext = createParamDecorator(
     ( data: unknown,context: ExecutionContext ) =>{
@@ -11,7 +11,7 @@ export const CurrentContext = createParamDecorator(
         }
         const transactionManager = request.transactionManager;
 
-        const currentContext:IContext = { transactionManager };
+        const currentContext:Context = { transactionManager };
 
         return currentContext;
     })

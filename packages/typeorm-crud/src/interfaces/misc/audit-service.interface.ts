@@ -1,9 +1,9 @@
-import { IContext } from "./context.interface";
+import { Context } from "./context.interface";
 
-export interface IAuditService {
+export interface AuditService {
 
     Audit(
-        context:IContext,
+        context:Context,
         serviceName:string,
         action:string,
         objectId?:any,
@@ -12,4 +12,4 @@ export interface IAuditService {
     ):Promise<void>;
 }
 
-export const IAuditService = Symbol("IAuditService");
+export const AuditService = Symbol("AuditService");

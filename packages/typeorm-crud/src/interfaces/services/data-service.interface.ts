@@ -1,21 +1,21 @@
 import { FindManyOptions, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
 import { BooleanType, NotNullableIf } from '../../types';
-import { IContext, IdTypeFrom, IEntity,  IFindArgs, ICountResult, IDataRetrievalOptions, IExtendedRelationInfo } from '../misc';
+import { Context, IdTypeFrom, Entity,  FindArgsInterface, CountResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
 
-export interface IDataService<
-  PrimaryKeyType extends IdTypeFrom<EntityType>,
-  EntityType extends IEntity<unknown>,
-  FindArgsType extends IFindArgs,
-  ContextType extends IContext = IContext
+export interface DataServiceInterface<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  FindArgsType extends FindArgsInterface,
+  ContextType extends Context = Context
 > {
   getRepository(context: ContextType): Repository<EntityType>;
 
-  getRelationsInfo(context: ContextType): IExtendedRelationInfo[]
+  getRelationsInfo(context: ContextType): ExtendedRelationInfo[]
 
   getQueryBuilder(
     context: ContextType,
     args?: FindArgsType,
-    options?: IDataRetrievalOptions,
+    options?: DataRetrievalOptions,
   ): SelectQueryBuilder<EntityType>;
 
   find(
@@ -26,18 +26,18 @@ export interface IDataService<
   findAll(
     context: ContextType, 
     args?: FindArgsType,
-    options?: IDataRetrievalOptions,
+    options?: DataRetrievalOptions,
   ): Promise<EntityType[]>;
 
   Count(
     context: ContextType, 
     args?: FindArgsType,
-    options?: IDataRetrievalOptions,
-  ): Promise<ICountResult>;
+    options?: DataRetrievalOptions,
+  ): Promise<CountResultInterface>;
 
   findOne<TBool extends BooleanType = false>(
     context: ContextType,
-    id: PrimaryKeyType,
+    id: IdType,
     orFail?: TBool,
     withDeleted?: boolean,
   ): Promise<NotNullableIf<TBool,EntityType>>;
@@ -52,7 +52,7 @@ export interface IDataService<
   Audit(
     context: ContextType,
     action: string,
-    objectId?: PrimaryKeyType,
+    objectId?: IdType,
     valueBefore?: object,
     valueAfter?: object,
   ): Promise<void>;

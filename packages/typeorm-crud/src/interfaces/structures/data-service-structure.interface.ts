@@ -1,26 +1,26 @@
-import { IContext } from "../misc/context.interface";
+import { Context } from "../misc/context.interface";
 import { Constructable } from "../../types";
-import { IdTypeFrom, IEntity, IFindArgs } from "../misc";
-import { IDataRetrievalOptions } from "../misc/data-retrieval-options.interface";
+import { IdTypeFrom, Entity, FindArgsInterface } from "../misc";
+import { DataRetrievalOptions } from "../misc/data-retrieval-options.interface";
 
-export interface IDataServiceStructure<
-    PrimaryKeyType extends IdTypeFrom<EntityType>,
-    EntityType extends IEntity<unknown>,
-    FindArgsType extends IFindArgs,
-    ContextType extends IContext = IContext
+export interface DataServiceStructure<
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
+    FindArgsType extends FindArgsInterface,
+    ContextType extends Context = Context
     >{
         entityType: Constructable<EntityType>
         findArgsType?: Constructable<FindArgsType>,
         contextType?: Constructable<ContextType>,
-        dataRetrievalOptions?:IDataRetrievalOptions
+        dataRetrievalOptions?:DataRetrievalOptions
     }
 
 export function DataServiceStructure<
-                        PrimaryKeyType extends IdTypeFrom<EntityType>,
-                        EntityType extends IEntity<unknown>,
-                        FindArgsType extends IFindArgs,
-                        ContextType extends IContext = IContext,
-                        >(input:IDataServiceStructure<PrimaryKeyType,EntityType,FindArgsType,ContextType>):IDataServiceStructure<PrimaryKeyType,EntityType,FindArgsType,ContextType>
+                        IdType extends IdTypeFrom<EntityType>,
+                        EntityType extends Entity<unknown>,
+                        FindArgsType extends FindArgsInterface,
+                        ContextType extends Context = Context,
+                        >(input:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>):DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
                         {
                             return input;
                         }

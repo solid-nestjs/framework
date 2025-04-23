@@ -1,5 +1,5 @@
 import { EntityManager } from "typeorm";
 
-export interface IContext {
+export interface Context {
     transactionManager?:EntityManager;
 }

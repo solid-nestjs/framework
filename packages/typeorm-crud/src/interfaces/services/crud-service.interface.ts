@@ -1,41 +1,41 @@
 import { DeepPartial, Repository } from "typeorm";
-import { IContext, IdTypeFrom, IEntity, IFindArgs } from "../misc";
-import { ICreateEventsHandler, IHardRemoveEventsHandler, IRemoveEventsHandler, IUpdateEventsHandler } from "../event-handlers";
-import { IDataService } from "./data-service.interface";
+import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
+import { CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../event-handlers";
+import { DataServiceInterface } from "./data-service.interface";
 
-export interface ICrudService<
-        PrimaryKeyType extends IdTypeFrom<EntityType>,
-        EntityType extends IEntity<unknown>,
+export interface CrudServiceInterface<
+        IdType extends IdTypeFrom<EntityType>,
+        EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
-        FindArgsType extends IFindArgs,
-        ContextType extends IContext = IContext
-        > extends IDataService<PrimaryKeyType,EntityType,FindArgsType,ContextType>{
+        FindArgsType extends FindArgsInterface,
+        ContextType extends Context = Context
+        > extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>{
            
             create(
                 context:ContextType,
                 createInput: CreateInputType,
-                eventHandler?:ICreateEventsHandler<PrimaryKeyType,EntityType,CreateInputType,ContextType>
+                eventHandler?:CreateEventsHandler<IdType,EntityType,CreateInputType,ContextType>
                 ): Promise<EntityType>;
 
             update(
                 context:ContextType,
-                id: PrimaryKeyType, 
+                id: IdType, 
                 updateInput: UpdateInputType,
-                eventHandler?:IUpdateEventsHandler<PrimaryKeyType,EntityType,UpdateInputType,ContextType>
+                eventHandler?:UpdateEventsHandler<IdType,EntityType,UpdateInputType,ContextType>
                 ): Promise<EntityType>;
 
             remove(
                 context:ContextType,
-                id: PrimaryKeyType,
-                eventHandler?:IRemoveEventsHandler<PrimaryKeyType,EntityType,ContextType>
+                id: IdType,
+                eventHandler?:RemoveEventsHandler<IdType,EntityType,ContextType>
                 ): Promise<EntityType>;
 
             
             hardRemove(
                 context:ContextType,
-                id: PrimaryKeyType,
-                eventHandler?:IHardRemoveEventsHandler<PrimaryKeyType,EntityType,ContextType>
+                id: IdType,
+                eventHandler?:HardRemoveEventsHandler<IdType,EntityType,ContextType>
                 ): Promise<EntityType>; 
 
             beforeCreate(context:ContextType,repository: Repository<EntityType>,entity: EntityType,createInput: CreateInputType) : Promise<void>

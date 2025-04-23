@@ -1,43 +1,43 @@
 import { DeepPartial } from "typeorm";
 import { Constructable } from "../../types";
-import { ICrudService } from "../services";
-import { IContext, IdTypeFrom, IEntity, IFindArgs } from "../misc";
-import { ICrudServiceStructure } from "./crud-service-structure.interface";
-import { IDataControllerClassStructure, IDataControllerStructure, IMethodStructure } from "./data-controller-structure.interface";
+import { CrudServiceInterface } from "../services";
+import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
+import { CrudServiceStructure } from "./crud-service-structure.interface";
+import { DataControllerClassStructure, DataControllerStructure, MethodStructure } from "./data-controller-structure.interface";
 
 
-export interface ICrudControllerClassStructure<PrimaryKeyType> extends IDataControllerClassStructure<PrimaryKeyType> {
-    create?:IMethodStructure|boolean,
-    update?:IMethodStructure|boolean,
-    remove?:IMethodStructure|boolean,
-    hardRemove?:IMethodStructure|boolean,
+export interface CrudControllerClassStructure<IdType> extends DataControllerClassStructure<IdType> {
+    create?:MethodStructure|boolean,
+    update?:MethodStructure|boolean,
+    remove?:MethodStructure|boolean,
+    hardRemove?:MethodStructure|boolean,
 }
 
-export interface ICrudControllerStructure<
-    PrimaryKeyType extends IdTypeFrom<EntityType>,
-    EntityType extends IEntity<unknown>,
+export interface CrudControllerStructure<
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
-    ServiceType extends ICrudService<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
-    FindArgsType extends IFindArgs,
-    ContextType extends IContext = IContext,
+    ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+    FindArgsType extends FindArgsInterface,
+    ContextType extends Context = Context,
     > extends 
-        ICrudServiceStructure<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>, 
-        ICrudControllerClassStructure<PrimaryKeyType>,
-        IDataControllerStructure<PrimaryKeyType,EntityType,ServiceType,FindArgsType,ContextType>
+        CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>, 
+        CrudControllerClassStructure<IdType>,
+        DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>
     {
         serviceType:Constructable<ServiceType>
     }
 
 export function CrudControllerStructure<
-    PrimaryKeyType extends IdTypeFrom<EntityType>,
-    EntityType extends IEntity<unknown>,
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
-    ServiceType extends ICrudService<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
-    FindArgsType extends IFindArgs,
-    ContextType extends IContext,
-    >(input:ICrudControllerStructure<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>):ICrudControllerStructure<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>
+    ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+    FindArgsType extends FindArgsInterface,
+    ContextType extends Context,
+    >(input:CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>):CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>
     {
         return input;
     }

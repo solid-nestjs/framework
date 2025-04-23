@@ -4,7 +4,7 @@ import { SetMetadata, mixin } from "@nestjs/common";
 import { ApiProperty, ApiSchema, PartialType } from "@nestjs/swagger";
 import { Constructable } from "../types";
 import { Pagination } from "../classes/inputs";
-import { IFindArgs } from "../interfaces";
+import { FindArgsInterface } from "../interfaces";
 
 export const WHERE_CLASS_KEY = 'WhereClass';
 export const ORDER_BY_CLASS_KEY = 'OrderByClass';
@@ -18,7 +18,7 @@ export function
         orderByStructureType?: OrderByStructureType
     ){    
         
-    class ArgsClass implements IFindArgs
+    class ArgsClass implements FindArgsInterface
     {        
         @ApiProperty({ type: () => Pagination, required: false })
         @Type(() => Pagination)
@@ -50,7 +50,7 @@ export function
         }
 
         @SetMetadata(WHERE_CLASS_KEY,WhereClass)
-        class ArgsClassWithWhere extends returnedClass implements IFindArgs
+        class ArgsClassWithWhere extends returnedClass implements FindArgsInterface
         {
             @ApiProperty({ type: () => WhereClass, required: false })
             @Type(() => WhereClass)

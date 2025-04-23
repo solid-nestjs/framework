@@ -10,7 +10,7 @@ export interface RelationInfo {
   isLazy: boolean;
 }
 
-export interface IExtendedRelationInfo extends RelationInfo {
+export interface ExtendedRelationInfo extends RelationInfo {
   aggregatedCardinality: RelationType;
   path: string[];
   isExtended: boolean;

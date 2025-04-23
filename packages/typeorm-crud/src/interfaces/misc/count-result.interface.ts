@@ -1,4 +1,4 @@
-export interface ICountResult{
+export interface CountResultInterface{
     totalRecords: number;
     recordsInCurrentPage: number;
     pageSize?: number;

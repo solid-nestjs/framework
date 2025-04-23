@@ -1,7 +1,7 @@
-import { IPagination } from "./pagination.interface";
+import { PaginationInterface } from "./pagination.interface";
 
-export interface IFindArgs {
-  pagination?: IPagination;
+export interface FindArgsInterface {
+  pagination?: PaginationInterface;
 
   where?: any;
 

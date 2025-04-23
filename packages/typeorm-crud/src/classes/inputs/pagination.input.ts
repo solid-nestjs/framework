@@ -1,8 +1,8 @@
 import { IsNumber, IsOptional, Min } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { IPagination } from "../../interfaces";
+import { PaginationInterface } from "../../interfaces";
 
-export class Pagination implements IPagination{
+export class Pagination implements PaginationInterface{
 
     @ApiProperty({ required: false , type: Number, example:0})
     @IsNumber()

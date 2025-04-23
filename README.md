@@ -130,8 +130,8 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ### [0.2.0] - Enhanced Data Retrieval
 - [ ] Entity Id Type automatic detection.
-  - currently If the PrimaryKeyType is not specified it's taken as int by default, it should be inferred by the EntityType.
-  - supporting PrimaryKeyType inference means that it also should be a mapper that resolves what pipeTransform must be used for the controller retrieval of the PK from the query.
+  - currently If the IdType is not specified it's taken as int by default, it should be inferred by the EntityType.
+  - supporting IdType inference means that it also should be a mapper that resolves what pipeTransform must be used for the controller retrieval of the PK from the query.
 - [ ] Enhanced pagination
   - Return both data and pagination metadata in single response
   - Fix pagination calculations for relations with one-to-many/many-to-many cardinality

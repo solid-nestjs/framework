@@ -2,30 +2,30 @@ import { DeepPartial } from 'typeorm';
 import { Body, Delete, HttpCode, HttpStatus, Param, ParseIntPipe, PipeTransform, Post, Put, Type, mixin } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam  } from '@nestjs/swagger';
 import { Constructable } from '../types';
-import { IContext, IdTypeFrom, IEntity, IFindArgs, ICrudService, ICrudControllerStructure, ICrudControllerClassStructure } from '../interfaces';
+import { Context, IdTypeFrom, Entity, FindArgsInterface, CrudServiceInterface, CrudControllerStructure, CrudControllerClassStructure } from '../interfaces';
 import { ApiResponses, CurrentContext } from '../decorators';
 import { applyMethodDecorators } from '../utils';
 import { CountResult, DefaultArgs } from '../classes';
 import { DataController } from './data-controller.mixin';
 
 export function CrudControllerFrom<
-  PrimaryKeyType extends IdTypeFrom<EntityType>,
-  EntityType extends IEntity<unknown>,
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
-  ServiceType extends ICrudService<
-    PrimaryKeyType,
+  ServiceType extends CrudServiceInterface<
+    IdType,
     EntityType,
     CreateInputType,
     UpdateInputType,
     FindArgsType,
     ContextType
   >,
-  FindArgsType extends IFindArgs = DefaultArgs,
-  ContextType extends IContext = IContext,
+  FindArgsType extends FindArgsInterface = DefaultArgs,
+  ContextType extends Context = Context,
 >(
-  structure: ICrudControllerStructure<
-    PrimaryKeyType,
+  structure: CrudControllerStructure<
+    IdType,
     EntityType,
     CreateInputType,
     UpdateInputType,
@@ -55,39 +55,39 @@ export function CrudControllerFrom<
 }
 
 export function CrudController<
-  PrimaryKeyType extends IdTypeFrom<EntityType>,
-  EntityType extends IEntity<unknown>,
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
-  ServiceType extends ICrudService<
-    PrimaryKeyType,
+  ServiceType extends CrudServiceInterface<
+    IdType,
     EntityType,
     CreateInputType,
     UpdateInputType,
     FindArgsType,
     ContextType
   >,
-  FindArgsType extends IFindArgs = DefaultArgs,
-  ContextType extends IContext = IContext,
+  FindArgsType extends FindArgsInterface = DefaultArgs,
+  ContextType extends Context = Context,
 >(
   entityType: Constructable<EntityType>,
   createInputType: Constructable<CreateInputType>,
   updateInputType: Constructable<UpdateInputType>,
   serviceType: Constructable<ServiceType>,
-  controllerStructure: ICrudControllerClassStructure<PrimaryKeyType>,
+  controllerStructure: CrudControllerClassStructure<IdType>,
   findArgsType?: Constructable<FindArgsType>,
   contextType?: Constructable<ContextType>,
 ) {
   const ContextDecorator =
     controllerStructure.parameterDecorators?.currentContext ?? CurrentContext;
 
-  let primaryKeyType:any = Number;
+  let idType:any = Number;
   let pipeTransforms:Type<PipeTransform>[] = [ParseIntPipe];
 
-  if(controllerStructure.primaryKey)
+  if(controllerStructure.idStructure)
   {
-    primaryKeyType = controllerStructure.primaryKey.type;
-    pipeTransforms = controllerStructure.primaryKey.pipeTransforms ?? [];
+    idType = controllerStructure.idStructure.type;
+    pipeTransforms = controllerStructure.idStructure.pipeTransforms ?? [];
   }
 
   const createStructure = (typeof(controllerStructure.create) == 'object')?controllerStructure.create:null;
@@ -164,11 +164,11 @@ export function CrudController<
     @ApiResponses({ type:entityType, successCodes:updateSuccessCodes, errorCodes: findOneErrorCodes })
     async update?(
       @ContextDecorator() context: ContextType,
-      @Param('id', ...pipeTransforms)  id: PrimaryKeyType,
+      @Param('id', ...pipeTransforms)  id: IdType,
       @Body() updateInput: UpdateInputType
     ) : Promise<EntityType>
     {
-      return this.service.update(context, updateInput.id as PrimaryKeyType, { ...updateInput, id });
+      return this.service.update(context, updateInput.id as IdType, { ...updateInput, id });
     }
 
     @Delete(removeRoute)
@@ -179,7 +179,7 @@ export function CrudController<
     @ApiResponses({ type:entityType, successCodes:removeSuccessCodes, errorCodes: removeErrorCodes })
     async remove?(
       @ContextDecorator() context: ContextType,
-      @Param('id', ...pipeTransforms) id: PrimaryKeyType
+      @Param('id', ...pipeTransforms) id: IdType
     ) : Promise<EntityType> 
     {
       return this.service.remove(context, id);
@@ -193,7 +193,7 @@ export function CrudController<
     @ApiResponses({ type:entityType, successCodes:hardRemoveSuccessCodes, errorCodes: hardRemoveErrorCodes })
     async hardRemove?(
       @ContextDecorator() context: ContextType,
-      @Param('id', ...pipeTransforms) id: PrimaryKeyType
+      @Param('id', ...pipeTransforms) id: IdType
     ) : Promise<EntityType>
     {
       return this.service.hardRemove(context, id);

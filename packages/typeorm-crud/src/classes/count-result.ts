@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { ICountResult } from "../interfaces";
+import { CountResultInterface } from "../interfaces";
 
-export class CountResult implements ICountResult {
+export class CountResult implements CountResultInterface {
 
   @ApiProperty()
   totalRecords: number;

@@ -2,18 +2,18 @@ import { FindManyOptions, FindOptionsWhere, Repository, SelectQueryBuilder } fro
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Constructable, BooleanType, NotNullableIf } from '../types';
-import { IContext, IEntity, IdTypeFrom, IDataService, IAuditService, IFindArgs, ICountResult, IExtendedRelationInfo, IDataRetrievalOptions, IDataServiceStructure } from '../interfaces';
+import { Context, Entity, IdTypeFrom, DataServiceInterface as DataServiceInterface, AuditService, FindArgsInterface, CountResultInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
 import { QueryBuilderHelper, hasDeleteDateColumn, getPaginationArgs } from '../helpers';
 
 export function DataServiceFrom<
-            PrimaryKeyType extends IdTypeFrom<EntityType>,
-            EntityType extends IEntity<unknown>,
-            FindArgsType extends IFindArgs = DefaultArgs,
-            ContextType extends IContext = IContext
+            IdType extends IdTypeFrom<EntityType>,
+            EntityType extends Entity<unknown>,
+            FindArgsType extends FindArgsInterface = DefaultArgs,
+            ContextType extends Context = Context
             >(
-                structure:IDataServiceStructure<PrimaryKeyType,EntityType,FindArgsType,ContextType>
-            ) : Type<IDataService<PrimaryKeyType,EntityType,FindArgsType,ContextType>>
+                structure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
+            ) : Type<DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>>
     {
         const { entityType,contextType,findArgsType, dataRetrievalOptions } = structure;
 
@@ -21,16 +21,16 @@ export function DataServiceFrom<
     }
 
 export function DataService<
-  PrimaryKeyType extends IdTypeFrom<EntityType>,
-  EntityType extends IEntity<unknown>,
-  FindArgsType extends IFindArgs = DefaultArgs,
-  ContextType extends IContext = IContext
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  FindArgsType extends FindArgsInterface = DefaultArgs,
+  ContextType extends Context = Context
 >(
   entityType: Constructable<EntityType>,
   findArgsType?: Constructable<FindArgsType>,
   contextType?: Constructable<ContextType>,
-  dataRetrievalOptions?:IDataRetrievalOptions
-): Type<IDataService<PrimaryKeyType,EntityType, FindArgsType, ContextType>> {
+  dataRetrievalOptions?:DataRetrievalOptions
+): Type<DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>> {
 
   const argsType = findArgsType ?? DefaultArgs;
 
@@ -38,16 +38,16 @@ export function DataService<
 
   @Injectable()
   class DataService
-    implements IDataService<PrimaryKeyType,EntityType, FindArgsType, ContextType>
+    implements DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>
   {
-    @Inject(IAuditService)
+    @Inject(AuditService)
     @Optional()
-    private readonly _auditService?: IAuditService;
+    private readonly _auditService?: AuditService;
 
     @InjectRepository(entityType)
     private readonly _repository: Repository<EntityType>;
 
-    private readonly _defaultDataRetrievalOptions:IDataRetrievalOptions = dataRetrievalOptions ?? {};
+    private readonly _defaultDataRetrievalOptions:DataRetrievalOptions = dataRetrievalOptions ?? {};
 
     getRepository(context: ContextType) {
       if (context?.transactionManager)
@@ -56,7 +56,7 @@ export function DataService<
       return this._repository;
     }
 
-    getRelationsInfo(context: ContextType): IExtendedRelationInfo[] {
+    getRelationsInfo(context: ContextType): ExtendedRelationInfo[] {
       const repository = this.getRepository(context);
       
       return QBHelper.getRelationsInfo(repository);
@@ -65,7 +65,7 @@ export function DataService<
     getQueryBuilder(
       context: ContextType,
       args?: FindArgsType,
-      options?: IDataRetrievalOptions,
+      options?: DataRetrievalOptions,
     ): SelectQueryBuilder<EntityType> {
       const repository = this.getRepository(context);
 
@@ -85,7 +85,7 @@ export function DataService<
     async findAll(
       context: ContextType,
       args?: FindArgsType,
-      options?: IDataRetrievalOptions,
+      options?: DataRetrievalOptions,
     ): Promise<EntityType[]> {
       const queryBuilder = this.getQueryBuilder(context, args, options);
 
@@ -95,8 +95,8 @@ export function DataService<
     async Count(
       context: ContextType,
       args?: FindArgsType,
-      options?: IDataRetrievalOptions,
-    ): Promise<ICountResult> {
+      options?: DataRetrievalOptions,
+    ): Promise<CountResultInterface> {
       const queryBuilder = this.getQueryBuilder(context, {
         ...args,
         pagination: undefined,
@@ -126,7 +126,7 @@ export function DataService<
     
     async findOne<TBool extends BooleanType = false>(
       context: ContextType,
-      id: PrimaryKeyType,
+      id: IdType,
       orFail?: TBool,
       withDeleted?: boolean,
     ): Promise< NotNullableIf<TBool,EntityType> > {
@@ -169,7 +169,7 @@ export function DataService<
     async Audit(
       context: ContextType,
       action: string,
-      objectId?: PrimaryKeyType,
+      objectId?: IdType,
       valueBefore?: object,
       valueAfter?: object,
     ): Promise<void> {

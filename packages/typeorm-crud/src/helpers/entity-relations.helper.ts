@@ -1,7 +1,7 @@
 import { EntityMetadata, ObjectLiteral } from 'typeorm';
 import { RelationType } from 'typeorm/metadata/types/RelationTypes';
 import { Repository } from 'typeorm';
-import { IExtendedRelationInfo, RelationInfo } from '../interfaces';
+import { ExtendedRelationInfo, RelationInfo } from '../interfaces';
 import { getTypeName } from './types.helper';
 
 
@@ -16,9 +16,9 @@ function getAggregatedCardinality(fromCardinality: RelationType, toCardinality: 
   return fromCardinality;
 }
 
-export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: Repository<T>, maxDepth = 2): IExtendedRelationInfo[] {
+export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: Repository<T>, maxDepth = 2): ExtendedRelationInfo[] {
   const metadata: EntityMetadata = repository.metadata;
-  const relations: IExtendedRelationInfo[] = [];
+  const relations: ExtendedRelationInfo[] = [];
   const visitedPaths = new Set<string>();
 
   // Add direct relations

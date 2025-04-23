@@ -1,22 +1,22 @@
 import { DeepPartial, Repository } from "typeorm";
 import { Injectable, Type, mixin } from "@nestjs/common";
 import { Constructable } from "../types";
-import { IContext, IdTypeFrom, IEntity, IDataRetrievalOptions, ICrudService, IFindArgs, ICrudServiceStructure, ICreateEventsHandler, IHardRemoveEventsHandler, IRemoveEventsHandler, IUpdateEventsHandler } from "../interfaces";
+import { Context, IdTypeFrom, Entity, DataRetrievalOptions, CrudServiceInterface as CrudServiceInterface, FindArgsInterface, CrudServiceStructure, CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../interfaces";
 import { StandardActions } from "../enums";
 import { DefaultArgs } from "../classes";
 import { hasDeleteDateColumn } from "../helpers";
-import { DataService } from "./data-service.mixin";
+import { DataService as DataServiceInterface } from "./data-service.mixin";
 
 export function CrudServiceFrom<
-            PrimaryKeyType extends IdTypeFrom<EntityType>,
-            EntityType extends IEntity<unknown>,
+            IdType extends IdTypeFrom<EntityType>,
+            EntityType extends Entity<unknown>,
             CreateInputType extends DeepPartial<EntityType>,
             UpdateInputType extends DeepPartial<EntityType>,
-            FindArgsType extends IFindArgs = DefaultArgs,
-            ContextType extends IContext = IContext
+            FindArgsType extends FindArgsInterface = DefaultArgs,
+            ContextType extends Context = Context
             >(
-                structure:ICrudServiceStructure<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
-            ) : Type<ICrudService<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>>
+                structure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
+            ) : Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>>
     {
         const { entityType,createInputType,updateInputType,contextType,findArgsType,dataRetrievalOptions } = structure;
 
@@ -25,30 +25,30 @@ export function CrudServiceFrom<
 
 export function 
     CrudService<
-        PrimaryKeyType extends IdTypeFrom<EntityType>,
-        EntityType extends IEntity<unknown>,
+        IdType extends IdTypeFrom<EntityType>,
+        EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
-        FindArgsType extends IFindArgs = DefaultArgs,
-        ContextType extends IContext = IContext
+        FindArgsType extends FindArgsInterface = DefaultArgs,
+        ContextType extends Context = Context
     >(
         entityType: Constructable<EntityType>,
         createInputType:Constructable<CreateInputType>,
         updateInputType:Constructable<UpdateInputType>,
         findArgsType?: Constructable<FindArgsType>,
         contextType?: Constructable<ContextType>,
-        dataRetrievalOptions?:IDataRetrievalOptions
-    ): Type<ICrudService<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>> {
+        dataRetrievalOptions?:DataRetrievalOptions
+    ): Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>> {
 
     @Injectable()
     class CrudService 
-        extends DataService(entityType,findArgsType,contextType,dataRetrievalOptions)
-        implements ICrudService<PrimaryKeyType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>{
+        extends DataServiceInterface(entityType,findArgsType,contextType,dataRetrievalOptions)
+        implements CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>{
     
         async create(
             context:ContextType,
             createInput: CreateInputType,
-            eventHandler:ICreateEventsHandler<PrimaryKeyType,EntityType,CreateInputType,ContextType> = this
+            eventHandler:CreateEventsHandler<IdType,EntityType,CreateInputType,ContextType> = this
             ): Promise<EntityType> {
     
             const repository = this.getRepository(context);
@@ -59,7 +59,7 @@ export function
             
             const responseEntity = await repository.save(entity);
 
-            this.Audit(context,StandardActions.Create,entity.id as PrimaryKeyType,undefined,responseEntity);
+            this.Audit(context,StandardActions.Create,entity.id as IdType,undefined,responseEntity);
     
             await eventHandler.afterCreate(context,repository,responseEntity,createInput);
     
@@ -68,9 +68,9 @@ export function
     
         async update(
             context:ContextType,
-            id: PrimaryKeyType, 
+            id: IdType, 
             updateInput: UpdateInputType,
-            eventHandler:IUpdateEventsHandler<PrimaryKeyType,EntityType,UpdateInputType,ContextType> = this
+            eventHandler:UpdateEventsHandler<IdType,EntityType,UpdateInputType,ContextType> = this
             ): Promise<EntityType> {
             const repository = this.getRepository(context);
     
@@ -84,7 +84,7 @@ export function
     
             const responseEntity = await repository.save(entity);
 
-            this.Audit(context,StandardActions.Update,entity.id as PrimaryKeyType,entityBefore,responseEntity);            
+            this.Audit(context,StandardActions.Update,entity.id as IdType,entityBefore,responseEntity);            
     
             await eventHandler.afterUpdate(context,repository,responseEntity,updateInput);
     
@@ -93,8 +93,8 @@ export function
     
         async remove(
             context:ContextType,
-            id: PrimaryKeyType,
-            eventHandler:IRemoveEventsHandler<PrimaryKeyType,EntityType,ContextType> = this
+            id: IdType,
+            eventHandler:RemoveEventsHandler<IdType,EntityType,ContextType> = this
             ): Promise<EntityType> {
             const repository = this.getRepository(context);
     
@@ -113,7 +113,7 @@ export function
                 responseEntity.id = id;
             }
     
-            await this.Audit(context,StandardActions.Remove,entity.id as PrimaryKeyType,responseEntity);   
+            await this.Audit(context,StandardActions.Remove,entity.id as IdType,responseEntity);   
 
             await eventHandler.afterRemove(context,repository,responseEntity);
     
@@ -122,8 +122,8 @@ export function
 
         async hardRemove(
             context:ContextType,
-            id: PrimaryKeyType,
-            eventHandler:IHardRemoveEventsHandler<PrimaryKeyType,EntityType,ContextType> = this
+            id: IdType,
+            eventHandler:HardRemoveEventsHandler<IdType,EntityType,ContextType> = this
             ): Promise<EntityType> {
             const repository = this.getRepository(context);
 
@@ -142,7 +142,7 @@ export function
 
             responseEntity.id = id;
        
-            await this.Audit(context,StandardActions.Remove,entity.id as PrimaryKeyType,responseEntity);   
+            await this.Audit(context,StandardActions.Remove,entity.id as IdType,responseEntity);   
 
             await eventHandler.afterHardRemove(context,repository,responseEntity);
     
