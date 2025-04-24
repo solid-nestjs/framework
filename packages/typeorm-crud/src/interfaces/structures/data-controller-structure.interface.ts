@@ -1,8 +1,9 @@
-import { HttpStatus, PipeTransform, Type } from "@nestjs/common";
+import { HttpStatus } from "@nestjs/common";
 import { Constructable } from "../../types";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { DataServiceInterface } from "../services";
 import { DataServiceStructure } from "./data-service-structure.interface";
+import { EntityManagerStructure, fillEntityId, IdStructure } from "./entity-manager-structure.interface";
 
 
 export interface MethodStructure {
@@ -22,20 +23,16 @@ export interface ParameterDecorators
     currentContext:() => ParameterDecorator;
 }
 
-export interface IdStructure<IdType>
-{
-    type:Constructable<IdType>,
-    pipeTransforms?:Type<PipeTransform>[]
-}
-
-export interface DataControllerClassStructure<IdType> {    
+export interface DataControllerClassStructure<
+                            IdType extends IdTypeFrom<EntityType>,
+                            EntityType extends Entity<unknown>,
+                        > extends EntityManagerStructure<IdType,EntityType>{    
     findAll?:MethodStructure|boolean,
     findOne?:MethodStructure|boolean,
     count?:MethodStructure|boolean,
     route?:string;
     parameterDecorators?:ParameterDecorators,
     classDecorators?:(() => ClassDecorator)[],
-    idStructure?:IdStructure<IdType>,
 }
 
 export interface DataControllerStructure<
@@ -46,7 +43,7 @@ export interface DataControllerStructure<
     ContextType extends Context,
     > extends 
         DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>, 
-        DataControllerClassStructure<IdType>
+        DataControllerClassStructure<IdType,EntityType>
     {
         serviceType:Constructable<ServiceType>
     }
@@ -59,5 +56,7 @@ export function DataControllerStructure<
     ContextType extends Context,
     >(input:DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>):DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>
     {
+        fillEntityId(input);
+
         return input;
     }

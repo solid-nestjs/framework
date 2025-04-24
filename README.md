@@ -24,14 +24,14 @@ npm install @nestjz/typeorm-crud
 ### Creating a CRUD Service
 
 ```typescript
-import { CrudServiceFrom, ICrudServiceStructure } from '@nestjz/typeorm-crud';
+import { CrudServiceFrom, CrudServiceStructure } from '@nestjz/typeorm-crud';
 
 // Define your service structure
-const serviceStructure: ICrudServiceStructure<number, YourEntity, CreateDto, UpdateDto> = {
+export const serviceStructure = CrudServiceStructure({
   entityType: YourEntity,
   createInputType: CreateDto,
   updateInputType: UpdateDto
-};
+});
 
 // Create the service
 export class YourService extends CrudServiceFrom(serviceStructure) {
@@ -42,18 +42,15 @@ export class YourService extends CrudServiceFrom(serviceStructure) {
 ### Creating a CRUD Controller
 
 ```typescript
-import { CrudControllerFrom, ICrudControllerStructure } from '@nestjz/typeorm-crud';
+import { CrudControllerFrom, CrudControllerStructure } from '@nestjz/typeorm-crud';
+import { serviceStructure, YourService } from './your.service'
 
 // Define your controller structure
-const controllerStructure: ICrudControllerStructure<number, YourEntity, CreateDto, UpdateDto> = {
-  entityType: YourEntity,
+const controllerStructure = CrudControllerStructure({
+  ..serviceStructure,
   serviceType: YourService,
-  createInputType: CreateDto,
-  updateInputType: UpdateDto
-};
+});
 
-// Create the controller
-@Controller('your-route')
 export class YourController extends CrudControllerFrom(controllerStructure) {
   // Add custom endpoints here
 }
@@ -129,7 +126,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - [x] Basic relation handling
 
 ### [0.2.0] - Enhanced Data Retrieval
-- [ ] Entity Id Type automatic detection.
+- [x] Entity Id Type automatic detection.
   - currently If the IdType is not specified it's taken as int by default, it should be inferred by the EntityType.
   - supporting IdType inference means that it also should be a mapper that resolves what pipeTransform must be used for the controller retrieval of the PK from the query.
 - [ ] Enhanced pagination
@@ -139,6 +136,12 @@ MIT License - see the [LICENSE](LICENSE) file for details.
   - Configurable relation loading through request parameters
   - Enable/disable specific relations at service level
   - Optimize relation loading performance
+- [ ] Custom operations support in the ControllerStructure
+    (this is already possible adding those methods (with their api decorators) to the inherited class, but it will be cleanner to do this way)
+  - Allow defining custom operations in controllers
+  - Support for custom routes and methods
+  - Enable operation-specific validation and transformation
+  - Provide decorators for operation configuration
 - [ ] Implement bulk operations
 - [ ] Query optimization improvements
   - Query caching options

@@ -74,7 +74,7 @@ export function CrudController<
   createInputType: Constructable<CreateInputType>,
   updateInputType: Constructable<UpdateInputType>,
   serviceType: Constructable<ServiceType>,
-  controllerStructure: CrudControllerClassStructure<IdType>,
+  controllerStructure: CrudControllerClassStructure<IdType,EntityType>,
   findArgsType?: Constructable<FindArgsType>,
   contextType?: Constructable<ContextType>,
 ) {
@@ -84,10 +84,10 @@ export function CrudController<
   let idType:any = Number;
   let pipeTransforms:Type<PipeTransform>[] = [ParseIntPipe];
 
-  if(controllerStructure.idStructure)
+  if(controllerStructure.entityId)
   {
-    idType = controllerStructure.idStructure.type;
-    pipeTransforms = controllerStructure.idStructure.pipeTransforms ?? [];
+    idType = controllerStructure.entityId.type;
+    pipeTransforms = controllerStructure.entityId.pipeTransforms ?? [];
   }
 
   const createStructure = (typeof(controllerStructure.create) == 'object')?controllerStructure.create:null;
