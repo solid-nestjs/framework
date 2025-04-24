@@ -58,7 +58,7 @@ export function DataController<
 >(
   entityType: Constructable<EntityType>,
   serviceType: Constructable<ServiceType>,
-  controllerStructure: DataControllerClassStructure<IdType>,
+  controllerStructure: DataControllerClassStructure<IdType,EntityType>,
   findArgsType?: Constructable<FindArgsType>,
   contextType?: Constructable<ContextType>,
 ) {
@@ -71,10 +71,10 @@ export function DataController<
   let idType:any = Number;
   let pipeTransforms:Type<PipeTransform>[] = [ParseIntPipe];
 
-  if(controllerStructure.idStructure)
+  if(controllerStructure.entityId)
   {
-    idType = controllerStructure.idStructure.type;
-    pipeTransforms = controllerStructure.idStructure.pipeTransforms ?? [];
+    idType = controllerStructure.entityId.type;
+    pipeTransforms = controllerStructure.entityId.pipeTransforms ?? [];
   }
 
   const controllerApiTags = controllerStructure.route ?? entityType.name.toLowerCase()+'s';

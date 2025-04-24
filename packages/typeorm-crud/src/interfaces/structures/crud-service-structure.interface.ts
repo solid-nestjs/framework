@@ -2,6 +2,7 @@ import { DeepPartial } from "typeorm";
 import { Constructable } from "../../types";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { DataServiceStructure } from "./data-service-structure.interface";
+import { fillEntityId } from "./entity-manager-structure.interface";
 
 export interface CrudServiceStructure<
     IdType extends IdTypeFrom<EntityType>,
@@ -26,5 +27,7 @@ export function CrudServiceStructure<
                         ContextType extends Context,
                         >(input:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>):CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
                         {
+                            fillEntityId(input);
+
                             return input;
                         }

@@ -1,2 +1,2 @@
-export * from './constructable.type';
+export * from './constructor.type';
 export * from './boolean.type';

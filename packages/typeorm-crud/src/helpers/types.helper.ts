@@ -1,3 +1,5 @@
+import { Constructor } from "../types";
+
 export function getTypeName(type: string | Function): string {
     if (typeof type === 'string') {
       return type;
@@ -10,3 +12,8 @@ export function getTypeName(type: string | Function): string {
     
     throw new Error('Type must be a string or a constructor function');
   }
+
+export function getPropertyType(constructor:Constructor, field:string)
+{
+  return Reflect.getMetadata('design:type', constructor.prototype, field);
+}

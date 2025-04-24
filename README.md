@@ -24,14 +24,14 @@ npm install @nestjz/typeorm-crud
 ### Creating a CRUD Service
 
 ```typescript
-import { CrudServiceFrom, ICrudServiceStructure } from '@nestjz/typeorm-crud';
+import { CrudServiceFrom, CrudServiceStructure } from '@nestjz/typeorm-crud';
 
 // Define your service structure
-const serviceStructure: ICrudServiceStructure<number, YourEntity, CreateDto, UpdateDto> = {
+export const serviceStructure = CrudServiceStructure({
   entityType: YourEntity,
   createInputType: CreateDto,
   updateInputType: UpdateDto
-};
+});
 
 // Create the service
 export class YourService extends CrudServiceFrom(serviceStructure) {
@@ -42,18 +42,15 @@ export class YourService extends CrudServiceFrom(serviceStructure) {
 ### Creating a CRUD Controller
 
 ```typescript
-import { CrudControllerFrom, ICrudControllerStructure } from '@nestjz/typeorm-crud';
+import { CrudControllerFrom, CrudControllerStructure } from '@nestjz/typeorm-crud';
+import { serviceStructure, YourService } from './your.service'
 
 // Define your controller structure
-const controllerStructure: ICrudControllerStructure<number, YourEntity, CreateDto, UpdateDto> = {
-  entityType: YourEntity,
+const controllerStructure = CrudControllerStructure({
+  ..serviceStructure,
   serviceType: YourService,
-  createInputType: CreateDto,
-  updateInputType: UpdateDto
-};
+});
 
-// Create the controller
-@Controller('your-route')
 export class YourController extends CrudControllerFrom(controllerStructure) {
   // Add custom endpoints here
 }
@@ -142,6 +139,11 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - [ ] Implement bulk operations
 - [ ] Query optimization improvements
   - Query caching options
+- [ ] Custom operations support
+  - Allow defining custom operations in controllers
+  - Support for custom routes and methods
+  - Enable operation-specific validation and transformation
+  - Provide decorators for operation configuration
 
 ### [0.3.0] - Architecture & GraphQL Support
 - [ ] Architecture enhancements

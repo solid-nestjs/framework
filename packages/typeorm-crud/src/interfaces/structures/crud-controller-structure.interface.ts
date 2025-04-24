@@ -4,9 +4,13 @@ import { CrudServiceInterface } from "../services";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { CrudServiceStructure } from "./crud-service-structure.interface";
 import { DataControllerClassStructure, DataControllerStructure, MethodStructure } from "./data-controller-structure.interface";
+import { fillEntityId } from "./entity-manager-structure.interface";
 
 
-export interface CrudControllerClassStructure<IdType> extends DataControllerClassStructure<IdType> {
+export interface CrudControllerClassStructure<
+                                    IdType extends IdTypeFrom<EntityType>,
+                                    EntityType extends Entity<unknown>,
+                                > extends DataControllerClassStructure<IdType,EntityType> {
     create?:MethodStructure|boolean,
     update?:MethodStructure|boolean,
     remove?:MethodStructure|boolean,
@@ -23,7 +27,7 @@ export interface CrudControllerStructure<
     ContextType extends Context = Context,
     > extends 
         CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>, 
-        CrudControllerClassStructure<IdType>,
+        CrudControllerClassStructure<IdType,EntityType>,
         DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>
     {
         serviceType:Constructable<ServiceType>
@@ -39,5 +43,7 @@ export function CrudControllerStructure<
     ContextType extends Context,
     >(input:CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>):CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>
     {
+        fillEntityId(input);
+
         return input;
     }
