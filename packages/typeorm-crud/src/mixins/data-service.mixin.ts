@@ -1,36 +1,23 @@
 import { FindManyOptions, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Constructable, BooleanType, NotNullableIf } from '../types';
+import { BooleanType, NotNullableIf } from '../types';
 import { Context, Entity, IdTypeFrom, DataServiceInterface as DataServiceInterface, AuditService, FindArgsInterface, CountResultInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
 import { QueryBuilderHelper, hasDeleteDateColumn, getPaginationArgs } from '../helpers';
 
+
+
 export function DataServiceFrom<
-            IdType extends IdTypeFrom<EntityType>,
-            EntityType extends Entity<unknown>,
-            FindArgsType extends FindArgsInterface = DefaultArgs,
-            ContextType extends Context = Context
-            >(
-                structure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
-            ) : Type<DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>>
-    {
-        const { entityType,contextType,findArgsType, dataRetrievalOptions } = structure;
-
-        return DataService(entityType,findArgsType,contextType,dataRetrievalOptions);
-    }
-
-export function DataService<
-  IdType extends IdTypeFrom<EntityType>,
-  EntityType extends Entity<unknown>,
-  FindArgsType extends FindArgsInterface = DefaultArgs,
-  ContextType extends Context = Context
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
+    FindArgsType extends FindArgsInterface = DefaultArgs,
+    ContextType extends Context = Context
 >(
-  entityType: Constructable<EntityType>,
-  findArgsType?: Constructable<FindArgsType>,
-  contextType?: Constructable<ContextType>,
-  dataRetrievalOptions?:DataRetrievalOptions
+  serviceStructure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>,
 ): Type<DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>> {
+
+  const { entityType, findArgsType, dataRetrievalOptions } = serviceStructure;
 
   const argsType = findArgsType ?? DefaultArgs;
 

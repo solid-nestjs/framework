@@ -137,7 +137,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
   - Enable/disable specific relations at service level
   - Optimize relation loading performance
 - [ ] Custom operations support in the ControllerStructure
-    (this is already possible adding those methods (with their api decorators) to the inherited class, but it will be cleanner to do this way)
   - Allow defining custom operations in controllers
   - Support for custom routes and methods
   - Enable operation-specific validation and transformation

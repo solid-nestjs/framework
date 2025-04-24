@@ -1,5 +1,10 @@
-import { FindManyOptions, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
-import { BooleanType, NotNullableIf } from '../../types';
+import { 
+  TypeOrmFindManyOptions as FindManyOptions, 
+  TypeOrmFindOptionsWhere as FindOptionsWhere, 
+  TypeOrmRepository as Repository, 
+  TypeOrmSelectQueryBuilder as SelectQueryBuilder,
+  BooleanType, NotNullableIf 
+} from '../../types';
 import { Context, IdTypeFrom, Entity,  FindArgsInterface, CountResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
 
 export interface DataServiceInterface<

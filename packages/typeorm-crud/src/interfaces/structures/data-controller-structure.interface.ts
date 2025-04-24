@@ -3,15 +3,16 @@ import { Constructable } from "../../types";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { DataServiceInterface } from "../services";
 import { DataServiceStructure } from "./data-service-structure.interface";
-import { EntityManagerStructure, fillEntityId, IdStructure } from "./entity-manager-structure.interface";
+import { fillEntityId } from "./entity-manager-structure.interface";
 
 
-export interface MethodStructure {
+export interface OperationStructure {
     name:string;
     title?:string;
     description?:string;
     route?:string;
     operationId?:string;
+
     successCode?:HttpStatus;
     successCodes?:HttpStatus[];
     errorCodes?:HttpStatus[];
@@ -20,19 +21,20 @@ export interface MethodStructure {
 
 export interface ParameterDecorators
 {
-    currentContext:() => ParameterDecorator;
+    context:() => ParameterDecorator;
 }
 
-export interface DataControllerClassStructure<
-                            IdType extends IdTypeFrom<EntityType>,
-                            EntityType extends Entity<unknown>,
-                        > extends EntityManagerStructure<IdType,EntityType>{    
-    findAll?:MethodStructure|boolean,
-    findOne?:MethodStructure|boolean,
-    count?:MethodStructure|boolean,
-    route?:string;
-    parameterDecorators?:ParameterDecorators,
-    classDecorators?:(() => ClassDecorator)[],
+export interface DataControllerOperations<
+                                        IdType extends IdTypeFrom<EntityType>,
+                                        EntityType extends Entity<unknown>,
+                                        ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
+                                        FindArgsType extends FindArgsInterface,
+                                        ContextType extends Context,
+                                    >
+{
+    findAll?:OperationStructure|boolean,
+    findOne?:OperationStructure|boolean,
+    count?:OperationStructure|boolean,
 }
 
 export interface DataControllerStructure<
@@ -42,10 +44,13 @@ export interface DataControllerStructure<
     FindArgsType extends FindArgsInterface,
     ContextType extends Context,
     > extends 
-        DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>, 
-        DataControllerClassStructure<IdType,EntityType>
+        DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
     {
-        serviceType:Constructable<ServiceType>
+        serviceType:Constructable<ServiceType>,
+        operations?:DataControllerOperations<IdType,EntityType,ServiceType,FindArgsType,ContextType>,
+        route?:string;
+        parameterDecorators?:ParameterDecorators,
+        classDecorators?:(() => ClassDecorator)[],
     }
 
 export function DataControllerStructure<

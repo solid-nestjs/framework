@@ -1,12 +1,11 @@
 import { DeepPartial } from 'typeorm';
 import { Body, Delete, HttpCode, HttpStatus, Param, ParseIntPipe, PipeTransform, Post, Put, Type, mixin } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam  } from '@nestjs/swagger';
-import { Constructable } from '../types';
-import { Context, IdTypeFrom, Entity, FindArgsInterface, CrudServiceInterface, CrudControllerStructure, CrudControllerClassStructure } from '../interfaces';
+import { Context, IdTypeFrom, Entity, FindArgsInterface, CrudServiceInterface, CrudControllerStructure } from '../interfaces';
 import { ApiResponses, CurrentContext } from '../decorators';
 import { applyMethodDecorators } from '../utils';
 import { CountResult, DefaultArgs } from '../classes';
-import { DataController } from './data-controller.mixin';
+import { DataControllerFrom } from './data-controller.mixin';
 
 export function CrudControllerFrom<
   IdType extends IdTypeFrom<EntityType>,
@@ -24,62 +23,13 @@ export function CrudControllerFrom<
   FindArgsType extends FindArgsInterface = DefaultArgs,
   ContextType extends Context = Context,
 >(
-  structure: CrudControllerStructure<
-    IdType,
-    EntityType,
-    CreateInputType,
-    UpdateInputType,
-    ServiceType,
-    FindArgsType,
-    ContextType
-  >,
+  controllerStructure: CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>
 ) {
-  const {
-    entityType,
-    createInputType,
-    updateInputType,
-    serviceType,
-    contextType,
-    findArgsType,
-  } = structure;
 
-  return CrudController(
-    entityType,
-    createInputType,
-    updateInputType,
-    serviceType,
-    structure,
-    findArgsType,
-    contextType,
-  );
-}
+  const { entityType, createInputType, updateInputType } = controllerStructure;
 
-export function CrudController<
-  IdType extends IdTypeFrom<EntityType>,
-  EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
-  ServiceType extends CrudServiceInterface<
-    IdType,
-    EntityType,
-    CreateInputType,
-    UpdateInputType,
-    FindArgsType,
-    ContextType
-  >,
-  FindArgsType extends FindArgsInterface = DefaultArgs,
-  ContextType extends Context = Context,
->(
-  entityType: Constructable<EntityType>,
-  createInputType: Constructable<CreateInputType>,
-  updateInputType: Constructable<UpdateInputType>,
-  serviceType: Constructable<ServiceType>,
-  controllerStructure: CrudControllerClassStructure<IdType,EntityType>,
-  findArgsType?: Constructable<FindArgsType>,
-  contextType?: Constructable<ContextType>,
-) {
   const ContextDecorator =
-    controllerStructure.parameterDecorators?.currentContext ?? CurrentContext;
+    controllerStructure.parameterDecorators?.context ?? CurrentContext;
 
   let idType:any = Number;
   let pipeTransforms:Type<PipeTransform>[] = [ParseIntPipe];
@@ -90,7 +40,7 @@ export function CrudController<
     pipeTransforms = controllerStructure.entityId.pipeTransforms ?? [];
   }
 
-  const createStructure = (typeof(controllerStructure.create) == 'object')?controllerStructure.create:null;
+  const createStructure = (typeof(controllerStructure.operations?.create) == 'object')?controllerStructure.operations?.create:null;
   const createRoute = createStructure?.route;
   const createDecorators = createStructure?.decorators ?? [];
   const createSummary = createStructure?.title ?? ('Create ' + entityType.name.toLowerCase() + ' record');
@@ -100,7 +50,7 @@ export function CrudController<
   const createSuccessCodes = createStructure?.successCodes ?? [createSuccessCode];
   const findAllErrorCodes = createStructure?.errorCodes ?? [HttpStatus.BAD_REQUEST];
 
-  const updateStructure = (typeof(controllerStructure.update) == 'object')?controllerStructure.update:null;
+  const updateStructure = (typeof(controllerStructure.operations?.update) == 'object')?controllerStructure.operations?.update:null;
   const updateRoute = updateStructure?.route ?? ':id';
   const updateDecorators = updateStructure?.decorators ?? [];
   const updateSummary = updateStructure?.title ?? ('Update ' + entityType.name.toLowerCase() + ' record');
@@ -110,7 +60,7 @@ export function CrudController<
   const updateSuccessCodes = updateStructure?.successCodes ?? [updateSuccessCode];
   const findOneErrorCodes = updateStructure?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
   
-  const removeStructure = (typeof(controllerStructure.remove) == 'object')?controllerStructure.remove:null;
+  const removeStructure = (typeof(controllerStructure.operations?.remove) == 'object')?controllerStructure.operations?.remove:null;
   const removeRoute = removeStructure?.route ?? ':id';
   const removeDecorators = removeStructure?.decorators ?? [];
   const removeSummary = removeStructure?.title ?? ('Remove ' + entityType.name.toLowerCase() + ' record');
@@ -120,7 +70,7 @@ export function CrudController<
   const removeSuccessCodes = removeStructure?.successCodes ?? [removeSuccessCode];
   const removeErrorCodes = removeStructure?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
 
-  const hardRemoveStructure = (typeof(controllerStructure.hardRemove) == 'object')?controllerStructure.hardRemove:null;
+  const hardRemoveStructure = (typeof(controllerStructure.operations?.hardRemove) == 'object')?controllerStructure.operations?.hardRemove:null;
   const hardRemoveRoute = hardRemoveStructure?.route ?? 'hard/:id';
   const hardRemoveDecorators = hardRemoveStructure?.decorators ?? [];
   const hardRemoveSummary = hardRemoveStructure?.title ?? ('Remove (HARD) ' + entityType.name.toLowerCase() + ' record');
@@ -132,15 +82,8 @@ export function CrudController<
 
   const paramApiConfig = { name: 'id', description: 'ID of the ' + entityType.name + ' entity', required: true };
 
-  class CrudController extends DataController(
-                                          entityType,
-                                          serviceType,
-                                          controllerStructure,
-                                          findArgsType,
-                                          contextType,
-                                        ) {
-   
-
+  class CrudController extends DataControllerFrom(controllerStructure) 
+  {
     @Post(createRoute)
     @applyMethodDecorators(createDecorators)
     @ApiOperation({ summary: createSummary, description: createDescription, operationId: createOperationId })
@@ -201,17 +144,17 @@ export function CrudController<
   }
 
   //remove controller methods if they are disabled in the structure
-  if (controllerStructure.create === false) {
+  if (controllerStructure.operations?.create === false) {
     delete CrudController.prototype.create;
   }
-  if (controllerStructure.update === false) {
+  if (controllerStructure.operations?.update === false) {
     delete CrudController.prototype.update;
   }
-  if (controllerStructure.remove === false) {
+  if (controllerStructure.operations?.remove === false) {
     delete CrudController.prototype.remove;
   }
   //this method is disabled by default
-  if (!controllerStructure.hardRemove) {
+  if (!controllerStructure.operations?.hardRemove) {
     delete CrudController.prototype.hardRemove;
   }
 

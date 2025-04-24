@@ -3,18 +3,25 @@ import { Constructable } from "../../types";
 import { CrudServiceInterface } from "../services";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { CrudServiceStructure } from "./crud-service-structure.interface";
-import { DataControllerClassStructure, DataControllerStructure, MethodStructure } from "./data-controller-structure.interface";
+import { DataControllerOperations, DataControllerStructure, OperationStructure } from "./data-controller-structure.interface";
 import { fillEntityId } from "./entity-manager-structure.interface";
 
 
-export interface CrudControllerClassStructure<
-                                    IdType extends IdTypeFrom<EntityType>,
-                                    EntityType extends Entity<unknown>,
-                                > extends DataControllerClassStructure<IdType,EntityType> {
-    create?:MethodStructure|boolean,
-    update?:MethodStructure|boolean,
-    remove?:MethodStructure|boolean,
-    hardRemove?:MethodStructure|boolean,
+export interface CrudControllerOperations<
+                                        IdType extends IdTypeFrom<EntityType>,
+                                        EntityType extends Entity<unknown>,
+                                        CreateInputType extends DeepPartial<EntityType>,
+                                        UpdateInputType extends DeepPartial<EntityType>,
+                                        ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+                                        FindArgsType extends FindArgsInterface,
+                                        ContextType extends Context = Context,
+                                    > extends
+                                    DataControllerOperations<IdType,EntityType,ServiceType,FindArgsType,ContextType>
+{
+    create?:OperationStructure|boolean,
+    update?:OperationStructure|boolean,
+    remove?:OperationStructure|boolean,
+    hardRemove?:OperationStructure|boolean,
 }
 
 export interface CrudControllerStructure<
@@ -27,10 +34,10 @@ export interface CrudControllerStructure<
     ContextType extends Context = Context,
     > extends 
         CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>, 
-        CrudControllerClassStructure<IdType,EntityType>,
         DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>
     {
-        serviceType:Constructable<ServiceType>
+        serviceType:Constructable<ServiceType>,
+        operations?:CrudControllerOperations<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>,
     }
 
 export function CrudControllerStructure<

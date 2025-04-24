@@ -1,4 +1,5 @@
-import { DeepPartial, Repository } from "typeorm";
+import { DeepPartial } from "typeorm";
+import { TypeOrmRepository as Repository } from '../../types'
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../event-handlers";
 import { DataServiceInterface } from "./data-service.interface";

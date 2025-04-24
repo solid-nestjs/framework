@@ -1,30 +1,13 @@
 import { DeepPartial, Repository } from "typeorm";
 import { Injectable, Type, mixin } from "@nestjs/common";
-import { Constructable } from "../types";
-import { Context, IdTypeFrom, Entity, DataRetrievalOptions, CrudServiceInterface as CrudServiceInterface, FindArgsInterface, CrudServiceStructure, CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../interfaces";
+import { Context, IdTypeFrom, Entity, CrudServiceInterface as CrudServiceInterface, FindArgsInterface, CrudServiceStructure, CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../interfaces";
 import { StandardActions } from "../enums";
 import { DefaultArgs } from "../classes";
 import { hasDeleteDateColumn } from "../helpers";
-import { DataService as DataServiceInterface } from "./data-service.mixin";
-
-export function CrudServiceFrom<
-            IdType extends IdTypeFrom<EntityType>,
-            EntityType extends Entity<unknown>,
-            CreateInputType extends DeepPartial<EntityType>,
-            UpdateInputType extends DeepPartial<EntityType>,
-            FindArgsType extends FindArgsInterface = DefaultArgs,
-            ContextType extends Context = Context
-            >(
-                structure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
-            ) : Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>>
-    {
-        const { entityType,createInputType,updateInputType,contextType,findArgsType,dataRetrievalOptions } = structure;
-
-        return CrudService(entityType,createInputType,updateInputType,findArgsType,contextType,dataRetrievalOptions);
-    }
+import { DataServiceFrom } from "./data-service.mixin";
 
 export function 
-    CrudService<
+    CrudServiceFrom<
         IdType extends IdTypeFrom<EntityType>,
         EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
@@ -32,17 +15,13 @@ export function
         FindArgsType extends FindArgsInterface = DefaultArgs,
         ContextType extends Context = Context
     >(
-        entityType: Constructable<EntityType>,
-        createInputType:Constructable<CreateInputType>,
-        updateInputType:Constructable<UpdateInputType>,
-        findArgsType?: Constructable<FindArgsType>,
-        contextType?: Constructable<ContextType>,
-        dataRetrievalOptions?:DataRetrievalOptions
+        serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+
     ): Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>> {
 
     @Injectable()
-    class CrudService 
-        extends DataServiceInterface(entityType,findArgsType,contextType,dataRetrievalOptions)
+    class CrudService
+        extends DataServiceFrom(serviceStructure)
         implements CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>{
     
         async create(

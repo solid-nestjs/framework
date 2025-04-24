@@ -1,7 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Inject, Param, ParseIntPipe, PipeTransform, Query, Type, ValidationPipe, mixin } from '@nestjs/common';
 import { ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiTags, getSchemaPath  } from '@nestjs/swagger';
-import { Constructable } from '../types';
-import { Context, IdTypeFrom, Entity, FindArgsInterface, DataControllerClassStructure, DataControllerStructure, DataServiceInterface } from '../interfaces';
+import { Context, IdTypeFrom, Entity, FindArgsInterface, DataControllerStructure, DataServiceInterface } from '../interfaces';
 import { DefaultArgs, CountResult } from '../classes';
 import { ApiResponses, CurrentContext } from '../decorators';
 import { QueryTransformPipe } from '../pipes';
@@ -20,50 +19,18 @@ export function DataControllerFrom<
   FindArgsType extends FindArgsInterface = DefaultArgs,
   ContextType extends Context = Context,
 >(
-  structure: DataControllerStructure<
-    IdType,
-    EntityType,
-    ServiceType,
-    FindArgsType,
-    ContextType
-  >,
+  controllerStructure: DataControllerStructure<
+                          IdType,
+                          EntityType,
+                          ServiceType,
+                          FindArgsType,
+                          ContextType
+                        >
 ) {
-  const {
-    entityType,
-    serviceType,
-    contextType,
-    findArgsType,
-  } = structure;
+  const { entityType, serviceType, findArgsType } = controllerStructure;
 
-  return DataController(
-    entityType,
-    serviceType,
-    structure,
-    findArgsType,
-    contextType,
-  );
-}
-
-export function DataController<
-  IdType extends IdTypeFrom<EntityType>,
-  EntityType extends Entity<unknown>,
-  ServiceType extends DataServiceInterface<
-    IdType,
-    EntityType,
-    FindArgsType,
-    ContextType
-  >,
-  FindArgsType extends FindArgsInterface = DefaultArgs,
-  ContextType extends Context = Context,
->(
-  entityType: Constructable<EntityType>,
-  serviceType: Constructable<ServiceType>,
-  controllerStructure: DataControllerClassStructure<IdType,EntityType>,
-  findArgsType?: Constructable<FindArgsType>,
-  contextType?: Constructable<ContextType>,
-) {
   const ContextDecorator =
-    controllerStructure.parameterDecorators?.currentContext ?? CurrentContext;
+    controllerStructure.parameterDecorators?.context ?? CurrentContext;
 
   const argsType = findArgsType ?? DefaultArgs;
 
@@ -82,7 +49,7 @@ export function DataController<
   const controllerDecorators = controllerStructure.classDecorators ?? [];
 
   
-  const findAll_Structure =  (typeof(controllerStructure.findAll) == 'object')?controllerStructure.findAll:null;
+  const findAll_Structure =  (typeof(controllerStructure.operations?.findAll) == 'object')?controllerStructure.operations?.findAll:null;
   const findAllRoute = findAll_Structure?.route ?? '';
   const findAllDecorators = findAll_Structure?.decorators ?? [];
   const findAllSummary = findAll_Structure?.title ?? ('List of ' + entityType.name.toLowerCase() + 's records');
@@ -92,7 +59,7 @@ export function DataController<
   const findAllSuccessCodes = findAll_Structure?.successCodes ?? [findAllSuccessCode];
   const findAllErrorCodes = findAll_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST];
 
-  const findOne_Structure =  (typeof(controllerStructure.findOne) == 'object')?controllerStructure.findOne:null;
+  const findOne_Structure =  (typeof(controllerStructure.operations?.findOne) == 'object')?controllerStructure.operations?.findOne:null;
   const findOneRoute = findOne_Structure?.route ?? ':id';
   const findOneDecorators = findOne_Structure?.decorators ?? [];
   const findOneSummary = findOne_Structure?.title ?? ('Retrieve ' + entityType.name.toLowerCase() + ' record by id');
@@ -102,7 +69,7 @@ export function DataController<
   const findOneSuccessCodes = findOne_Structure?.successCodes ?? [findOneSuccessCode];
   const findOneErrorCodes = findOne_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
 
-  const count_Structure =  (typeof(controllerStructure.count) == 'object')?controllerStructure.count:null;
+  const count_Structure =  (typeof(controllerStructure.operations?.count) == 'object')?controllerStructure.operations?.count:null;
   const countRoute = count_Structure?.route ?? 'count';
   const countDecorators = count_Structure?.decorators ?? [];
   const countSummary = count_Structure?.title ?? ('Count of ' + entityType.name.toLowerCase() + ' records');
@@ -195,13 +162,13 @@ export function DataController<
   }
 
   //remove controller methods if they are disabled in the structure
-  if (controllerStructure.findAll === false) {
+  if (controllerStructure.operations?.findAll === false) {
     delete DataController.prototype.findAll;
   }
-  if (controllerStructure.findOne === false) {
+  if (controllerStructure.operations?.findOne === false) {
     delete DataController.prototype.findOne;
   }
-  if (controllerStructure.count === false) {
+  if (controllerStructure.operations?.count === false) {
     delete DataController.prototype.count;
   }
 
