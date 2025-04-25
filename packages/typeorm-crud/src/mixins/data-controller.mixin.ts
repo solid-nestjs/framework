@@ -75,9 +75,19 @@ export function DataControllerFrom<
   const countSummary = count_Structure?.title ?? ('Count of ' + entityType.name.toLowerCase() + ' records');
   const countDescription = count_Structure?.description ?? ('count of ' + entityType.name.toLowerCase() + ' records');
   const countOperationId = count_Structure?.operationId;
-  const countSuccessCode = count_Structure?.successCode ?? (count_Structure?.successCodes ?? [])[0] ?? HttpStatus.OK;
-  const countSuccessCodes = count_Structure?.successCodes ?? [countSuccessCode];
-  const countErrorCodes = count_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST];
+  const countSuccessCode = count_Structure?.successCode ?? (count_Structure?.successCodes ?? [])[0]?? findAllSuccessCode ?? HttpStatus.OK;
+  const countSuccessCodes = count_Structure?.successCodes ?? [countSuccessCode] ?? findAllSuccessCodes;
+  const countErrorCodes = count_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST] ?? findAllErrorCodes;
+
+  const findAllAndCount_Structure =  (typeof(controllerStructure.operations?.findAllAndCount) == 'object')?controllerStructure.operations?.findAllAndCount:null;
+  const findAllAndCountRoute = findAllAndCount_Structure?.route ?? 'paginated';
+  const findAllAndCountDecorators = findAllAndCount_Structure?.decorators ?? findAllDecorators ??[];
+  const findAllAndCountSummary = findAllAndCount_Structure?.title ?? ('Paginated List of ' + entityType.name.toLowerCase() + 's records');
+  const findAllAndCountDescription = findAllAndCount_Structure?.description ?? ('paginated list of ' + entityType.name.toLowerCase() + 's records');
+  const findAllAndCountOperationId = findAllAndCount_Structure?.operationId;
+  const findAllAndCountSuccessCode = findAllAndCount_Structure?.successCode ?? (findAllAndCount_Structure?.successCodes ?? [])[0] ?? findAllSuccessCode ?? HttpStatus.OK;
+  const findAllAndCountSuccessCodes = findAllAndCount_Structure?.successCodes ?? [findAllSuccessCode] ?? findAllSuccessCodes;
+  const findAllAndCountErrorCodes = findAllAndCount_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST] ?? findAllErrorCodes;
 
   const paramApiConfig = { name: 'id', description: 'ID of the ' + entityType.name + ' entity', required: true };
 
@@ -145,6 +155,46 @@ export function DataControllerFrom<
     {
       return this.service.Count(context, args);
     }
+
+    @Get(findAllAndCountRoute)
+    @applyMethodDecorators(findAllAndCountDecorators)
+    @ApiOperation({ summary: findAllAndCountSummary, description: findAllAndCountDescription, operationId: findAllAndCountOperationId })
+    @ApiQuery({
+        name: 'args',
+        required: false,
+        schema: {
+          $ref: getSchemaPath(argsType)
+        }
+      })
+    @HttpCode(findAllAndCountSuccessCode)
+    @ApiResponses( { schema: {
+      type:'object',
+      properties:{
+        data:{  
+          type:'array',
+          items:{
+            $ref: getSchemaPath(entityType)
+          }
+        },
+        pagination:{ $ref: getSchemaPath(CountResult) },
+      }
+    }, isArray:true, successCodes:findAllAndCountSuccessCodes, errorCodes: findAllAndCountErrorCodes })
+    async findAllAndCount?(
+      @ContextDecorator() context: ContextType,
+      @Query(
+            QueryTransformPipe,  
+            new ValidationPipe({ 
+                transform: true,
+                expectedType:argsType, 
+                whitelist: true,
+                forbidNonWhitelisted: true,
+                forbidUnknownValues: true
+            }),
+          ) args
+    ) :Promise<{ data:EntityType[], pagination:CountResult}>
+    {
+      return this.service.findAllAndCount(context,args);
+    }
     
     @Get(findOneRoute)
     @applyMethodDecorators(findOneDecorators)
@@ -170,6 +220,9 @@ export function DataControllerFrom<
   }
   if (controllerStructure.operations?.count === false) {
     delete DataController.prototype.count;
+  }
+  if (controllerStructure.operations?.findAllAndCount === false) {
+    delete DataController.prototype.findAllAndCount;
   }
 
   return mixin(DataController);

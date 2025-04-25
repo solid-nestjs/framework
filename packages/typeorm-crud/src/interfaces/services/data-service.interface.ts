@@ -40,6 +40,12 @@ export interface DataServiceInterface<
     options?: DataRetrievalOptions,
   ): Promise<CountResultInterface>;
 
+  findAllAndCount(
+    context: ContextType, 
+    args?: FindArgsType,
+    options?: DataRetrievalOptions,
+  ): Promise<{ data:EntityType[], pagination:CountResultInterface }>;
+
   findOne<TBool extends BooleanType = false>(
     context: ContextType,
     id: IdType,

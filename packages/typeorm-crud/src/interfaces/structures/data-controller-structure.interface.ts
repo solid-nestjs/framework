@@ -35,6 +35,7 @@ export interface DataControllerOperations<
     findAll?:OperationStructure|boolean,
     findOne?:OperationStructure|boolean,
     count?:OperationStructure|boolean,
+    findAllAndCount?:OperationStructure|boolean,
 }
 
 export interface DataControllerStructure<

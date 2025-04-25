@@ -1,6 +1,7 @@
 import { HttpStatus, Type } from "@nestjs/common";
 import { ApiProperty, ApiResponse } from "@nestjs/swagger";
 import { applyMethodDecorators, getHttpStatusDescription } from "../utils";
+import { ReferenceObject, SchemaObject } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
 
 class ErrorResponse {
     @ApiProperty()
@@ -13,8 +14,9 @@ class ErrorResponse {
     error: string;
 }
 
-export const ApiResponses = ( { type, isArray, successCodes, errorCodes }:{ 
-                                type:Type|Function, 
+export const ApiResponses = ( { type, schema, isArray, successCodes, errorCodes }:{ 
+                                type?:Type|Function, 
+                                schema?:SchemaObject & Partial<ReferenceObject>,
                                 isArray?:boolean, 
                                 successCodes?:HttpStatus[],
                                 errorCodes?:HttpStatus[] 
@@ -25,6 +27,7 @@ export const ApiResponses = ( { type, isArray, successCodes, errorCodes }:{
             status: successCode, 
             description: getHttpStatusDescription(successCode),
             type:type,
+            schema:schema,
             isArray
         })
     )),

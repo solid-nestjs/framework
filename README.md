@@ -144,11 +144,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - [ ] Implement bulk operations
 - [ ] Query optimization improvements
   - Query caching options
-- [ ] Custom operations support
-  - Allow defining custom operations in controllers
-  - Support for custom routes and methods
-  - Enable operation-specific validation and transformation
-  - Provide decorators for operation configuration
 
 ### [0.3.0] - Architecture & GraphQL Support
 - [ ] Architecture enhancements

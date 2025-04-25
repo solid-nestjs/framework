@@ -79,6 +79,20 @@ export function DataServiceFrom<
       return queryBuilder.getMany();
     }
 
+    async findAllAndCount(
+      context: ContextType, 
+      args?: FindArgsType | undefined, 
+      options?: DataRetrievalOptions
+    ): Promise<{ data: EntityType[]; pagination: CountResultInterface; }> {
+      const queryBuilder = this.getQueryBuilder(context, args, options);
+
+      //reusing query builder      
+      const data = await queryBuilder.getMany();
+      const pagination = await this.getCountResult(context,queryBuilder,args);
+
+      return { data, pagination };
+    }
+
     async Count(
       context: ContextType,
       args?: FindArgsType,
@@ -90,13 +104,26 @@ export function DataServiceFrom<
         orderBy: undefined,
       } as FindArgsType,options);
 
+      return this.getCountResult(context,queryBuilder,args);
+    }
+
+    async getCountResult(
+      context: ContextType,
+      queryBuilder: SelectQueryBuilder<EntityType>,
+      args?: FindArgsType,
+    ) : Promise<CountResultInterface> {
+
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
 
       const totalRecords = await queryBuilder.getCount();
-      const pageSize = take;
+      let pageSize = take;
       const totalPages = (!pageSize)?1:Math.ceil(totalRecords / pageSize);
       const currentPage = (!pageSize)?1:Math.ceil((skip+ 1) / pageSize);
       const recordsInCurrentPage = (!pageSize)?totalRecords:Math.min(pageSize, totalRecords - skip);
+      
+      if(!pageSize)
+        pageSize = recordsInCurrentPage;
+
       const hasNextPage = (currentPage < totalPages);
       const hasPreviousPage = (currentPage > 1);
 
