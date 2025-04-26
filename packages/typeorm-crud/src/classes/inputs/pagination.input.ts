@@ -26,5 +26,5 @@ export class Pagination implements PaginationInterface{
     @IsNumber()
     @Min(0)
     @IsOptional()
-    pageSize?:number;
+    limit?:number;
 }

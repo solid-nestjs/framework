@@ -3,9 +3,10 @@ import {
   TypeOrmFindOptionsWhere as FindOptionsWhere, 
   TypeOrmRepository as Repository, 
   TypeOrmSelectQueryBuilder as SelectQueryBuilder,
-  BooleanType, NotNullableIf 
+  BooleanType, NotNullableIf, 
+  If
 } from '../../types';
-import { Context, IdTypeFrom, Entity,  FindArgsInterface, CountResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
+import { Context, IdTypeFrom, Entity,  FindArgsInterface, PaginationResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
 
 export interface DataServiceInterface<
   IdType extends IdTypeFrom<EntityType>,
@@ -28,23 +29,18 @@ export interface DataServiceInterface<
     options?: FindManyOptions<EntityType>,
   ): Promise<EntityType[]>;
 
-  findAll(
+  findAll<TBool extends BooleanType = false>(
     context: ContextType, 
     args?: FindArgsType,
+    withPagination?:TBool,
     options?: DataRetrievalOptions,
-  ): Promise<EntityType[]>;
+  ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> >;
 
-  Count(
+  pagination(
     context: ContextType, 
     args?: FindArgsType,
     options?: DataRetrievalOptions,
-  ): Promise<CountResultInterface>;
-
-  findAllAndCount(
-    context: ContextType, 
-    args?: FindArgsType,
-    options?: DataRetrievalOptions,
-  ): Promise<{ data:EntityType[], pagination:CountResultInterface }>;
+  ): Promise<PaginationResultInterface>;
 
   findOne<TBool extends BooleanType = false>(
     context: ContextType,
@@ -60,7 +56,7 @@ export interface DataServiceInterface<
     withDeleted?: boolean,
   ): Promise<NotNullableIf<TBool,EntityType>>;
    
-  Audit(
+  audit(
     context: ContextType,
     action: string,
     objectId?: IdType,

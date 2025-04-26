@@ -33,9 +33,9 @@ export interface DataControllerOperations<
                                     >
 {
     findAll?:OperationStructure|boolean,
+    findAllPaginated?:OperationStructure|boolean,
+    pagination?:OperationStructure|boolean,
     findOne?:OperationStructure|boolean,
-    count?:OperationStructure|boolean,
-    findAllAndCount?:OperationStructure|boolean,
 }
 
 export interface DataControllerStructure<

@@ -1,8 +1,8 @@
 import { FindManyOptions, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BooleanType, NotNullableIf } from '../types';
-import { Context, Entity, IdTypeFrom, DataServiceInterface as DataServiceInterface, AuditService, FindArgsInterface, CountResultInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
+import { BooleanType, If, NotNullableIf } from '../types';
+import { Context, Entity, IdTypeFrom, DataServiceInterface as DataServiceInterface, AuditService, FindArgsInterface, PaginationResultInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
 import { QueryBuilderHelper, hasDeleteDateColumn, getPaginationArgs } from '../helpers';
 
@@ -61,7 +61,7 @@ export function DataServiceFrom<
       return QBHelper.getQueryBuilder(repository, args, options);
     }
 
-    async find(
+    async find<TBool extends BooleanType = false>(
       context: ContextType,
       options?: FindManyOptions<EntityType>,
     ): Promise<EntityType[]> {
@@ -69,70 +69,64 @@ export function DataServiceFrom<
       return repository.find(options);
     }
     
-    async findAll(
+    async findAll<TBool extends BooleanType = false>(
       context: ContextType,
       args?: FindArgsType,
+      withPagination?:TBool,
       options?: DataRetrievalOptions,
-    ): Promise<EntityType[]> {
+    ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> > {
       const queryBuilder = this.getQueryBuilder(context, args, options);
 
-      return queryBuilder.getMany();
-    }
-
-    async findAllAndCount(
-      context: ContextType, 
-      args?: FindArgsType | undefined, 
-      options?: DataRetrievalOptions
-    ): Promise<{ data: EntityType[]; pagination: CountResultInterface; }> {
-      const queryBuilder = this.getQueryBuilder(context, args, options);
-
-      //reusing query builder      
       const data = await queryBuilder.getMany();
-      const pagination = await this.getCountResult(context,queryBuilder,args);
 
-      return { data, pagination };
+      if(withPagination == false)
+        return data as any;
+
+      const pagination = await this.getPagination(context,queryBuilder,args);
+
+      return { data, pagination } as any;
     }
 
-    async Count(
+    async pagination(
       context: ContextType,
       args?: FindArgsType,
       options?: DataRetrievalOptions,
-    ): Promise<CountResultInterface> {
+    ): Promise<PaginationResultInterface> {
       const queryBuilder = this.getQueryBuilder(context, {
         ...args,
         pagination: undefined,
         orderBy: undefined,
       } as FindArgsType,options);
 
-      return this.getCountResult(context,queryBuilder,args);
+      return this.getPagination(context,queryBuilder,args);
     }
 
-    async getCountResult(
+    async getPagination(
       context: ContextType,
       queryBuilder: SelectQueryBuilder<EntityType>,
       args?: FindArgsType,
-    ) : Promise<CountResultInterface> {
+    ) : Promise<PaginationResultInterface> {
 
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
 
-      const totalRecords = await queryBuilder.getCount();
-      let pageSize = take;
-      const totalPages = (!pageSize)?1:Math.ceil(totalRecords / pageSize);
-      const currentPage = (!pageSize)?1:Math.ceil((skip+ 1) / pageSize);
-      const recordsInCurrentPage = (!pageSize)?totalRecords:Math.min(pageSize, totalRecords - skip);
+      const total = await queryBuilder.getCount();
+      let limit = take;
+      const pageCount = (!limit)?1:Math.ceil(total / limit);
+      const page = (!limit)?1:Math.ceil((skip+ 1) / limit);
+      const count = (!limit)?total:Math.min(limit, total - skip);
       
-      if(!pageSize)
-        pageSize = recordsInCurrentPage;
+      if(!limit)
+        limit = count;
 
-      const hasNextPage = (currentPage < totalPages);
-      const hasPreviousPage = (currentPage > 1);
+      const hasNextPage = (page < pageCount);
+      const hasPreviousPage = (page > 1);
 
       return { 
-              totalRecords,
-              recordsInCurrentPage,
-              pageSize,
-              currentPage,
-              totalPages,
+              total,
+              count,
+              limit,
+              page,
+              pageCount,
               hasNextPage,
               hasPreviousPage 
             };
@@ -180,7 +174,7 @@ export function DataServiceFrom<
       return entity as NotNullableIf<TBool,EntityType>;
     }
     
-    async Audit(
+    async audit(
       context: ContextType,
       action: string,
       objectId?: IdType,

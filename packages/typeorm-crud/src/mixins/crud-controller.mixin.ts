@@ -4,7 +4,7 @@ import { ApiBody, ApiOperation, ApiParam  } from '@nestjs/swagger';
 import { Context, IdTypeFrom, Entity, FindArgsInterface, CrudServiceInterface, CrudControllerStructure } from '../interfaces';
 import { ApiResponses, CurrentContext } from '../decorators';
 import { applyMethodDecorators } from '../utils';
-import { CountResult, DefaultArgs } from '../classes';
+import { PaginationResult, DefaultArgs } from '../classes';
 import { DataControllerFrom } from './data-controller.mixin';
 
 export function CrudControllerFrom<

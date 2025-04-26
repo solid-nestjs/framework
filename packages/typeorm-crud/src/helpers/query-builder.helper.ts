@@ -40,6 +40,11 @@ class Relation implements RelationInterface
     relationInfo?:ExtendedRelationInfo;
 }
 
+function isMultiplyingJoin(relation: Relation): boolean {
+    const cardinality = relation.relationInfo?.aggregatedCardinality;
+    return cardinality === 'one-to-many' || cardinality ==='many-to-many';
+}
+
 interface QueryContext<EntityType extends ObjectLiteral> {
     queryBuilder: SelectQueryBuilder<EntityType>;
     relations: Relation[];
@@ -295,6 +300,14 @@ export function QueryBuilderHelper<
             const property = whereContext.alias + '.' + fieldName;
 
             const relation = this.addRelation(whereContext,property);
+
+            const aggregatedCardinality = relation.relationInfo?.aggregatedCardinality;
+
+            if(!aggregatedCardinality)
+                throw new InternalServerErrorException(`no aggregatedCardinality for ${property}`,{ cause:{ property, relation, whereContext } });
+
+            if(aggregatedCardinality === "one-to-many" || aggregatedCardinality == "many-to-many")
+                throw new InternalServerErrorException(`invalid aggregatedCardinality (${aggregatedCardinality}) for condition in property (${property})`,{ cause:{ property, aggregatedCardinality, relation, whereContext } });
 
             return relation.alias;
         }

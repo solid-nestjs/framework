@@ -1,4 +1,4 @@
-import { CountResult, CrudControllerFrom, CrudControllerStructure } from '@nestjz/typeorm-crud';
+import { CrudControllerFrom, CrudControllerStructure } from '@nestjz/typeorm-crud';
 import { ProductsService, serviceStructure } from './products.service';
 
 const controllerStructure = CrudControllerStructure({

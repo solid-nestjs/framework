@@ -38,7 +38,7 @@ export function
             
             const responseEntity = await repository.save(entity);
 
-            this.Audit(context,StandardActions.Create,entity.id as IdType,undefined,responseEntity);
+            this.audit(context,StandardActions.Create,entity.id as IdType,undefined,responseEntity);
     
             await eventHandler.afterCreate(context,repository,responseEntity,createInput);
     
@@ -63,7 +63,7 @@ export function
     
             const responseEntity = await repository.save(entity);
 
-            this.Audit(context,StandardActions.Update,entity.id as IdType,entityBefore,responseEntity);            
+            this.audit(context,StandardActions.Update,entity.id as IdType,entityBefore,responseEntity);            
     
             await eventHandler.afterUpdate(context,repository,responseEntity,updateInput);
     
@@ -92,7 +92,7 @@ export function
                 responseEntity.id = id;
             }
     
-            await this.Audit(context,StandardActions.Remove,entity.id as IdType,responseEntity);   
+            await this.audit(context,StandardActions.Remove,entity.id as IdType,responseEntity);   
 
             await eventHandler.afterRemove(context,repository,responseEntity);
     
@@ -121,7 +121,7 @@ export function
 
             responseEntity.id = id;
        
-            await this.Audit(context,StandardActions.Remove,entity.id as IdType,responseEntity);   
+            await this.audit(context,StandardActions.Remove,entity.id as IdType,responseEntity);   
 
             await eventHandler.afterHardRemove(context,repository,responseEntity);
     
