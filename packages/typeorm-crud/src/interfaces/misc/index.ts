@@ -6,4 +6,5 @@ export * from './pagination.interface';
 export * from './pagination-result.interface';
 export * from './audit-service.interface';
 export * from './relation-info.interface';
+export * from './entity-manager-provider.interface'
 

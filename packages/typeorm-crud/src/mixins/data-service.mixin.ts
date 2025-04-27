@@ -1,10 +1,12 @@
-import { FindManyOptions, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
+import { EntityManager, FindManyOptions, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
+import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BooleanType, If, NotNullableIf } from '../types';
 import { Context, Entity, IdTypeFrom, DataServiceInterface as DataServiceInterface, AuditService, FindArgsInterface, PaginationResultInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
 import { QueryBuilderHelper, hasDeleteDateColumn, getPaginationArgs } from '../helpers';
+import { runInTransaction } from '../helpers';
 
 
 
@@ -41,6 +43,11 @@ export function DataServiceFrom<
         return context.transactionManager.getRepository(entityType);
       
       return this._repository;
+    }
+
+    getEntityManager(context: ContextType): EntityManager {
+      
+      return this.getRepository(context).manager;
     }
 
     getRelationsInfo(context: ContextType): ExtendedRelationInfo[] {
@@ -174,6 +181,17 @@ export function DataServiceFrom<
       return entity as NotNullableIf<TBool,EntityType>;
     }
     
+    async runInTransaction<ReturnType>(
+        context: ContextType,
+        fn:(context:ContextType) => Promise<ReturnType>,
+        isolationLevel?: IsolationLevel,
+      ):Promise<ReturnType>
+    {
+        const manager = this.getEntityManager(context);
+
+        return runInTransaction(context,manager.connection,fn,isolationLevel);
+    }
+
     async audit(
       context: ContextType,
       action: string,

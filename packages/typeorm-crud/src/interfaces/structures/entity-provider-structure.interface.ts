@@ -9,7 +9,7 @@ export interface IdStructure<IdType>
     pipeTransforms?:Type<PipeTransform>[]
 }
 
-export interface EntityManagerStructure<
+export interface EntityProviderStructure<
                             IdType extends IdTypeFrom<EntityType>,
                             EntityType extends Entity<unknown>,
                         > {    
@@ -20,15 +20,15 @@ export interface EntityManagerStructure<
 export function fillEntityId<
                         IdType extends IdTypeFrom<EntityType>,
                         EntityType extends Entity<unknown>,
-                        >(entityManager:EntityManagerStructure<IdType,EntityType>)
+                        >(entityProvider:EntityProviderStructure<IdType,EntityType>)
 {
-    if(entityManager.entityId)
+    if(entityProvider.entityId)
         return;
 
-    const idType = getPropertyType(entityManager.entityType,"id");
+    const idType = getPropertyType(entityProvider.entityType,"id");
     const idPipeTransform = getPipeTransformForType(idType);
 
-    entityManager.entityId = {
+    entityProvider.entityId = {
         type:idType,
         pipeTransforms:(idPipeTransform)?[idPipeTransform]:[]
     };

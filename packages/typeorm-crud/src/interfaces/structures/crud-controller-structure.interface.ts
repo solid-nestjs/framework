@@ -4,7 +4,7 @@ import { CrudServiceInterface } from "../services";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { CrudServiceStructure } from "./crud-service-structure.interface";
 import { DataControllerOperations, DataControllerStructure, OperationStructure } from "./data-controller-structure.interface";
-import { fillEntityId } from "./entity-manager-structure.interface";
+import { fillEntityId } from "./entity-provider-structure.interface";
 
 
 export interface CrudControllerOperations<

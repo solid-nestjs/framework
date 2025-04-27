@@ -1,3 +1,5 @@
+import { EntityManager } from 'typeorm';
+import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { 
   TypeOrmFindManyOptions as FindManyOptions, 
   TypeOrmFindOptionsWhere as FindOptionsWhere, 
@@ -15,6 +17,8 @@ export interface DataServiceInterface<
   ContextType extends Context = Context
 > {
   getRepository(context: ContextType): Repository<EntityType>;
+
+  getEntityManager(context: ContextType): EntityManager;
 
   getRelationsInfo(context: ContextType): ExtendedRelationInfo[]
 
@@ -56,6 +60,12 @@ export interface DataServiceInterface<
     withDeleted?: boolean,
   ): Promise<NotNullableIf<TBool,EntityType>>;
    
+  runInTransaction<ReturnType>(
+    context: ContextType,
+    fn:(context:ContextType) => Promise<ReturnType>,
+    isolationLevel?: IsolationLevel,
+  ):Promise<ReturnType>;
+
   audit(
     context: ContextType,
     action: string,

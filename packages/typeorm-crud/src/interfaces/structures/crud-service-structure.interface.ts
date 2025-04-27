@@ -2,7 +2,7 @@ import { DeepPartial } from "typeorm";
 import { Constructable } from "../../types";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { DataServiceStructure } from "./data-service-structure.interface";
-import { fillEntityId } from "./entity-manager-structure.interface";
+import { fillEntityId } from "./entity-provider-structure.interface";
 
 export interface CrudServiceStructure<
     IdType extends IdTypeFrom<EntityType>,

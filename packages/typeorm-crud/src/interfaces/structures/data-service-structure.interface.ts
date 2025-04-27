@@ -1,13 +1,13 @@
 import { Constructable } from "../../types";
 import { Context, DataRetrievalOptions, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
-import { EntityManagerStructure, fillEntityId } from "./entity-manager-structure.interface";
+import { EntityProviderStructure, fillEntityId } from "./entity-provider-structure.interface";
 
 export interface DataServiceStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
     FindArgsType extends FindArgsInterface,
     ContextType extends Context = Context
-    > extends EntityManagerStructure<IdType,EntityType> {
+    > extends EntityProviderStructure<IdType,EntityType> {
         findArgsType?: Constructable<FindArgsType>,
         contextType?: Constructable<ContextType>,
         dataRetrievalOptions?:DataRetrievalOptions

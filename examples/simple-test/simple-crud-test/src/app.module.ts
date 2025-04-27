@@ -10,6 +10,7 @@ import { Product } from './products/entities/product.entity';
       database: './database-data/products.sqlite',
       entities: [Product],
       synchronize: true, // Set to false in production
+      logging: true
     }),
     ProductsModule,
   ],
