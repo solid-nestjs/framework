@@ -9,6 +9,7 @@ import {
   If
 } from '../../types';
 import { Context, IdTypeFrom, Entity,  FindArgsInterface, PaginationResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
+import { QueryBuilderHelper } from '@nestjz/typeorm-crud/helpers';
 
 export interface DataServiceInterface<
   IdType extends IdTypeFrom<EntityType>,
@@ -65,6 +66,9 @@ export interface DataServiceInterface<
     fn:(context:ContextType) => Promise<ReturnType>,
     isolationLevel?: IsolationLevel,
   ):Promise<ReturnType>;
+
+
+  get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType,FindArgsType>;
 
   audit(
     context: ContextType,

@@ -23,8 +23,6 @@ export function DataServiceFrom<
 
   const argsType = findArgsType ?? DefaultArgs;
 
-  class QBHelper extends QueryBuilderHelper(entityType, argsType) {}
-
   @Injectable()
   class DataService
     implements DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>
@@ -36,7 +34,14 @@ export function DataServiceFrom<
     @InjectRepository(entityType)
     private readonly _repository: Repository<EntityType>;
 
+    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType,FindArgsType> = new QueryBuilderHelper<IdType,EntityType,FindArgsType>();
+
     private readonly _defaultDataRetrievalOptions:DataRetrievalOptions = dataRetrievalOptions ?? {};
+
+
+    get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType,FindArgsType>{
+      return this._queryBuilderHelper;
+    }
 
     getRepository(context: ContextType) {
       if (context?.transactionManager)
@@ -53,7 +58,7 @@ export function DataServiceFrom<
     getRelationsInfo(context: ContextType): ExtendedRelationInfo[] {
       const repository = this.getRepository(context);
       
-      return QBHelper.getRelationsInfo(repository);
+      return this.queryBuilderHelper.getRelationsInfo(repository);
     }
 
     getQueryBuilder(
@@ -65,7 +70,7 @@ export function DataServiceFrom<
 
       options = Object.assign({ mainAlias:entityType.name.toLowerCase(), relations:[] }, this._defaultDataRetrievalOptions, options);
 
-      return QBHelper.getQueryBuilder(repository, args, options);
+      return this.queryBuilderHelper.getQueryBuilder(repository, args, options);
     }
 
     async find<TBool extends BooleanType = false>(
