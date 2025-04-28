@@ -129,12 +129,15 @@ MIT License - see the [LICENSE](LICENSE) file for details.
   - currently If the IdType is not specified it's taken as int by default, it should be inferred by the EntityType.
   - supporting IdType inference means that it also should be a mapper that resolves what pipeTransform must be used for the controller retrieval of the PK from the query.
 - [x] Transaction support
+  - [x] Implement "runInTransaction" function
+  - [x] Implemente "Transactional" decorator for services
+  - [x] Allow to specify isolationLevel for transaction. (as seen in https://github.com/Aliheym/typeorm-transactional?tab=readme-ov-file#isolation-levels)
 - [ ] Enhanced pagination
   - [x] Return both data and pagination metadata in single response
   - [ ] Fix pagination calculations for relations with one-to-many/many-to-many cardinality
 - [ ] Advanced relation handling
   - [x] Enable/disable specific relations at service level
-  - [ ] allow relation specification using typeorm's FindOptionsRelations<T>
+  - [ ] Allow relation specification using typeorm's FindOptionsRelations<T>
   - [ ] Optimize relation loading performance
 - [ ] Implement bulk operations
 - [ ] support soft-deleted records recovery.
@@ -148,6 +151,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
   - Create separate package for REST utilities (@nestjz/rest)
   - Create separate package for TypeORM utilities (@nestjz/typeorm)
 - [ ] Configurable relation loading through request parameters
+- [ ] Allow to specify transaction propagation option (as seen in https://github.com/Aliheym/typeorm-transactional?tab=readme-ov-file#transaction-propagation)
 - [ ] GraphQL support
   - Create GraphQL-specific package (@nestjz/graphql)
   - GraphQL-optimized resolvers
