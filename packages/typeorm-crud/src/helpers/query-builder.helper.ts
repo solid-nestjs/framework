@@ -1,7 +1,10 @@
 import { And, Between, Brackets, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
 import { Constructable } from "../types";
-import { DataRetrievalOptions, Relation as RelationInterface, Entity, IdTypeFrom, ExtendedRelationInfo, FindArgsInterface } from "../interfaces";
+import { DefaultArgs } from "../classes";
+import { 
+    DataRetrievalOptions, Relation as RelationInterface, 
+    Entity, IdTypeFrom, ExtendedRelationInfo, FindArgsInterface, QueryBuilderConfig } from "../interfaces";
 import { getEntityRelationsExtended } from "./entity-relations.helper";
 import { getPaginationArgs } from "./pagination.helper";
 
@@ -63,11 +66,16 @@ const RECURSIVE_DEPTH_ERROR = `Max recursive depth reached`;
 export class QueryBuilderHelper<
                     IdType extends IdTypeFrom<EntityType>,
                     EntityType extends Entity<any>,
-                    FindArgsType extends FindArgsInterface
-                > {        
-    
-    _relationsInfo?: ExtendedRelationInfo[];
+                    FindArgsType extends FindArgsInterface = DefaultArgs
+> {
+    constructor(
+        private readonly entityType:Constructable<EntityType>,
+        private readonly defaultOptions?:QueryBuilderConfig<EntityType>,        
+    ){}
 
+
+    _relationsInfo?: ExtendedRelationInfo[];
+    
     getRelationsInfo(repository:Repository<EntityType>) : ExtendedRelationInfo[]
     {
         if(!this._relationsInfo)
@@ -76,19 +84,24 @@ export class QueryBuilderHelper<
         return this._relationsInfo;
     }
 
-    getQueryBuilder(repository:Repository<EntityType>,args?:FindArgsType,options?:DataRetrievalOptions) : SelectQueryBuilder<EntityType>
+    getQueryBuilder(repository:Repository<EntityType>,args?:FindArgsType,options?:DataRetrievalOptions<EntityType>) : SelectQueryBuilder<EntityType>
     {
-        const mainAlias = options?.mainAlias ?? 'aa';
-        const relationsList = options?.relations ?? [];
+        const mainAlias = options?.mainAlias ?? this.defaultOptions?.relationsConfig?.mainAlias ?? this.entityType.name.toLowerCase();
+        const relations = options?.relations ?? this.defaultOptions?.relationsConfig?.relations ?? [];
+        const lockMode = options?.lockMode ?? this.defaultOptions?.lockModesConfig?.findAll;
+
         const relationsInfo = this.getRelationsInfo(repository);
         
         const queryBuilder = repository.createQueryBuilder(mainAlias);
         
-        if(options?.lockMode)
-            if(options.lockMode.lockMode === "optimistic")
-                queryBuilder.setLock(options.lockMode.lockMode,options.lockMode.lockVersion);
+        if(lockMode)
+            if(lockMode.lockMode === "optimistic")
+                queryBuilder.setLock(lockMode.lockMode,lockMode.lockVersion);
             else
-                queryBuilder.setLock(options.lockMode.lockMode,options.lockMode.lockVersion,options.lockMode.lockTables);
+                queryBuilder.setLock(lockMode.lockMode,lockMode.lockVersion,lockMode.lockTables);
+
+        if(options?.withDeleted)
+            queryBuilder.withDeleted();
 
         const queryContext:QueryContext<EntityType> = {
             queryBuilder: queryBuilder,
@@ -96,11 +109,16 @@ export class QueryBuilderHelper<
             relationsInfo,
         };
 
-        relationsList.forEach((relation) => {
-            let { property, alias } = relation;
-
-            this.addRelation(queryContext,property,alias,true);
-        });
+        if(typeof(relations) === 'function')
+        {
+            const relationsList = relations as RelationInterface[];
+            relationsList.forEach((relation) => {
+                let { property, alias } = relation;
+    
+                this.addRelation(queryContext,property,alias,true);
+            });
+        }
+        
 
         if(args)
             this.applyArgs(queryContext,args);

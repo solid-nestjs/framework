@@ -1,6 +1,9 @@
 import { DeepPartial, Repository } from "typeorm";
 import { Injectable, Type, mixin } from "@nestjs/common";
-import { Context, IdTypeFrom, Entity, CrudServiceInterface as CrudServiceInterface, FindArgsInterface, CrudServiceStructure, CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../interfaces";
+import { 
+    Context, IdTypeFrom, Entity, CrudServiceInterface as CrudServiceInterface, 
+    FindArgsInterface, CrudServiceStructure, 
+    CreateOptions, UpdateOptions, RemoveOptions, HardRemoveOptions } from "../interfaces";
 import { StandardActions } from "../enums";
 import { DefaultArgs } from "../classes";
 import { hasDeleteDateColumn } from "../helpers";
@@ -27,9 +30,10 @@ export function
         async create(
             context:ContextType,
             createInput: CreateInputType,
-            eventHandler:CreateEventsHandler<IdType,EntityType,CreateInputType,ContextType> = this
-            ): Promise<EntityType> {
-    
+            options?:CreateOptions<IdType,EntityType,CreateInputType,ContextType>
+        ):Promise<EntityType> {
+            const eventHandler = options?.eventHandler ?? this;
+            
             const repository = this.getRepository(context);
     
             const entity = repository.create(createInput);
@@ -49,8 +53,10 @@ export function
             context:ContextType,
             id: IdType, 
             updateInput: UpdateInputType,
-            eventHandler:UpdateEventsHandler<IdType,EntityType,UpdateInputType,ContextType> = this
-            ): Promise<EntityType> {
+            options?:UpdateOptions<IdType,EntityType,UpdateInputType,ContextType>
+        ): Promise<EntityType> {
+            const eventHandler = options?.eventHandler ?? this;
+
             const repository = this.getRepository(context);
     
             const entity = await this.findOne(context,id,true) as EntityType;
@@ -73,8 +79,10 @@ export function
         async remove(
             context:ContextType,
             id: IdType,
-            eventHandler:RemoveEventsHandler<IdType,EntityType,ContextType> = this
-            ): Promise<EntityType> {
+            options?:RemoveOptions<IdType,EntityType,ContextType>
+        ): Promise<EntityType> {
+            const eventHandler = options?.eventHandler ?? this;
+                
             const repository = this.getRepository(context);
     
             const entity = await this.findOne(context,id,true);
@@ -102,16 +110,18 @@ export function
         async hardRemove(
             context:ContextType,
             id: IdType,
-            eventHandler:HardRemoveEventsHandler<IdType,EntityType,ContextType> = this
-            ): Promise<EntityType> {
-            const repository = this.getRepository(context);
+            options?:HardRemoveOptions<IdType,EntityType,ContextType>
+        ): Promise<EntityType> {            
+            const eventHandler = options?.eventHandler ?? this;
+
+            const repository = this.getRepository(context);            
 
             // check if the repository has a deleteDateColumn, if not, call remove instead
             // this is to avoid the error: MissingDeleteDateColumnError: Entity "EntityName" does not have a delete date column.
             if (!hasDeleteDateColumn(repository))
                 return this.remove(context,id);
     
-            const entity = await this.findOne(context,id,true,true);
+            const entity = await this.findOne(context,id,true,{ withDeleted:true });
     
             await eventHandler.beforeHardRemove(context,repository,entity);
     

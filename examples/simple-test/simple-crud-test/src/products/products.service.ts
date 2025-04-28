@@ -1,9 +1,8 @@
-import { Context, CreateEventsHandler, CrudServiceFrom, CrudServiceStructure, Transactional } from '@nestjz/typeorm-crud';
+import { Context, CreateOptions, CrudServiceFrom, CrudServiceStructure, Transactional } from '@nestjz/typeorm-crud';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { TypeOrmRepository } from '@nestjz/typeorm-crud';
-import { InternalServerErrorException } from '@nestjs/common';
 
 export const serviceStructure= CrudServiceStructure({
   entityType: Product,
@@ -14,8 +13,8 @@ export const serviceStructure= CrudServiceStructure({
 export class ProductsService extends CrudServiceFrom(serviceStructure){
 
   @Transactional()
-  override async create(context: Context, createInput: CreateProductDto, eventHandler?: CreateEventsHandler<string, Product, CreateProductDto, Context> | undefined): Promise<Product> {
-    return super.create(context,createInput,eventHandler);
+  override create(context: Context, createInput: CreateProductDto, options?: CreateOptions<string, Product, CreateProductDto, Context> | undefined): Promise<Product> {
+    return super.create(context,createInput,options);
   }
 
   override async beforeCreate(context: Context, repository: TypeOrmRepository<Product>, entity: Product, createInput: CreateProductDto): Promise<void> {
@@ -25,7 +24,7 @@ export class ProductsService extends CrudServiceFrom(serviceStructure){
 
   override async afterCreate(context: Context, repository: TypeOrmRepository<Product>, entity: Product, createInput: CreateProductDto): Promise<void> {
     console.log('after create');
-    throw new InternalServerErrorException("exception in after create");
+    //throw new InternalServerErrorException("exception in after create");
   }
   
 }

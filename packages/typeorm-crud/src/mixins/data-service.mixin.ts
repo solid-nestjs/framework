@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BooleanType, If, NotNullableIf } from '../types';
 import { Context, Entity, IdTypeFrom, DataServiceInterface as DataServiceInterface, AuditService, FindArgsInterface, PaginationResultInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
-import { QueryBuilderHelper, hasDeleteDateColumn, getPaginationArgs } from '../helpers';
+import { QueryBuilderHelper, getPaginationArgs } from '../helpers';
 import { runInTransaction } from '../helpers';
 
 
@@ -19,9 +19,10 @@ export function DataServiceFrom<
   serviceStructure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>,
 ): Type<DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>> {
 
-  const { entityType, findArgsType, dataRetrievalOptions } = serviceStructure;
+  const { entityType, findArgsType, lockModesConfig, relationsConfig } = serviceStructure;
 
   const argsType = findArgsType ?? DefaultArgs;
+  
 
   @Injectable()
   class DataService
@@ -34,10 +35,7 @@ export function DataServiceFrom<
     @InjectRepository(entityType)
     private readonly _repository: Repository<EntityType>;
 
-    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType,FindArgsType> = new QueryBuilderHelper<IdType,EntityType,FindArgsType>();
-
-    private readonly _defaultDataRetrievalOptions:DataRetrievalOptions = dataRetrievalOptions ?? {};
-
+    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType,FindArgsType> = new QueryBuilderHelper<IdType,EntityType,FindArgsType>(entityType,{ lockModesConfig, relationsConfig });
 
     get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType,FindArgsType>{
       return this._queryBuilderHelper;
@@ -64,16 +62,14 @@ export function DataServiceFrom<
     getQueryBuilder(
       context: ContextType,
       args?: FindArgsType,
-      options?: DataRetrievalOptions,
+      options?: DataRetrievalOptions<EntityType>,
     ): SelectQueryBuilder<EntityType> {
       const repository = this.getRepository(context);
-
-      options = Object.assign({ mainAlias:entityType.name.toLowerCase(), relations:[] }, this._defaultDataRetrievalOptions, options);
 
       return this.queryBuilderHelper.getQueryBuilder(repository, args, options);
     }
 
-    async find<TBool extends BooleanType = false>(
+    async find(
       context: ContextType,
       options?: FindManyOptions<EntityType>,
     ): Promise<EntityType[]> {
@@ -85,7 +81,7 @@ export function DataServiceFrom<
       context: ContextType,
       args?: FindArgsType,
       withPagination?:TBool,
-      options?: DataRetrievalOptions,
+      options?: DataRetrievalOptions<EntityType>,
     ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> > {
       const queryBuilder = this.getQueryBuilder(context, args, options);
 
@@ -102,7 +98,7 @@ export function DataServiceFrom<
     async pagination(
       context: ContextType,
       args?: FindArgsType,
-      options?: DataRetrievalOptions,
+      options?: DataRetrievalOptions<EntityType>,
     ): Promise<PaginationResultInterface> {
       const queryBuilder = this.getQueryBuilder(context, {
         ...args,
@@ -148,13 +144,10 @@ export function DataServiceFrom<
       context: ContextType,
       id: IdType,
       orFail?: TBool,
-      withDeleted?: boolean,
+      options?: DataRetrievalOptions<EntityType>,
     ): Promise< NotNullableIf<TBool,EntityType> > {
-      const repository = this.getRepository(context);
 
-      withDeleted = (hasDeleteDateColumn(repository))? withDeleted : undefined;
-
-      let entity = await this.findOneBy(context, { id:id as any }, false, withDeleted);
+      let entity = await this.findOneBy(context, { id:id as any }, false, options);
 
       if(entity)
         return entity;
@@ -167,21 +160,24 @@ export function DataServiceFrom<
 
     async findOneBy<TBool extends BooleanType = false>(
       context: ContextType,
-      options: FindOptionsWhere<EntityType>,
+      where: FindOptionsWhere<EntityType>,
       orFail?: TBool,
-      withDeleted?: boolean,
+      options?: DataRetrievalOptions<EntityType>,
     ): Promise< NotNullableIf<TBool,EntityType> > {
-      const repository = this.getRepository(context);
 
-      withDeleted = (hasDeleteDateColumn(repository))? withDeleted : undefined;
+      const args = { where } as FindArgsType;
 
-      let entity = await repository.findOneBy({ withDeleted, ...options });
+      options = { ...options, lockMode:options?.lockMode ?? lockModesConfig?.findOne };
+
+      const queryBuilder = this.getQueryBuilder(context, args, options);
+
+      let entity = await queryBuilder.getOne();
 
       if(entity)
         return entity;
 
       if (orFail)
-        throw new NotFoundException(`${entityType.name} not found with options: ${JSON.stringify(options)}`);
+        throw new NotFoundException(`${entityType.name} not found with options: ${JSON.stringify(where)}`);
 
       return entity as NotNullableIf<TBool,EntityType>;
     }

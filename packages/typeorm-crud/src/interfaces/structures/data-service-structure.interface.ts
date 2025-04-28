@@ -1,6 +1,22 @@
+import { FindOptionsRelations } from "typeorm";
 import { Constructable } from "../../types";
-import { Context, DataRetrievalOptions, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
+import { Context, IdTypeFrom, Entity, FindArgsInterface, Relation, LockModeOptimistic, LockModeNotOptimistic } from "../misc";
 import { EntityProviderStructure, fillEntityId } from "./entity-provider-structure.interface";
+
+export interface RelationsConfig<EntityType> {
+    mainAlias?: string;
+    relations?: Relation[] | FindOptionsRelations<EntityType>;
+}
+
+export interface LockModesConfig<EntityType> {
+    findAll?: LockModeOptimistic | LockModeNotOptimistic;
+    findOne?: LockModeOptimistic | LockModeNotOptimistic;
+}
+
+export interface QueryBuilderConfig<EntityType> {
+    relationsConfig?:RelationsConfig<EntityType>,
+    lockModesConfig?:LockModesConfig<EntityType>,
+}
 
 export interface DataServiceStructure<
     IdType extends IdTypeFrom<EntityType>,
@@ -10,7 +26,8 @@ export interface DataServiceStructure<
     > extends EntityProviderStructure<IdType,EntityType> {
         findArgsType?: Constructable<FindArgsType>,
         contextType?: Constructable<ContextType>,
-        dataRetrievalOptions?:DataRetrievalOptions
+        relationsConfig?:RelationsConfig<EntityType>,
+        lockModesConfig?:LockModesConfig<EntityType>,
     }
 
 export function DataServiceStructure<

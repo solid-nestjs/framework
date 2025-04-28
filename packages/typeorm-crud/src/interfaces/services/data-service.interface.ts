@@ -26,7 +26,7 @@ export interface DataServiceInterface<
   getQueryBuilder(
     context: ContextType,
     args?: FindArgsType,
-    options?: DataRetrievalOptions,
+    options?: DataRetrievalOptions<EntityType>,
   ): SelectQueryBuilder<EntityType>;
 
   find(
@@ -38,27 +38,27 @@ export interface DataServiceInterface<
     context: ContextType, 
     args?: FindArgsType,
     withPagination?:TBool,
-    options?: DataRetrievalOptions,
+    options?: DataRetrievalOptions<EntityType>,
   ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> >;
 
   pagination(
     context: ContextType, 
     args?: FindArgsType,
-    options?: DataRetrievalOptions,
+    options?: DataRetrievalOptions<EntityType>,
   ): Promise<PaginationResultInterface>;
 
   findOne<TBool extends BooleanType = false>(
     context: ContextType,
     id: IdType,
     orFail?: TBool,
-    withDeleted?: boolean,
+    options?: DataRetrievalOptions<EntityType>,
   ): Promise<NotNullableIf<TBool,EntityType>>;
 
   findOneBy<TBool extends BooleanType = false>(
     context: ContextType,
-    options: FindOptionsWhere<EntityType>,
+    where: FindOptionsWhere<EntityType>,
     orFail?: TBool,
-    withDeleted?: boolean,
+    options?: DataRetrievalOptions<EntityType>,
   ): Promise<NotNullableIf<TBool,EntityType>>;
    
   runInTransaction<ReturnType>(

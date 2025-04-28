@@ -1,8 +1,21 @@
 import { DeepPartial } from "typeorm";
+import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
 import { Constructable } from "../../types";
 import { Context, IdTypeFrom, Entity, FindArgsInterface } from "../misc";
 import { DataServiceStructure } from "./data-service-structure.interface";
 import { fillEntityId } from "./entity-provider-structure.interface";
+
+export interface TransactionConfig {
+    transactional:boolean,
+    isolationLevel?:IsolationLevel
+}
+
+export interface TransactionsConfig {
+    create?:TransactionConfig,
+    update?:TransactionConfig,
+    delete?:TransactionConfig,
+    hardDelete?:TransactionConfig,
+}
 
 export interface CrudServiceStructure<
     IdType extends IdTypeFrom<EntityType>,

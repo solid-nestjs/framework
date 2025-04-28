@@ -100,7 +100,7 @@ Use the `@Transactional()` decorator to wrap operations in a transaction:
 
 ```typescript
 @Transactional()
-async controllerMethod() {
+async serviceMethod() {
   // Operations will be executed in a transaction
 }
 ```
@@ -121,7 +121,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - [x] Basic sorting functionality
 - [x] Basic pagination support
 - [x] OpenAPI (Swagger) documentation
-- [x] Transaction support
 - [x] Input validation
 - [x] Basic relation handling
 
@@ -129,29 +128,33 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - [x] Entity Id Type automatic detection.
   - currently If the IdType is not specified it's taken as int by default, it should be inferred by the EntityType.
   - supporting IdType inference means that it also should be a mapper that resolves what pipeTransform must be used for the controller retrieval of the PK from the query.
+- [x] Transaction support
 - [ ] Enhanced pagination
-  - Return both data and pagination metadata in single response
-  - Fix pagination calculations for relations with one-to-many/many-to-many cardinality
+  - [x] Return both data and pagination metadata in single response
+  - [ ] Fix pagination calculations for relations with one-to-many/many-to-many cardinality
 - [ ] Advanced relation handling
-  - Configurable relation loading through request parameters
-  - Enable/disable specific relations at service level
-  - Optimize relation loading performance
+  - [x] Enable/disable specific relations at service level
+  - [ ] allow relation specification using typeorm's FindOptionsRelations<T>
+  - [ ] Optimize relation loading performance
+- [ ] Implement bulk operations
+- [ ] support soft-deleted records recovery.
+- [ ] Query optimization improvements
+  - Query caching options
+
+### [0.3.0] - Architecture & GraphQL Support
+- [ ] configure this project as a monorepo
+- [ ] Architecture enhancements
+  - Decouple data layer from presentation layer
+  - Create separate package for REST utilities (@nestjz/rest)
+  - Create separate package for TypeORM utilities (@nestjz/typeorm)
+- [ ] Configurable relation loading through request parameters
+- [ ] GraphQL support
+  - Create GraphQL-specific package (@nestjz/graphql)
+  - GraphQL-optimized resolvers
+  - GraphQL-specific decorators
 - [ ] Custom operations support in the ControllerStructure
   - Allow defining custom operations in controllers
   - Support for custom routes and methods
   - Enable operation-specific validation and transformation
   - Provide decorators for operation configuration
-- [ ] Implement bulk operations
-- [ ] Query optimization improvements
-  - Query caching options
-
-### [0.3.0] - Architecture & GraphQL Support
-- [ ] Architecture enhancements
-  - Decouple data layer from presentation layer
-  - Create separate package for REST utilities (@nestjz/rest)
-  - Create separate package for TypeORM utilities (@nestjz/typeorm)
-- [ ] GraphQL support
-  - Create GraphQL-specific package (@nestjz/graphql)
-  - GraphQL-optimized resolvers
-  - GraphQL-specific decorators
 - [ ] Comprehensive documentation
