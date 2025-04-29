@@ -1,11 +1,10 @@
 import { Controller, Get, HttpCode, HttpStatus, Inject, Param, ParseIntPipe, PipeTransform, Query, Type, ValidationPipe, mixin } from '@nestjs/common';
 import { ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiTags, getSchemaPath  } from '@nestjs/swagger';
-import { Context, IdTypeFrom, Entity, FindArgsInterface, DataControllerStructure, DataServiceInterface } from '../interfaces';
+import { Context, IdTypeFrom, Entity, FindArgsInterface, DataControllerStructure, DataServiceInterface, OperationStructure } from '../interfaces';
 import { DefaultArgs, PaginationResult } from '../classes';
 import { ApiResponses, CurrentContext } from '../decorators';
 import { QueryTransformPipe } from '../pipes';
 import { applyClassDecorators, applyMethodDecorators } from '../utils';
-
 
 export function DataControllerFrom<
   IdType extends IdTypeFrom<EntityType>,
@@ -48,45 +47,49 @@ export function DataControllerFrom<
   const controllerRoute = controllerStructure.route ?? entityType.name.toLowerCase()+'s';
   const controllerDecorators = controllerStructure.classDecorators ?? [];
   
-  const findAll_Structure =  (typeof(controllerStructure.operations?.findAll) == 'object')?controllerStructure.operations?.findAll:null;
-  const findAllRoute = findAll_Structure?.route ?? '';
-  const findAllDecorators = findAll_Structure?.decorators ?? [];
-  const findAllSummary = findAll_Structure?.title ?? ('List of ' + entityType.name.toLowerCase() + 's records');
-  const findAllDescription = findAll_Structure?.description ?? ('list of ' + entityType.name.toLowerCase() + 's records');
-  const findAllOperationId = findAll_Structure?.operationId;
-  const findAllSuccessCode = findAll_Structure?.successCode ?? (findAll_Structure?.successCodes ?? [])[0] ?? HttpStatus.OK;
-  const findAllSuccessCodes = findAll_Structure?.successCodes ?? [findAllSuccessCode];
-  const findAllErrorCodes = findAll_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST];
+  const findAllSettings = extractOperationSettings(
+    controllerStructure.operations?.findAll,
+    {
+      route: '',
+      summary: 'List of ' + entityType.name.toLowerCase() + 's records',
+      description: 'list of ' + entityType.name.toLowerCase() + 's records',
+      successCode: HttpStatus.OK,
+      errorCodes: [HttpStatus.BAD_REQUEST],
+    }
+  );
 
-  const findOne_Structure =  (typeof(controllerStructure.operations?.findOne) == 'object')?controllerStructure.operations?.findOne:null;
-  const findOneRoute = findOne_Structure?.route ?? ':id';
-  const findOneDecorators = findOne_Structure?.decorators ?? [];
-  const findOneSummary = findOne_Structure?.title ?? ('Retrieve ' + entityType.name.toLowerCase() + ' record by id');
-  const findOneDescription = findOne_Structure?.description ?? ('retrieval of ' + entityType.name.toLowerCase() + ' record by id');
-  const findOneOperationId = findOne_Structure?.operationId;
-  const findOneSuccessCode = findOne_Structure?.successCode ?? (findOne_Structure?.successCodes ?? [])[0] ?? HttpStatus.OK;
-  const findOneSuccessCodes = findOne_Structure?.successCodes ?? [findOneSuccessCode];
-  const findOneErrorCodes = findOne_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST,HttpStatus.NOT_FOUND];
+  const findOneSettings = extractOperationSettings(
+    controllerStructure.operations?.findOne,
+    {
+      route: ':id',
+      summary: 'Retrieve ' + entityType.name.toLowerCase() + ' record by id',
+      description: 'retrieval of ' + entityType.name.toLowerCase() + ' record by id',
+      successCode: HttpStatus.OK,
+      errorCodes: [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
+    }
+  );
 
-  const pagination_Structure =  (typeof(controllerStructure.operations?.pagination) == 'object')?controllerStructure.operations?.pagination:null;
-  const paginationRoute = pagination_Structure?.route ?? 'pagination';
-  const paginationDecorators = pagination_Structure?.decorators ?? [];
-  const paginationSummary = pagination_Structure?.title ?? ('Pagination of ' + entityType.name.toLowerCase());
-  const paginationDescription = pagination_Structure?.description ?? ('pagination of ' + entityType.name.toLowerCase());
-  const paginationOperationId = pagination_Structure?.operationId;
-  const paginationSuccessCode = pagination_Structure?.successCode ?? (pagination_Structure?.successCodes ?? [])[0]?? findAllSuccessCode ?? HttpStatus.OK;
-  const paginationSuccessCodes = pagination_Structure?.successCodes ?? [paginationSuccessCode] ?? findAllSuccessCodes;
-  const paginationErrorCodes = pagination_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST] ?? findAllErrorCodes;
+  const paginationSettings = extractOperationSettings(
+    controllerStructure.operations?.pagination,
+    {
+      route: 'pagination',
+      summary: 'Pagination of ' + entityType.name.toLowerCase(),
+      description: 'pagination of ' + entityType.name.toLowerCase(),
+      successCode: HttpStatus.OK,
+      errorCodes: [HttpStatus.BAD_REQUEST],
+    }
+  );
 
-  const findAllPaginated_Structure =  (typeof(controllerStructure.operations?.findAllPaginated) == 'object')?controllerStructure.operations?.findAllPaginated:null;
-  const findAllPaginatedRoute = findAllPaginated_Structure?.route ?? 'paginated';
-  const findAllPaginatedDecorators = findAllPaginated_Structure?.decorators ?? findAllDecorators ??[];
-  const findAllPaginatedSummary = findAllPaginated_Structure?.title ?? ('Paginated List of ' + entityType.name.toLowerCase() + 's records');
-  const findAllPaginatedDescription = findAllPaginated_Structure?.description ?? ('paginated list of ' + entityType.name.toLowerCase() + 's records');
-  const findAllPaginatedOperationId = findAllPaginated_Structure?.operationId;
-  const findAllPaginatedSuccessCode = findAllPaginated_Structure?.successCode ?? (findAllPaginated_Structure?.successCodes ?? [])[0] ?? findAllSuccessCode ?? HttpStatus.OK;
-  const findAllPaginatedSuccessCodes = findAllPaginated_Structure?.successCodes ?? [findAllSuccessCode] ?? findAllSuccessCodes;
-  const findAllPaginatedErrorCodes = findAllPaginated_Structure?.errorCodes ?? [HttpStatus.BAD_REQUEST] ?? findAllErrorCodes;
+  const findAllPaginatedSettings = extractOperationSettings(
+    controllerStructure.operations?.findAllPaginated,
+    {
+      route: 'paginated',
+      summary: 'Paginated List of ' + entityType.name.toLowerCase() + 's records',
+      description: 'paginated list of ' + entityType.name.toLowerCase() + 's records',
+      successCode: HttpStatus.OK,
+      errorCodes: [HttpStatus.BAD_REQUEST],
+    }
+  );
 
   const paramApiConfig = { name: 'id', description: 'ID of the ' + entityType.name + ' entity', required: true };
 
@@ -97,9 +100,9 @@ export function DataControllerFrom<
   class DataController {
     constructor(@Inject(serviceType) readonly service: ServiceType) {}
 
-    @Get(findAllRoute)
-    @applyMethodDecorators(findAllDecorators)
-    @ApiOperation({ summary: findAllSummary, description: findAllDescription, operationId: findAllOperationId })
+    @Get(findAllSettings?.route ?? '')
+    @applyMethodDecorators(findAllSettings?.decorators ?? [])
+    @ApiOperation({ summary: findAllSettings?.summary, description: findAllSettings?.description, operationId: findAllSettings?.operationId })
     @ApiQuery({
         name: 'args',
         required: false,
@@ -107,8 +110,8 @@ export function DataControllerFrom<
           $ref: getSchemaPath(argsType)
         }
       })
-    @HttpCode(findAllSuccessCode)
-    @ApiResponses( { type: entityType, isArray:true, successCodes:findAllSuccessCodes, errorCodes: findAllErrorCodes })
+    @HttpCode(findAllSettings?.successCode ?? HttpStatus.OK)
+    @ApiResponses( { type: entityType, isArray:true, successCodes:findAllSettings?.successCodes ?? [HttpStatus.OK], errorCodes: findAllSettings?.errorCodes ?? [HttpStatus.BAD_REQUEST] })
     async findAll?(
       @ContextDecorator() context: ContextType,
       @Query(
@@ -126,9 +129,9 @@ export function DataControllerFrom<
       return this.service.findAll(context, args);
     }
     
-    @Get(paginationRoute)
-    @applyMethodDecorators(paginationDecorators)
-    @ApiOperation({ summary: paginationSummary, description: paginationDescription, operationId: paginationOperationId })
+    @Get(paginationSettings?.route ?? 'pagination')
+    @applyMethodDecorators(paginationSettings?.decorators ?? [])
+    @ApiOperation({ summary: paginationSettings?.summary, description: paginationSettings?.description, operationId: paginationSettings?.operationId })
     @ApiQuery({
         name: 'args',
         required: false,
@@ -136,8 +139,8 @@ export function DataControllerFrom<
           $ref: getSchemaPath(argsType)
         }
       })
-    @HttpCode(paginationSuccessCode)
-    @ApiResponses( { type: PaginationResult, successCodes:paginationSuccessCodes, errorCodes: paginationErrorCodes })
+    @HttpCode(paginationSettings?.successCode ?? HttpStatus.OK)
+    @ApiResponses( { type: PaginationResult, successCodes:paginationSettings?.successCodes ?? [HttpStatus.OK], errorCodes: paginationSettings?.errorCodes ?? [HttpStatus.BAD_REQUEST] })
     async pagination?(
       @ContextDecorator() context: ContextType,
       @Query(
@@ -155,9 +158,9 @@ export function DataControllerFrom<
       return this.service.pagination(context, args);
     }
 
-    @Get(findAllPaginatedRoute)
-    @applyMethodDecorators(findAllPaginatedDecorators)
-    @ApiOperation({ summary: findAllPaginatedSummary, description: findAllPaginatedDescription, operationId: findAllPaginatedOperationId })
+    @Get(findAllPaginatedSettings?.route ?? 'paginated')
+    @applyMethodDecorators(findAllPaginatedSettings?.decorators ?? [])
+    @ApiOperation({ summary: findAllPaginatedSettings?.summary, description: findAllPaginatedSettings?.description, operationId: findAllPaginatedSettings?.operationId })
     @ApiQuery({
         name: 'args',
         required: false,
@@ -165,7 +168,7 @@ export function DataControllerFrom<
           $ref: getSchemaPath(argsType)
         }
       })
-    @HttpCode(findAllPaginatedSuccessCode)
+    @HttpCode(findAllPaginatedSettings?.successCode ?? HttpStatus.OK)
     @ApiResponses( { schema: {
       type:'object',
       properties:{
@@ -177,7 +180,7 @@ export function DataControllerFrom<
         },
         pagination:{ $ref: getSchemaPath(PaginationResult) },
       }
-    }, isArray:true, successCodes:findAllPaginatedSuccessCodes, errorCodes: findAllPaginatedErrorCodes })
+    }, isArray:true, successCodes:findAllPaginatedSettings?.successCodes ?? [HttpStatus.OK], errorCodes: findAllPaginatedSettings?.errorCodes ?? [HttpStatus.BAD_REQUEST] })
     async findAllPaginated?(
       @ContextDecorator() context: ContextType,
       @Query(
@@ -195,12 +198,12 @@ export function DataControllerFrom<
       return this.service.findAll(context,args,true);
     }
     
-    @Get(findOneRoute)
-    @applyMethodDecorators(findOneDecorators)
-    @ApiOperation({ summary: findOneSummary, description: findOneDescription, operationId: findOneOperationId })
+    @Get(findOneSettings?.route ?? ':id')
+    @applyMethodDecorators(findOneSettings?.decorators ?? [])
+    @ApiOperation({ summary: findOneSettings?.summary, description: findOneSettings?.description, operationId: findOneSettings?.operationId })
     @ApiParam(paramApiConfig)
-    @HttpCode(findOneSuccessCode)
-    @ApiResponses( { type: entityType, successCodes:findOneSuccessCodes, errorCodes: findOneErrorCodes })
+    @HttpCode(findOneSettings?.successCode ?? HttpStatus.OK)
+    @ApiResponses( { type: entityType, successCodes:findOneSettings?.successCodes ?? [HttpStatus.OK], errorCodes: findOneSettings?.errorCodes ?? [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND] })
     async findOne?(
       @ContextDecorator() context: ContextType,
       @Param('id', ...pipeTransforms) id: IdType
@@ -225,4 +228,29 @@ export function DataControllerFrom<
   }
 
   return mixin(DataController);
+}
+
+export function extractOperationSettings(
+  operation:OperationStructure|boolean|undefined, 
+  defaults:{
+    route:string|undefined, 
+    summary:string, 
+    description:string,
+    successCode:HttpStatus, 
+    errorCodes:HttpStatus[]
+  }
+) {
+  if(typeof(operation) !== 'object')
+    operation = {} as OperationStructure;
+  
+  return {
+    route: operation.route ?? defaults.route,
+    decorators: operation.decorators ?? [],
+    summary: operation.title ?? defaults.summary,
+    description: operation.description ?? defaults.description,
+    operationId: operation.operationId,
+    successCode: operation.successCode ?? (operation.successCodes ?? [])[0] ?? defaults.successCode,
+    successCodes: operation.successCodes ?? [defaults.successCode],
+    errorCodes: operation.errorCodes ?? defaults.errorCodes,
+  };
 }
