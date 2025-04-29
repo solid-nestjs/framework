@@ -3,25 +3,6 @@ import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
 import { Context, EntityManagerProvider } from "../interfaces";
 import { InternalServerErrorException } from "@nestjs/common";
 
-export async function injectTransaction(
-    options:any,
-    next: (...args:any[]) => Promise<any>,
-    args:any[]
-): Promise<any>
-{
-    if(typeof(options?.injectable?.getEntityManager) !== 'function')
-        throw new InternalServerErrorException("cannot injectTransaction, function getEntityManager is needed in the service class",{ cause:{ obj: options, args } });
-
-    const service = options.injectable as EntityManagerProvider<Context>;
-    const isolationLevel = options.isolationLevel as IsolationLevel
-
-    const [ context, ...otherArgs ] = args as [ Context, ...any[] ];
-    
-    const manager = service.getEntityManager(context);
-
-    return runInTransaction(context,manager.connection,(context) => next(context,...otherArgs),isolationLevel);
-}
-
 export async function runInTransaction<ContextType extends Context,ReturnType>(
     context:ContextType,
     dataSource:DataSource,
@@ -58,4 +39,23 @@ export async function runInTransaction<ContextType extends Context,ReturnType>(
 
         await queryRunner.release();
     }
+}
+
+export async function wrapWithTransaction(
+    options:any,
+    next: (...args:any[]) => Promise<any>,
+    args:any[]
+): Promise<any>
+{
+    if(typeof(options?.injectable?.getEntityManager) !== 'function')
+        throw new InternalServerErrorException("cannot injectTransaction, function getEntityManager is needed in the service class",{ cause:{ obj: options, args } });
+
+    const service = options.injectable as EntityManagerProvider<Context>;
+    const isolationLevel = options.isolationLevel as IsolationLevel
+
+    const [ context, ...otherArgs ] = args as [ Context, ...any[] ];
+    
+    const manager = service.getEntityManager(context);
+
+    return runInTransaction(context,manager.connection,(context) => next(context,...otherArgs),isolationLevel);
 }

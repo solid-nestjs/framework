@@ -8,14 +8,14 @@ export interface RelationsConfig<EntityType> {
     relations?: Relation[] | FindOptionsRelations<EntityType>;
 }
 
-export interface LockModesConfig<EntityType> {
+export interface QueryLocksConfig<EntityType> {
     findAll?: LockModeOptimistic | LockModeNotOptimistic;
     findOne?: LockModeOptimistic | LockModeNotOptimistic;
 }
 
 export interface QueryBuilderConfig<EntityType> {
     relationsConfig?:RelationsConfig<EntityType>,
-    lockModesConfig?:LockModesConfig<EntityType>,
+    queryLocksConfig?:QueryLocksConfig<EntityType>,
 }
 
 export interface DataServiceStructure<
@@ -27,7 +27,7 @@ export interface DataServiceStructure<
         findArgsType?: Constructable<FindArgsType>,
         contextType?: Constructable<ContextType>,
         relationsConfig?:RelationsConfig<EntityType>,
-        lockModesConfig?:LockModesConfig<EntityType>,
+        queryLocksConfig?:QueryLocksConfig<EntityType>,
     }
 
 export function DataServiceStructure<

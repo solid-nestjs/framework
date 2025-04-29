@@ -19,7 +19,7 @@ export function DataServiceFrom<
   serviceStructure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>,
 ): Type<DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>> {
 
-  const { entityType, findArgsType, lockModesConfig, relationsConfig } = serviceStructure;
+  const { entityType, findArgsType, queryLocksConfig: lockModesConfig, relationsConfig } = serviceStructure;
 
   const argsType = findArgsType ?? DefaultArgs;
   
@@ -35,7 +35,7 @@ export function DataServiceFrom<
     @InjectRepository(entityType)
     private readonly _repository: Repository<EntityType>;
 
-    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType,FindArgsType> = new QueryBuilderHelper<IdType,EntityType,FindArgsType>(entityType,{ lockModesConfig, relationsConfig });
+    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType,FindArgsType> = new QueryBuilderHelper<IdType,EntityType,FindArgsType>(entityType,{ queryLocksConfig: lockModesConfig, relationsConfig });
 
     get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType,FindArgsType>{
       return this._queryBuilderHelper;

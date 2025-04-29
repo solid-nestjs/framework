@@ -88,7 +88,7 @@ export class QueryBuilderHelper<
     {
         const mainAlias = options?.mainAlias ?? this.defaultOptions?.relationsConfig?.mainAlias ?? this.entityType.name.toLowerCase();
         const relations = options?.relations ?? this.defaultOptions?.relationsConfig?.relations ?? [];
-        const lockMode = options?.lockMode ?? this.defaultOptions?.lockModesConfig?.findAll;
+        const lockMode = options?.lockMode ?? this.defaultOptions?.queryLocksConfig?.findAll;
 
         const relationsInfo = this.getRelationsInfo(repository);
         

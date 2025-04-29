@@ -13,8 +13,8 @@ export interface TransactionConfig {
 export interface TransactionsConfig {
     create?:TransactionConfig,
     update?:TransactionConfig,
-    delete?:TransactionConfig,
-    hardDelete?:TransactionConfig,
+    remove?:TransactionConfig,
+    hardRemove?:TransactionConfig,
 }
 
 export interface CrudServiceStructure<
@@ -28,6 +28,7 @@ export interface CrudServiceStructure<
 
         createInputType:Constructable<CreateInputType>,
         updateInputType:Constructable<UpdateInputType>,
+        transactionsConfig?:TransactionsConfig,
     }
 
 

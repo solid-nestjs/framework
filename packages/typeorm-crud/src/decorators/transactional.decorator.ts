@@ -1,5 +1,5 @@
 import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
-import { Intercepted } from "./intercepted.decorator";
-import { injectTransaction } from "../helpers/transaction.helper";
+import { Wrapped } from "./wrapped.decorator";
+import { wrapWithTransaction } from "../helpers/transaction.helper";
 
-export const Transactional = (options?:{isolationLevel?:IsolationLevel}) => Intercepted(injectTransaction,options);
+export const Transactional = (options?:{isolationLevel?:IsolationLevel}) => Wrapped(wrapWithTransaction,options);

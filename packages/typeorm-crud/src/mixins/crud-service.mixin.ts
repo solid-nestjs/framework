@@ -8,6 +8,8 @@ import { StandardActions } from "../enums";
 import { DefaultArgs } from "../classes";
 import { hasDeleteDateColumn } from "../helpers";
 import { DataServiceFrom } from "./data-service.mixin";
+import { Transactional } from "../decorators";
+import { applyMethodDecorators } from "../utils";
 
 export function 
     CrudServiceFrom<
@@ -17,16 +19,27 @@ export function
         UpdateInputType extends DeepPartial<EntityType>,
         FindArgsType extends FindArgsInterface = DefaultArgs,
         ContextType extends Context = Context
-    >(
-        serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+>(
+    serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
 
-    ): Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>> {
+): Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>> 
+{
+    var createTransactional = serviceStructure?.transactionsConfig?.create;
+    var updateTransactional = serviceStructure?.transactionsConfig?.update;
+    var removeTransactional = serviceStructure?.transactionsConfig?.remove;
+    var hardRemoveTransactional = serviceStructure?.transactionsConfig?.hardRemove;
+
+    var createDecorators = (createTransactional?.transactional)?[()=>Transactional( { isolationLevel: createTransactional?.isolationLevel } )]:[];
+    var updateDecorators = (updateTransactional?.transactional)?[()=>Transactional( { isolationLevel: updateTransactional?.isolationLevel } )]:[];
+    var removeDecorators = (removeTransactional?.transactional)?[()=>Transactional( { isolationLevel: removeTransactional?.isolationLevel } )]:[];
+    var hardRemoveDecorators = (hardRemoveTransactional?.transactional)?[()=>Transactional( { isolationLevel: hardRemoveTransactional?.isolationLevel } )]:[];
 
     @Injectable()
     class CrudService
         extends DataServiceFrom(serviceStructure)
         implements CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>{
     
+        @applyMethodDecorators(createDecorators)
         async create(
             context:ContextType,
             createInput: CreateInputType,
@@ -49,6 +62,7 @@ export function
             return responseEntity;
         }
     
+        @applyMethodDecorators(updateDecorators)
         async update(
             context:ContextType,
             id: IdType, 
@@ -76,6 +90,7 @@ export function
             return responseEntity;
         } 
     
+        @applyMethodDecorators(removeDecorators)
         async remove(
             context:ContextType,
             id: IdType,
@@ -107,6 +122,7 @@ export function
             return responseEntity;
         }
 
+        @applyMethodDecorators(hardRemoveDecorators)
         async hardRemove(
             context:ContextType,
             id: IdType,
