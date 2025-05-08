@@ -115,7 +115,7 @@ export function CrudControllerFrom<
       @Body() updateInput: UpdateInputType
     ) : Promise<EntityType>
     {
-      return this.service.update(context, updateInput.id as IdType, { ...updateInput, id });
+      return this.service.update(context, id, updateInput);
     }
 
     @Delete(removeSettings.route)

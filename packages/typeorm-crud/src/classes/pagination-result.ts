@@ -4,23 +4,23 @@ import { PaginationResultInterface } from "../interfaces";
 export class PaginationResult implements PaginationResultInterface {
 
   @ApiProperty()
-  total: number;
+  total!: number;
 
   @ApiProperty()
-  count: number;
+  count!: number;
 
   @ApiProperty()
   limit?: number;
 
   @ApiProperty()
-  page: number;
+  page!: number;
 
   @ApiProperty()
-  pageCount: number;
+  pageCount!: number;
 
   @ApiProperty()
-  hasNextPage: boolean;
+  hasNextPage!: boolean;
 
   @ApiProperty()
-  hasPreviousPage: boolean;
+  hasPreviousPage!: boolean;
 }

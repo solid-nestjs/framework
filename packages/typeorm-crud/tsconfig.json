@@ -19,6 +19,7 @@
       "sourceMap": true,
       "baseUrl": "./",
       "rootDir": "./src",
+      "strict": true,
       "paths": {
         "@nestjz/typeorm-crud/*": ["src/*"]
       }

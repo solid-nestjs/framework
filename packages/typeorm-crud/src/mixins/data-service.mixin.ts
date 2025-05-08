@@ -32,8 +32,11 @@ export function DataServiceFrom<
     @Optional()
     private readonly _auditService?: AuditService;
 
-    @InjectRepository(entityType)
-    private readonly _repository: Repository<EntityType>;
+
+    constructor(
+      @InjectRepository(entityType)
+      private readonly _repository: Repository<EntityType>
+    ) {}
 
     private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType,FindArgsType> = new QueryBuilderHelper<IdType,EntityType,FindArgsType>(entityType,{ queryLocksConfig: lockModesConfig, relationsConfig });
 
@@ -87,7 +90,7 @@ export function DataServiceFrom<
 
       const data = await queryBuilder.getMany();
 
-      if(withPagination == false)
+      if(!withPagination)
         return data as any;
 
       const pagination = await this.getPagination(context,queryBuilder,args);

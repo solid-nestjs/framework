@@ -5,13 +5,13 @@ import { ReferenceObject, SchemaObject } from "@nestjs/swagger/dist/interfaces/o
 
 class ErrorResponse {
     @ApiProperty()
-    statusCode: number;
+    statusCode!: number;
 
     @ApiProperty()
-    message: string;
+    message!: string;
 
     @ApiProperty()
-    error: string;
+    error!: string;
 }
 
 export const ApiResponses = ( { type, schema, isArray, successCodes, errorCodes }:{ 

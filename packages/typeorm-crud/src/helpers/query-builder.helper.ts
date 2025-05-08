@@ -36,10 +36,9 @@ function fixBracketQueryBuilder(bracketQueryBuilder,queryBuilder)
     bracketQueryBuilder.expressionMap.joinAttributes = [...queryBuilder.expressionMap.joinAttributes] ;
 }
 
-class Relation implements RelationInterface
+interface Relation extends RelationInterface
 {
-    property:string;
-    alias:string;
+    alias: string;
     relationInfo?:ExtendedRelationInfo;
 }
 
