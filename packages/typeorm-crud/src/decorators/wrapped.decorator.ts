@@ -8,7 +8,7 @@ return async (...args: Parameters<T>) => {
 };
 }
 
-export function Wrapped(
+export function WrappedBy(
     wrapper: (obj:any, next: (...args:any[]) => Promise<any>, args: any[]) => Promise<any>,
     options?:any
 ): MethodDecorator {

@@ -41,7 +41,7 @@ export async function runInTransaction<ContextType extends Context,ReturnType>(
     }
 }
 
-export async function wrapWithTransaction(
+export async function transactionalWrapper(
     options:any,
     next: (...args:any[]) => Promise<any>,
     args:any[]
