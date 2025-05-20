@@ -1,4 +1,5 @@
 # compiled output
+node_modules
 packages/**/dist
 packages/**/node_modules
 packages/**/build
@@ -61,3 +62,4 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+

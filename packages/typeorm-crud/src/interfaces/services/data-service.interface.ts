@@ -9,7 +9,7 @@ import {
   If
 } from '../../types';
 import { Context, IdTypeFrom, Entity,  FindArgsInterface, PaginationResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
-import { QueryBuilderHelper } from '@nestjz/typeorm-crud/helpers';
+import { QueryBuilderHelper } from '../../helpers';
 
 export interface DataServiceInterface<
   IdType extends IdTypeFrom<EntityType>,
