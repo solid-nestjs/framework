@@ -4,7 +4,6 @@ import { SetMetadata, mixin } from "@nestjs/common";
 import { ApiProperty, ApiSchema, PartialType } from "@nestjs/swagger";
 import { Constructable } from "../types";
 import { Pagination } from "../classes/inputs";
-import { FindArgsInterface } from "../interfaces";
 
 export const WHERE_CLASS_KEY = 'WhereClass';
 export const ORDER_BY_CLASS_KEY = 'OrderByClass';

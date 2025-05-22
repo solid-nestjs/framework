@@ -10,11 +10,11 @@ import {
 } from '../../types';
 import { Context, IdTypeFrom, Entity,  FindArgsInterface, PaginationResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
 import { QueryBuilderHelper } from '../../helpers';
+import { Where } from '../../types/find-args.type';
 
 export interface DataServiceInterface<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  FindArgsType extends FindArgsInterface<EntityType>,
   ContextType extends Context = Context
 > {
   getRepository(context: ContextType): Repository<EntityType>;
@@ -25,7 +25,7 @@ export interface DataServiceInterface<
 
   getQueryBuilder(
     context: ContextType,
-    args?: FindArgsType,
+    args?: FindArgsInterface<EntityType>,
     options?: DataRetrievalOptions<EntityType>,
   ): SelectQueryBuilder<EntityType>;
 
@@ -36,14 +36,14 @@ export interface DataServiceInterface<
 
   findAll<TBool extends BooleanType = false>(
     context: ContextType, 
-    args?: FindArgsType,
+    args?: FindArgsInterface<EntityType>,
     withPagination?:TBool,
     options?: DataRetrievalOptions<EntityType>,
   ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> >;
 
   pagination(
     context: ContextType, 
-    args?: FindArgsType,
+    args?: FindArgsInterface<EntityType>,
     options?: DataRetrievalOptions<EntityType>,
   ): Promise<PaginationResultInterface>;
 
@@ -56,7 +56,7 @@ export interface DataServiceInterface<
 
   findOneBy<TBool extends BooleanType = false>(
     context: ContextType,
-    where: FindOptionsWhere<EntityType>,
+    where: Where<EntityType>,
     orFail?: TBool,
     options?: DataRetrievalOptions<EntityType>,
   ): Promise<NotNullableIf<TBool,EntityType>>;
@@ -68,7 +68,7 @@ export interface DataServiceInterface<
   ):Promise<ReturnType>;
 
 
-  get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType,FindArgsType>;
+  get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>;
 
   audit(
     context: ContextType,

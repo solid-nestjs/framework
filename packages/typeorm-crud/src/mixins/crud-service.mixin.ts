@@ -20,9 +20,9 @@ export function
         FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
         ContextType extends Context = Context
 >(
-    serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+    serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>,
 
-): Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>> 
+): Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>> 
 {
     var createTransactional = serviceStructure?.transactionsConfig?.create;
     var updateTransactional = serviceStructure?.transactionsConfig?.update;
@@ -37,7 +37,7 @@ export function
     @Injectable()
     class CrudService
         extends DataServiceFrom(serviceStructure)
-        implements CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>{
+        implements CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>{
     
         @applyMethodDecorators(createDecorators)
         async create(

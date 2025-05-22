@@ -12,7 +12,7 @@ export interface CrudControllerOperations<
                                         EntityType extends Entity<unknown>,
                                         CreateInputType extends DeepPartial<EntityType>,
                                         UpdateInputType extends DeepPartial<EntityType>,
-                                        ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+                                        ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>,
                                         FindArgsType extends FindArgsInterface<EntityType>,
                                         ContextType extends Context = Context,
                                     > extends
@@ -29,11 +29,11 @@ export interface CrudControllerStructure<
     EntityType extends Entity<unknown>,
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
-    ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+    ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>,
     FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context = Context,
     > extends 
-        CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>, 
+        CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>, 
         DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>
     {
         serviceType:Constructable<ServiceType>,
@@ -45,7 +45,7 @@ export function CrudControllerStructure<
     EntityType extends Entity<unknown>,
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
-    ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
+    ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>,
     FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context,
     >(input:CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>):CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>

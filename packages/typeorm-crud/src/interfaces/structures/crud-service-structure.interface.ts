@@ -22,9 +22,8 @@ export interface CrudServiceStructure<
     EntityType extends Entity<unknown>,
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
-    FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context
-    > extends DataServiceStructure<IdType,EntityType,FindArgsType,ContextType> {
+    > extends DataServiceStructure<IdType,EntityType,ContextType> {
 
         createInputType:Constructable<CreateInputType>,
         updateInputType:Constructable<UpdateInputType>,
@@ -37,9 +36,8 @@ export function CrudServiceStructure<
                         EntityType extends Entity<unknown>,
                         CreateInputType extends DeepPartial<EntityType>,
                         UpdateInputType extends DeepPartial<EntityType>,
-                        FindArgsType extends FindArgsInterface<EntityType>,
                         ContextType extends Context,
-                        >(input:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>):CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
+                        >(input:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>):CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>
                         {
                             fillEntityId(input);
 

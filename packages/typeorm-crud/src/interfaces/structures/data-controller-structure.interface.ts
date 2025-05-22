@@ -27,7 +27,7 @@ export interface ParameterDecorators
 export interface DataControllerOperations<
                                         IdType extends IdTypeFrom<EntityType>,
                                         EntityType extends Entity<unknown>,
-                                        ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
+                                        ServiceType extends DataServiceInterface<IdType,EntityType,ContextType>,
                                         FindArgsType extends FindArgsInterface<EntityType>,
                                         ContextType extends Context,
                                     >
@@ -41,13 +41,14 @@ export interface DataControllerOperations<
 export interface DataControllerStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
-    ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
+    ServiceType extends DataServiceInterface<IdType,EntityType,ContextType>,
     FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context,
     > extends 
-        DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
+        DataServiceStructure<IdType,EntityType,ContextType>
     {
         serviceType:Constructable<ServiceType>,
+        findArgsType?:Constructable<FindArgsType>
         operations?:DataControllerOperations<IdType,EntityType,ServiceType,FindArgsType,ContextType>,
         route?:string;
         parameterDecorators?:ParameterDecorators,
@@ -57,7 +58,7 @@ export interface DataControllerStructure<
 export function DataControllerStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
-    ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
+    ServiceType extends DataServiceInterface<IdType,EntityType,ContextType>,
     FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context,
     >(input:DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>):DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>

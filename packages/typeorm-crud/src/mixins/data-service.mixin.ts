@@ -4,29 +4,26 @@ import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@n
 import { InjectRepository } from '@nestjs/typeorm';
 import { BooleanType, If, NotNullableIf } from '../types';
 import { Context, Entity, IdTypeFrom, DataServiceInterface as DataServiceInterface, AuditService, FindArgsInterface, PaginationResultInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
-import { DefaultArgs } from '../classes';
 import { QueryBuilderHelper, getPaginationArgs } from '../helpers';
 import { runInTransaction } from '../helpers';
+import { Where } from 'src/types/find-args.type';
 
 
 
 export function DataServiceFrom<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
-    FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
     ContextType extends Context = Context
 >(
-  serviceStructure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>,
-): Type<DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>> {
+  serviceStructure:DataServiceStructure<IdType,EntityType,ContextType>,
+): Type<DataServiceInterface<IdType,EntityType, ContextType>> {
 
-  const { entityType, findArgsType, queryLocksConfig: lockModesConfig, relationsConfig } = serviceStructure;
-
-  const argsType = findArgsType ?? DefaultArgs;
+  const { entityType, queryLocksConfig: lockModesConfig, relationsConfig } = serviceStructure;
   
 
   @Injectable()
   class DataService
-    implements DataServiceInterface<IdType,EntityType, FindArgsType, ContextType>
+    implements DataServiceInterface<IdType,EntityType,ContextType>
   {
     @Inject(AuditService)
     @Optional()
@@ -38,9 +35,9 @@ export function DataServiceFrom<
       private readonly _repository: Repository<EntityType>
     ) {}
 
-    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType,FindArgsType> = new QueryBuilderHelper<IdType,EntityType,FindArgsType>(entityType,{ queryLocksConfig: lockModesConfig, relationsConfig });
+    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType> = new QueryBuilderHelper<IdType,EntityType>(entityType,{ queryLocksConfig: lockModesConfig, relationsConfig });
 
-    get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType,FindArgsType>{
+    get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>{
       return this._queryBuilderHelper;
     }
 
@@ -64,7 +61,7 @@ export function DataServiceFrom<
 
     getQueryBuilder(
       context: ContextType,
-      args?: FindArgsType,
+      args?: FindArgsInterface<EntityType>,
       options?: DataRetrievalOptions<EntityType>,
     ): SelectQueryBuilder<EntityType> {
       const repository = this.getRepository(context);
@@ -82,7 +79,7 @@ export function DataServiceFrom<
     
     async findAll<TBool extends BooleanType = false>(
       context: ContextType,
-      args?: FindArgsType,
+      args?: FindArgsInterface<EntityType>,
       withPagination?:TBool,
       options?: DataRetrievalOptions<EntityType>,
     ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> > {
@@ -100,14 +97,14 @@ export function DataServiceFrom<
 
     async pagination(
       context: ContextType,
-      args?: FindArgsType,
+      args?: FindArgsInterface<EntityType>,
       options?: DataRetrievalOptions<EntityType>,
     ): Promise<PaginationResultInterface> {
       const queryBuilder = this.getQueryBuilder(context, {
         ...args,
         pagination: undefined,
         orderBy: undefined,
-      } as FindArgsType,options);
+      } as FindArgsInterface<EntityType>,options);
 
       return this.getPagination(context,queryBuilder,args);
     }
@@ -115,7 +112,7 @@ export function DataServiceFrom<
     async getPagination(
       context: ContextType,
       queryBuilder: SelectQueryBuilder<EntityType>,
-      args?: FindArgsType,
+      args?: FindArgsInterface<EntityType>,
     ) : Promise<PaginationResultInterface> {
 
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
@@ -163,12 +160,12 @@ export function DataServiceFrom<
 
     async findOneBy<TBool extends BooleanType = false>(
       context: ContextType,
-      where: FindOptionsWhere<EntityType>,
+      where: Where<EntityType>,
       orFail?: TBool,
       options?: DataRetrievalOptions<EntityType>,
     ): Promise< NotNullableIf<TBool,EntityType> > {
 
-      const args = { where } as FindArgsType;
+      const args = { where } as FindArgsInterface<EntityType>;
 
       options = { ...options, lockMode:options?.lockMode ?? lockModesConfig?.findOne };
 

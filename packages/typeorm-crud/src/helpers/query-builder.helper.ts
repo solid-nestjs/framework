@@ -1,7 +1,6 @@
 import { And, Between, Brackets, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
 import { Constructable } from "../types";
-import { DefaultArgs } from "../classes";
 import { 
     DataRetrievalOptions, Relation as RelationInterface, 
     Entity, IdTypeFrom, ExtendedRelationInfo, FindArgsInterface, QueryBuilderConfig } from "../interfaces";
@@ -65,8 +64,7 @@ const RECURSIVE_DEPTH_ERROR = `Max recursive depth reached`;
 
 export class QueryBuilderHelper<
                     IdType extends IdTypeFrom<EntityType>,
-                    EntityType extends Entity<any>,
-                    FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs
+                    EntityType extends Entity<any>
 > {
     constructor(
         private readonly entityType:Constructable<EntityType>,
@@ -86,7 +84,7 @@ export class QueryBuilderHelper<
 
     getQueryBuilder(
         repository:Repository<EntityType>,
-        args?:FindArgsType,
+        args?:FindArgsInterface<EntityType>,
         options?:DataRetrievalOptions<EntityType>
     ) : SelectQueryBuilder<EntityType>
     {
@@ -210,7 +208,7 @@ export class QueryBuilderHelper<
 
     applyArgs(
         queryContext:QueryContext<EntityType>, 
-        args:FindArgsType
+        args:FindArgsInterface<EntityType>
     )
     {
         const { queryBuilder } = queryContext;

@@ -12,7 +12,6 @@ export function DataControllerFrom<
   ServiceType extends DataServiceInterface<
     IdType,
     EntityType,
-    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
