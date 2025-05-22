@@ -13,7 +13,7 @@ export interface CrudControllerOperations<
                                         CreateInputType extends DeepPartial<EntityType>,
                                         UpdateInputType extends DeepPartial<EntityType>,
                                         ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
-                                        FindArgsType extends FindArgsInterface,
+                                        FindArgsType extends FindArgsInterface<EntityType>,
                                         ContextType extends Context = Context,
                                     > extends
                                     DataControllerOperations<IdType,EntityType,ServiceType,FindArgsType,ContextType>
@@ -30,7 +30,7 @@ export interface CrudControllerStructure<
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
     ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
-    FindArgsType extends FindArgsInterface,
+    FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context = Context,
     > extends 
         CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>, 
@@ -46,7 +46,7 @@ export function CrudControllerStructure<
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
     ServiceType extends CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
-    FindArgsType extends FindArgsInterface,
+    FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context,
     >(input:CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>):CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>
     {

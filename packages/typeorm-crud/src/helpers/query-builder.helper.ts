@@ -7,6 +7,7 @@ import {
     Entity, IdTypeFrom, ExtendedRelationInfo, FindArgsInterface, QueryBuilderConfig } from "../interfaces";
 import { getEntityRelationsExtended } from "./entity-relations.helper";
 import { getPaginationArgs } from "./pagination.helper";
+import { OrderBy, Where } from "src/types/find-args.type";
 
 const conditions = {
     _eq: (value) => value,
@@ -65,7 +66,7 @@ const RECURSIVE_DEPTH_ERROR = `Max recursive depth reached`;
 export class QueryBuilderHelper<
                     IdType extends IdTypeFrom<EntityType>,
                     EntityType extends Entity<any>,
-                    FindArgsType extends FindArgsInterface = DefaultArgs
+                    FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs
 > {
     constructor(
         private readonly entityType:Constructable<EntityType>,
@@ -83,7 +84,11 @@ export class QueryBuilderHelper<
         return this._relationsInfo;
     }
 
-    getQueryBuilder(repository:Repository<EntityType>,args?:FindArgsType,options?:DataRetrievalOptions<EntityType>) : SelectQueryBuilder<EntityType>
+    getQueryBuilder(
+        repository:Repository<EntityType>,
+        args?:FindArgsType,
+        options?:DataRetrievalOptions<EntityType>
+    ) : SelectQueryBuilder<EntityType>
     {
         const mainAlias = options?.mainAlias ?? this.defaultOptions?.relationsConfig?.mainAlias ?? this.entityType.name.toLowerCase();
         const relations = options?.relations ?? this.defaultOptions?.relationsConfig?.relations ?? [];
@@ -116,8 +121,7 @@ export class QueryBuilderHelper<
     
                 this.addRelation(queryContext,property,alias,true);
             });
-        }
-        
+        }        
 
         if(args)
             this.applyArgs(queryContext,args);
@@ -126,7 +130,12 @@ export class QueryBuilderHelper<
         return queryBuilder;
     }        
 
-    addRelation(queryContext:QueryContext<EntityType>, property:string, alias?:string, andSelect?:boolean) : Relation
+    addRelation(
+        queryContext:QueryContext<EntityType>, 
+        property:string, 
+        alias?:string, 
+        andSelect?:boolean
+    ) : Relation
     {
         const { queryBuilder, relations } = queryContext;
 
@@ -168,7 +177,11 @@ export class QueryBuilderHelper<
         return relation;
     }
 
-    getRelationPath(relations:Relation[],relation:Relation|undefined,recursiveDepth:number):string[]
+    getRelationPath(
+        relations:Relation[],
+        relation:Relation|undefined,
+        recursiveDepth:number
+    ):string[]
     {
         if(recursiveDepth > MAX_RECURSIVE_DEPTH)
             throw new InternalServerErrorException(RECURSIVE_DEPTH_ERROR,{ cause: { relations, relation, depth: recursiveDepth } });
@@ -195,7 +208,10 @@ export class QueryBuilderHelper<
         return [...this.getRelationPath(relations,parentRelation,recursiveDepth+1),field];
     }
 
-    applyArgs(queryContext:QueryContext<EntityType>, args:FindArgsType)
+    applyArgs(
+        queryContext:QueryContext<EntityType>, 
+        args:FindArgsType
+    )
     {
         const { queryBuilder } = queryContext;
 
@@ -222,11 +238,16 @@ export class QueryBuilderHelper<
         }
     }
 
-    applyOrderBy(queryContext:QueryContext<EntityType>,orderBy:any[])
+    applyOrderBy(
+        queryContext:QueryContext<EntityType>,
+        orderBy:OrderBy<EntityType> | OrderBy<EntityType>[]
+    )
     {
         const { queryBuilder } = queryContext;
 
-        orderBy.forEach((order) => {
+        let orderByArr = (Array.isArray(orderBy))? orderBy : [orderBy];
+
+        orderByArr.forEach((order) => {
             if(!order)
                 return;
 
@@ -241,7 +262,10 @@ export class QueryBuilderHelper<
         });
     }
 
-    getWhereCondition(whereContext:whereContext<EntityType>,where:object) : any
+    getWhereCondition(
+        whereContext:whereContext<EntityType>,
+        where:Where<EntityType>
+    ) : any
     {
         if(whereContext.recusirveDepth > MAX_RECURSIVE_DEPTH)
             throw new InternalServerErrorException(RECURSIVE_DEPTH_ERROR,{ cause: { whereContext, where, depth: whereContext.recusirveDepth } });
@@ -296,7 +320,11 @@ export class QueryBuilderHelper<
         return orBracket;
     }
 
-    relationCondition(whereContext:whereContext<EntityType>,fieldName:string,condition:object){
+    relationCondition(
+        whereContext:whereContext<EntityType>,
+        fieldName:string,
+        condition:Where<EntityType>
+    ){
 
         const alias:string = this.addRelationForCondition(whereContext,fieldName);
 
@@ -307,7 +335,10 @@ export class QueryBuilderHelper<
         return this.getWhereCondition({ ...whereContext, alias, constructField, recusirveDepth:whereContext.recusirveDepth+1 },condition);          
     }
 
-    addRelationForCondition(whereContext:whereContext<EntityType>,fieldName:string) : string
+    addRelationForCondition(
+        whereContext:whereContext<EntityType>,
+        fieldName:string
+    ) : string
     {
         const property = whereContext.alias + '.' + fieldName;
 
@@ -324,7 +355,11 @@ export class QueryBuilderHelper<
         return relation.alias;
     }
 
-    getFieldConditions(whereContext:whereContext<EntityType>,fieldName:string,fieldCondition:object)
+    getFieldConditions(
+        whereContext:whereContext<EntityType>,
+        fieldName:string,
+        fieldCondition:unknown
+    )
     {
         if(
             typeof(fieldCondition) === 'string'
@@ -336,10 +371,16 @@ export class QueryBuilderHelper<
             return whereContext.constructField(fieldName,fieldCondition);
         }
 
-        if(fieldCondition instanceof Array)
+        if(Array.isArray(fieldCondition))
         {
             return whereContext.constructField(fieldName,In(fieldCondition));
         }
+
+
+        if(!(typeof fieldCondition === 'object' &&
+             fieldCondition !== null
+        ))
+            throw new InternalServerErrorException(`${fieldName} must be an object`);
 
         const keys = Object.keys(fieldCondition);
 
@@ -366,11 +407,19 @@ export class QueryBuilderHelper<
         return whereContext.constructField(fieldName,condition);
     }    
 
-    getComplexConditions(whereContext:whereContext<EntityType>,conditions:object[]) {
-        return conditions.map((condition) => this.getWhereCondition(whereContext,condition));
+    getComplexConditions(
+        whereContext:whereContext<EntityType>,
+        conditions: Where<EntityType>|Where<EntityType>[]
+    ) {
+        const conditionsArr = (Array.isArray(conditions))?conditions:[conditions];
+
+        return conditionsArr.map((condition) => this.getWhereCondition(whereContext,condition));
     }
 
-    hasFieldConditions(fieldName:string,value:object): boolean
+    hasFieldConditions(
+        fieldName:string,
+        value:unknown
+    ): boolean
     {
         if(value === undefined || value === null)
             throw new BadRequestException(`field ${fieldName} cannot be null or undefined`);
@@ -380,7 +429,7 @@ export class QueryBuilderHelper<
             ||typeof(value) === 'number'
             ||typeof(value) === 'boolean'
             ||value instanceof Date
-            ||value instanceof Array
+            ||Array.isArray(value)
         ) return true;
 
         const objKeys = Object.keys(value);

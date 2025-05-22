@@ -1,9 +1,10 @@
+import { Where, OrderBy } from "../../types/find-args.type";
 import { PaginationInterface } from "./pagination.interface";
 
-export interface FindArgsInterface {
+export interface FindArgsInterface<T> {
   pagination?: PaginationInterface;
 
-  where?: any;
+  where?: Where<T>;
 
-  orderBy?: any[];
+  orderBy?: OrderBy<T> | OrderBy<T>[];
 }

@@ -28,7 +28,7 @@ export interface DataControllerOperations<
                                         IdType extends IdTypeFrom<EntityType>,
                                         EntityType extends Entity<unknown>,
                                         ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
-                                        FindArgsType extends FindArgsInterface,
+                                        FindArgsType extends FindArgsInterface<EntityType>,
                                         ContextType extends Context,
                                     >
 {
@@ -42,7 +42,7 @@ export interface DataControllerStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
     ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
-    FindArgsType extends FindArgsInterface,
+    FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context,
     > extends 
         DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
@@ -58,7 +58,7 @@ export function DataControllerStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
     ServiceType extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>,
-    FindArgsType extends FindArgsInterface,
+    FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context,
     >(input:DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>):DataControllerStructure<IdType,EntityType,ServiceType,FindArgsType,ContextType>
     {

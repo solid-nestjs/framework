@@ -43,7 +43,7 @@ export interface CrudServiceInterface<
         EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
-        FindArgsType extends FindArgsInterface,
+        FindArgsType extends FindArgsInterface<EntityType>,
         ContextType extends Context = Context
         > extends DataServiceInterface<IdType,EntityType,FindArgsType,ContextType>{
            

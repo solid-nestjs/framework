@@ -15,7 +15,7 @@ export function DataControllerFrom<
     FindArgsType,
     ContextType
   >,
-  FindArgsType extends FindArgsInterface = DefaultArgs,
+  FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
   ContextType extends Context = Context,
 >(
   controllerStructure: DataControllerStructure<

@@ -17,7 +17,7 @@ export function
         EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
-        FindArgsType extends FindArgsInterface = DefaultArgs,
+        FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
         ContextType extends Context = Context
 >(
     serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,

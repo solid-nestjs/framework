@@ -18,7 +18,7 @@ export function
         orderByStructureType?: OrderByStructureType
     ){    
         
-    class ArgsClass implements FindArgsInterface
+    class ArgsClass
     {        
         @ApiProperty({ type: () => Pagination, required: false })
         @Type(() => Pagination)
@@ -50,7 +50,7 @@ export function
         }
 
         @SetMetadata(WHERE_CLASS_KEY,WhereClass)
-        class ArgsClassWithWhere extends returnedClass implements FindArgsInterface
+        class ArgsClassWithWhere extends returnedClass
         {
             @ApiProperty({ type: () => WhereClass, required: false })
             @Type(() => WhereClass)

@@ -13,7 +13,7 @@ import { runInTransaction } from '../helpers';
 export function DataServiceFrom<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
-    FindArgsType extends FindArgsInterface = DefaultArgs,
+    FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
     ContextType extends Context = Context
 >(
   serviceStructure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>,

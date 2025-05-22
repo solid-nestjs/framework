@@ -21,7 +21,7 @@ export interface QueryBuilderConfig<EntityType> {
 export interface DataServiceStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
-    FindArgsType extends FindArgsInterface,
+    FindArgsType extends FindArgsInterface<EntityType>,
     ContextType extends Context = Context
     > extends EntityProviderStructure<IdType,EntityType> {
         findArgsType?: Constructable<FindArgsType>,
@@ -33,7 +33,7 @@ export interface DataServiceStructure<
 export function DataServiceStructure<
                         IdType extends IdTypeFrom<EntityType>,
                         EntityType extends Entity<unknown>,
-                        FindArgsType extends FindArgsInterface,
+                        FindArgsType extends FindArgsInterface<EntityType>,
                         ContextType extends Context = Context,
                         >(input:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>):DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
                         {

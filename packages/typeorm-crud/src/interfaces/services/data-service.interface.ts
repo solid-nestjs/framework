@@ -14,7 +14,7 @@ import { QueryBuilderHelper } from '../../helpers';
 export interface DataServiceInterface<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  FindArgsType extends FindArgsInterface,
+  FindArgsType extends FindArgsInterface<EntityType>,
   ContextType extends Context = Context
 > {
   getRepository(context: ContextType): Repository<EntityType>;
