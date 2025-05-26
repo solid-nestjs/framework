@@ -1,0 +1,39 @@
+{
+  "name": "@nestjz/common",
+  "version": "0.1.0",
+  "description": "nestjz common utilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nestjz/typeorm-crud"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc -w"
+  },
+  "keywords": [
+    "typescript",
+    "nest",
+    "nestjs",
+    "backend",
+    "frameworks"
+  ],
+  "author": {
+    "name": "Andres De la Ossa",
+    "email": "adelaossa0129@gmail.com"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/common": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "tsconfig.json": "^1.0.11",
+    "typescript": "^5.8.3"
+  }
+}
