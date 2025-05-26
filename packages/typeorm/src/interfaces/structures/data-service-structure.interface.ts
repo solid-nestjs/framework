@@ -1,7 +1,6 @@
 import { FindOptionsRelations } from "typeorm";
-import { Constructable } from "../../types";
-import { Context, IdTypeFrom, Entity, Relation, LockModeOptimistic, LockModeNotOptimistic } from "../misc";
-import { EntityProviderStructure, fillEntityId } from "./entity-provider-structure.interface";
+import { Constructable, Entity, EntityProviderStructure, fillEntityId, IdTypeFrom } from "@nestjz/common";
+import { Context, Relation, LockModeOptimistic, LockModeNotOptimistic } from "../misc";
 
 export interface RelationsConfig<EntityType> {
     mainAlias?: string;

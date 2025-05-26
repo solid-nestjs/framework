@@ -1,14 +1,12 @@
 import { EntityManager } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
+import { BooleanType, Entity, FindArgsInterface, IdTypeFrom, If, NotNullableIf, PaginationResultInterface, Where } from '@nestjz/common';
 import { 
   TypeOrmFindManyOptions as FindManyOptions, 
   TypeOrmRepository as Repository, 
   TypeOrmSelectQueryBuilder as SelectQueryBuilder,
-  BooleanType, NotNullableIf,
-  Where,
-  If
 } from '../../types';
-import { Context, IdTypeFrom, Entity,  FindArgsInterface, PaginationResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
+import { Context, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
 import { QueryBuilderHelper } from '../../helpers';
 
 export interface DataServiceInterface<

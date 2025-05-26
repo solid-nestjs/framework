@@ -1,12 +1,10 @@
 import { And, Between, Brackets, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
-import { Entity, FindArgsInterface, getPaginationArgs, IdTypeFrom } from "@nestjz/common";
-import { Constructable } from "../types";
+import { Constructable, Entity, FindArgsInterface, getPaginationArgs, IdTypeFrom, OrderBy, Where } from "@nestjz/common";
 import { 
     DataRetrievalOptions, Relation as RelationInterface, 
     ExtendedRelationInfo, QueryBuilderConfig } from "../interfaces";
 import { getEntityRelationsExtended } from "./entity-relations.helper";
-import { OrderBy, Where } from "../types/find-args.type";
 
 const conditions = {
     _eq: (value) => value,

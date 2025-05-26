@@ -1,15 +1,12 @@
 import { DeepPartial, Repository } from "typeorm";
 import { Injectable, Type, mixin } from "@nestjs/common";
+import { applyMethodDecorators, Entity, IdTypeFrom, StandardActions } from "@nestjz/common";
 import { 
-    Context, IdTypeFrom, Entity, CrudServiceInterface as CrudServiceInterface, 
-    FindArgsInterface, CrudServiceStructure, 
+    Context, CrudServiceInterface as CrudServiceInterface, CrudServiceStructure, 
     CreateOptions, UpdateOptions, RemoveOptions, HardRemoveOptions } from "../interfaces";
-import { StandardActions } from "../enums";
-import { DefaultArgs } from "../classes";
 import { hasDeleteDateColumn } from "../helpers";
 import { DataServiceFrom } from "./data-service.mixin";
 import { Transactional } from "../decorators";
-import { applyMethodDecorators } from "../utils";
 
 export function 
     CrudServiceFrom<
@@ -17,7 +14,6 @@ export function
         EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
-        FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
         ContextType extends Context = Context
 >(
     serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>,

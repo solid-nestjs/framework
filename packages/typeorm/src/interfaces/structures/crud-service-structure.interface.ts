@@ -1,9 +1,8 @@
 import { DeepPartial } from "typeorm";
 import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
-import { Constructable } from "../../types";
-import { Context, IdTypeFrom, Entity } from "../misc";
+import { Constructable, Entity, fillEntityId, IdTypeFrom } from "@nestjz/common";
+import { Context } from "../misc";
 import { DataServiceStructure } from "./data-service-structure.interface";
-import { fillEntityId } from "./entity-provider-structure.interface";
 
 export interface TransactionConfig {
     transactional:boolean,
