@@ -1,8 +1,8 @@
-import { Context, CreateOptions, CrudServiceFrom, CrudServiceStructure, Transactional } from '@nestjz/typeorm-crud';
+import { Context } from '@nestjz/common';
+import { CreateOptions, CrudServiceFrom, CrudServiceStructure, Transactional, TypeOrmRepository } from '@nestjz/typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { TypeOrmRepository } from '@nestjz/typeorm-crud';
 
 export const serviceStructure= CrudServiceStructure({
   entityType: Product,
@@ -11,7 +11,6 @@ export const serviceStructure= CrudServiceStructure({
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure){
-
   
   @Transactional()
   override create(context: Context, createInput: CreateProductDto, options?: CreateOptions<string, Product, CreateProductDto, Context> | undefined): Promise<Product> {

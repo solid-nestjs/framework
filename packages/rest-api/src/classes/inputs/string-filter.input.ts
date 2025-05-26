@@ -1,7 +1,8 @@
 import { IsArray, IsOptional, IsString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { StringFilter as CommonStringFilter } from "@nestjz/common";
 
-export class StringFilter {
+export class StringFilter implements CommonStringFilter {
 
     @ApiProperty({ required: false , type: String})
     @IsString()

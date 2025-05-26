@@ -2,8 +2,8 @@ import { IsArray, IsOptional, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { SetMetadata, mixin } from "@nestjs/common";
 import { ApiProperty, ApiSchema, PartialType } from "@nestjs/swagger";
-import { Constructable } from "../types";
-import { Pagination } from "../classes/inputs";
+import { Constructable, FindArgs } from "@nestjz/common";
+import { PaginationRequest } from "../classes/inputs";
 
 export const WHERE_CLASS_KEY = 'WhereClass';
 export const ORDER_BY_CLASS_KEY = 'OrderByClass';
@@ -19,11 +19,11 @@ export function
         
     class ArgsClass
     {        
-        @ApiProperty({ type: () => Pagination, required: false })
-        @Type(() => Pagination)
+        @ApiProperty({ type: () => PaginationRequest, required: false })
+        @Type(() => PaginationRequest)
         @IsOptional()
         @ValidateNested()
-        pagination?:Pagination;
+        pagination?:PaginationRequest;
     }
 
     let returnedClass:Constructable<ArgsClass> = ArgsClass;

@@ -1,7 +1,8 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsNumber, IsOptional } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { NumberFilter as CommonNumberFilter } from "@nestjz/common";
 
-export class NumberFilter {
+export class NumberFilter implements CommonNumberFilter {
     
     @ApiProperty({ required: false , type: Number})
     @IsNumber()    

@@ -1,20 +1,19 @@
 import { Controller, Get, HttpCode, HttpStatus, Inject, Param, ParseIntPipe, PipeTransform, Query, Type, ValidationPipe, mixin } from '@nestjs/common';
 import { ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiTags, getSchemaPath  } from '@nestjs/swagger';
-import { Context, IdTypeFrom, Entity, FindArgsInterface, DataControllerStructure, DataServiceInterface, OperationStructure } from '../interfaces';
+import { Context, IdTypeFrom, Entity, FindArgs, DataService, CurrentContext, applyClassDecorators, applyMethodDecorators, QueryTransformPipe } from "@nestjz/common";
+import { DataControllerStructure,  OperationStructure } from '../interfaces';
 import { DefaultArgs, PaginationResult } from '../classes';
-import { ApiResponses, CurrentContext } from '../decorators';
-import { QueryTransformPipe } from '../pipes';
-import { applyClassDecorators, applyMethodDecorators } from '../utils';
+import { ApiResponses } from '../decorators';
 
 export function DataControllerFrom<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataServiceInterface<
+  ServiceType extends DataService<
     IdType,
     EntityType,
     ContextType
   >,
-  FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
+  FindArgsType extends FindArgs<EntityType> = DefaultArgs,
   ContextType extends Context = Context,
 >(
   controllerStructure: DataControllerStructure<

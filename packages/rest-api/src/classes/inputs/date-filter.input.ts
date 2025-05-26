@@ -1,7 +1,8 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsDate, IsOptional } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { DateFilter as CommonDateFilter } from "@nestjz/common";
 
-export class DateFilter {
+export class DateFilter implements CommonDateFilter {
     
     @ApiProperty({ required: false , type: Date})
     @IsDate()    

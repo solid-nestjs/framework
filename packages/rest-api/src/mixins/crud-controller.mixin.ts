@@ -1,9 +1,8 @@
-import { DeepPartial } from 'typeorm';
 import { Body, Delete, HttpCode, HttpStatus, Param, ParseIntPipe, PipeTransform, Post, Put, Type, mixin } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam  } from '@nestjs/swagger';
-import { Context, IdTypeFrom, Entity, FindArgsInterface, CrudServiceInterface, CrudControllerStructure, OperationStructure } from '../interfaces';
-import { ApiResponses, CurrentContext } from '../decorators';
-import { applyMethodDecorators } from '../utils';
+import { Context, IdTypeFrom, Entity, FindArgs, CrudService, CurrentContext, applyMethodDecorators, DeepPartial } from "@nestjz/common";
+import { CrudControllerStructure } from '../interfaces';
+import { ApiResponses } from '../decorators';
 import { PaginationResult, DefaultArgs } from '../classes';
 import { DataControllerFrom, extractOperationSettings } from './data-controller.mixin';
 
@@ -12,14 +11,14 @@ export function CrudControllerFrom<
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
-  ServiceType extends CrudServiceInterface<
+  ServiceType extends CrudService<
     IdType,
     EntityType,
     CreateInputType,
     UpdateInputType,
     ContextType
   >,
-  FindArgsType extends FindArgsInterface<EntityType> = DefaultArgs,
+  FindArgsType extends FindArgs<EntityType> = DefaultArgs,
   ContextType extends Context = Context,
 >(
   controllerStructure: CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>

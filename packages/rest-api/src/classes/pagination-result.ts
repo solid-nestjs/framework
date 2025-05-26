@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { PaginationResultInterface } from "../interfaces";
+import { PaginationResult as CommonPaginationResult } from "@nestjz/common";
 
-export class PaginationResult implements PaginationResultInterface {
+export class PaginationResult implements CommonPaginationResult {
 
   @ApiProperty()
   total!: number;
