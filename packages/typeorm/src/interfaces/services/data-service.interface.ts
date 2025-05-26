@@ -1,6 +1,6 @@
 import { EntityManager } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
-import { BooleanType, Entity, FindArgsInterface, IdTypeFrom, If, NotNullableIf, PaginationResultInterface, Where } from '@nestjz/common';
+import { BooleanType, Entity, FindArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where, DataService as CommonDataService } from '@nestjz/common';
 import { 
   TypeOrmFindManyOptions as FindManyOptions, 
   TypeOrmRepository as Repository, 
@@ -9,20 +9,23 @@ import {
 import { Context, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
 import { QueryBuilderHelper } from '../../helpers';
 
-export interface DataServiceInterface<
+export interface DataService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
   ContextType extends Context = Context
-> {
+> extends CommonDataService<IdType,EntityType,ContextType>
+{
   getRepository(context: ContextType): Repository<EntityType>;
 
   getEntityManager(context: ContextType): EntityManager;
 
   getRelationsInfo(context: ContextType): ExtendedRelationInfo[]
 
+  get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>;
+
   getQueryBuilder(
     context: ContextType,
-    args?: FindArgsInterface<EntityType>,
+    args?: FindArgs<EntityType>,
     options?: DataRetrievalOptions<EntityType>,
   ): SelectQueryBuilder<EntityType>;
 
@@ -33,16 +36,16 @@ export interface DataServiceInterface<
 
   findAll<TBool extends BooleanType = false>(
     context: ContextType, 
-    args?: FindArgsInterface<EntityType>,
+    args?: FindArgs<EntityType>,
     withPagination?:TBool,
     options?: DataRetrievalOptions<EntityType>,
-  ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> >;
+  ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResult },EntityType[]> >;
 
   pagination(
     context: ContextType, 
-    args?: FindArgsInterface<EntityType>,
+    args?: FindArgs<EntityType>,
     options?: DataRetrievalOptions<EntityType>,
-  ): Promise<PaginationResultInterface>;
+  ): Promise<PaginationResult>;
 
   findOne<TBool extends BooleanType = false>(
     context: ContextType,
@@ -63,9 +66,6 @@ export interface DataServiceInterface<
     fn:(context:ContextType) => Promise<ReturnType>,
     isolationLevel?: IsolationLevel,
   ):Promise<ReturnType>;
-
-
-  get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>;
 
   audit(
     context: ContextType,

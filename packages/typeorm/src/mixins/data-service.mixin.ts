@@ -2,10 +2,9 @@ import { EntityManager, FindManyOptions, Repository, SelectQueryBuilder } from '
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuditService, BooleanType, Entity, FindArgsInterface, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResultInterface, Where } from '@nestjz/common';
-import { Context, DataServiceInterface as DataServiceInterface, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
-import { QueryBuilderHelper } from '../helpers';
-import { runInTransaction } from '../helpers';
+import { AuditService, BooleanType, Entity, FindArgs, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where } from '@nestjz/common';
+import { Context, DataService as DataService, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
+import { QueryBuilderHelper, runInTransaction } from '../helpers';
 
 export function DataServiceFrom<
     IdType extends IdTypeFrom<EntityType>,
@@ -13,14 +12,14 @@ export function DataServiceFrom<
     ContextType extends Context = Context
 >(
   serviceStructure:DataServiceStructure<IdType,EntityType,ContextType>,
-): Type<DataServiceInterface<IdType,EntityType, ContextType>> {
+): Type<DataService<IdType,EntityType, ContextType>> {
 
   const { entityType, queryLocksConfig: lockModesConfig, relationsConfig } = serviceStructure;
   
 
   @Injectable()
-  class DataService
-    implements DataServiceInterface<IdType,EntityType,ContextType>
+  class DataServiceClass
+    implements DataService<IdType,EntityType,ContextType>
   {
     @Inject(AuditService)
     @Optional()
@@ -58,7 +57,7 @@ export function DataServiceFrom<
 
     getQueryBuilder(
       context: ContextType,
-      args?: FindArgsInterface<EntityType>,
+      args?: FindArgs<EntityType>,
       options?: DataRetrievalOptions<EntityType>,
     ): SelectQueryBuilder<EntityType> {
       const repository = this.getRepository(context);
@@ -76,10 +75,10 @@ export function DataServiceFrom<
     
     async findAll<TBool extends BooleanType = false>(
       context: ContextType,
-      args?: FindArgsInterface<EntityType>,
+      args?: FindArgs<EntityType>,
       withPagination?:TBool,
       options?: DataRetrievalOptions<EntityType>,
-    ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> > {
+    ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResult },EntityType[]> > {
       const queryBuilder = this.getQueryBuilder(context, args, options);
 
       const data = await queryBuilder.getMany();
@@ -94,14 +93,14 @@ export function DataServiceFrom<
 
     async pagination(
       context: ContextType,
-      args?: FindArgsInterface<EntityType>,
+      args?: FindArgs<EntityType>,
       options?: DataRetrievalOptions<EntityType>,
-    ): Promise<PaginationResultInterface> {
+    ): Promise<PaginationResult> {
       const queryBuilder = this.getQueryBuilder(context, {
         ...args,
         pagination: undefined,
         orderBy: undefined,
-      } as FindArgsInterface<EntityType>,options);
+      } as FindArgs<EntityType>,options);
 
       return this.getPagination(context,queryBuilder,args);
     }
@@ -109,8 +108,8 @@ export function DataServiceFrom<
     async getPagination(
       context: ContextType,
       queryBuilder: SelectQueryBuilder<EntityType>,
-      args?: FindArgsInterface<EntityType>,
-    ) : Promise<PaginationResultInterface> {
+      args?: FindArgs<EntityType>,
+    ) : Promise<PaginationResult> {
 
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
 
@@ -162,7 +161,7 @@ export function DataServiceFrom<
       options?: DataRetrievalOptions<EntityType>,
     ): Promise< NotNullableIf<TBool,EntityType> > {
 
-      const args = { where } as FindArgsInterface<EntityType>;
+      const args = { where } as FindArgs<EntityType>;
 
       options = { ...options, lockMode:options?.lockMode ?? lockModesConfig?.findOne };
 
@@ -212,5 +211,5 @@ export function DataServiceFrom<
     }
   }
 
-  return mixin(DataService);
+  return mixin(DataServiceClass);
 }

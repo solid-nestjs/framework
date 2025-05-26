@@ -1,51 +1,18 @@
 import { DeepPartial } from "typeorm";
-import { Entity, IdTypeFrom } from "@nestjz/common";
+import { Entity, IdTypeFrom, CudService as CommonCudService } from "@nestjz/common";
 import { TypeOrmRepository as Repository } from '../../types'
 import { Context } from "../misc";
 import { CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../event-handlers";
-import { DataServiceInterface } from "./data-service.interface";
+import { DataService } from "./data-service.interface";
 
-export interface CreateOptions<
-        IdType extends IdTypeFrom<EntityType>,
-        EntityType extends Entity<unknown>,
-        CreateInputType extends DeepPartial<EntityType>,
-        ContextType extends Context>
-{
-    eventHandler?:CreateEventsHandler<IdType,EntityType,CreateInputType,ContextType>
-}
-
-export interface UpdateOptions<
-        IdType extends IdTypeFrom<EntityType>,
-        EntityType extends Entity<unknown>,
-        UpdateInputType extends DeepPartial<EntityType>,
-        ContextType extends Context>
-{
-    eventHandler?:UpdateEventsHandler<IdType,EntityType,UpdateInputType,ContextType>
-}
-
-export interface RemoveOptions<
-        IdType extends IdTypeFrom<EntityType>,
-        EntityType extends Entity<unknown>,
-        ContextType extends Context>
-{
-    eventHandler?:RemoveEventsHandler<IdType,EntityType,ContextType>
-}
-
-export interface HardRemoveOptions<
-        IdType extends IdTypeFrom<EntityType>,
-        EntityType extends Entity<unknown>,
-        ContextType extends Context>
-{
-    eventHandler?:HardRemoveEventsHandler<IdType,EntityType,ContextType>
-}
-
-export interface CrudServiceInterface<
+export interface CrudService<
         IdType extends IdTypeFrom<EntityType>,
         EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
         ContextType extends Context = Context
-        > extends DataServiceInterface<IdType,EntityType,ContextType>{
+        > extends DataService<IdType,EntityType,ContextType>,
+                    CommonCudService<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>{
            
             create(
                 context:ContextType,
@@ -89,3 +56,37 @@ export interface CrudServiceInterface<
             
             afterHardRemove(context:ContextType,repository: Repository<EntityType>,entity: EntityType) : Promise<void>
         }
+
+export interface CreateOptions<
+        IdType extends IdTypeFrom<EntityType>,
+        EntityType extends Entity<unknown>,
+        CreateInputType extends DeepPartial<EntityType>,
+        ContextType extends Context>
+{
+    eventHandler?:CreateEventsHandler<IdType,EntityType,CreateInputType,ContextType>
+}
+
+export interface UpdateOptions<
+        IdType extends IdTypeFrom<EntityType>,
+        EntityType extends Entity<unknown>,
+        UpdateInputType extends DeepPartial<EntityType>,
+        ContextType extends Context>
+{
+    eventHandler?:UpdateEventsHandler<IdType,EntityType,UpdateInputType,ContextType>
+}
+
+export interface RemoveOptions<
+        IdType extends IdTypeFrom<EntityType>,
+        EntityType extends Entity<unknown>,
+        ContextType extends Context>
+{
+    eventHandler?:RemoveEventsHandler<IdType,EntityType,ContextType>
+}
+
+export interface HardRemoveOptions<
+        IdType extends IdTypeFrom<EntityType>,
+        EntityType extends Entity<unknown>,
+        ContextType extends Context>
+{
+    eventHandler?:HardRemoveEventsHandler<IdType,EntityType,ContextType>
+}

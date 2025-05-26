@@ -2,7 +2,7 @@ import { DeepPartial, Repository } from "typeorm";
 import { Injectable, Type, mixin } from "@nestjs/common";
 import { applyMethodDecorators, Entity, IdTypeFrom, StandardActions } from "@nestjz/common";
 import { 
-    Context, CrudServiceInterface as CrudServiceInterface, CrudServiceStructure, 
+    Context, CrudService as CrudService, CrudServiceStructure, 
     CreateOptions, UpdateOptions, RemoveOptions, HardRemoveOptions } from "../interfaces";
 import { hasDeleteDateColumn } from "../helpers";
 import { DataServiceFrom } from "./data-service.mixin";
@@ -18,7 +18,7 @@ export function
 >(
     serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>,
 
-): Type<CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>> 
+): Type<CrudService<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>> 
 {
     var createTransactional = serviceStructure?.transactionsConfig?.create;
     var updateTransactional = serviceStructure?.transactionsConfig?.update;
@@ -31,9 +31,9 @@ export function
     var hardRemoveDecorators = (hardRemoveTransactional?.transactional)?[()=>Transactional( { isolationLevel: hardRemoveTransactional?.isolationLevel } )]:[];
 
     @Injectable()
-    class CrudService
+    class CrudServiceClass
         extends DataServiceFrom(serviceStructure)
-        implements CrudServiceInterface<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>{
+        implements CrudService<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>{
     
         @applyMethodDecorators(createDecorators)
         async create(
@@ -172,5 +172,5 @@ export function
         
     }
 
-    return mixin(CrudService);
+    return mixin(CrudServiceClass);
 }

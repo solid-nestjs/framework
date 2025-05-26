@@ -1,4 +1,4 @@
-export interface StringFilterInterface {    
+export interface StringFilter {    
     _eq?:string
     _neq?:string
     _in?:string[]
@@ -12,7 +12,7 @@ export interface StringFilterInterface {
     _notlike?:string
 }
 
-export interface NumberFilterInterface {    
+export interface NumberFilter {    
     _eq?:number    
     _neq?:number
     _gt?:number
@@ -24,7 +24,7 @@ export interface NumberFilterInterface {
     _notbetween?:number[]
 }
 
-export interface DateFilterInterface {
+export interface DateFilter {
     _eq?:Date
     _neq?:Date
     _gt?:Date

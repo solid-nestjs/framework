@@ -1,9 +1,9 @@
-import { StringFilterInterface, NumberFilterInterface, DateFilterInterface } from './../interfaces/misc/filters.interfaces'
+import { StringFilter, NumberFilter, DateFilter } from './../interfaces/misc/filters.interfaces'
 
 type WhereField<T> =
-    T extends string ? string | string[] | StringFilterInterface :
-    T extends number ? number | number[] | NumberFilterInterface :
-    T extends Date ? Date | Date[] | DateFilterInterface :
+    T extends string ? string | string[] | StringFilter :
+    T extends number ? number | number[] | NumberFilter :
+    T extends Date ? Date | Date[] | DateFilter :
     T extends boolean ? boolean :
     Where<T>;
 

@@ -1,7 +1,7 @@
-import { PaginationInterface } from "../interfaces";
+import { PaginationRequest } from "../interfaces";
 
 export function getPaginationArgs(
-  pagination: PaginationInterface
+  pagination: PaginationRequest
 ): 
 {
   skip: number;

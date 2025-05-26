@@ -1,6 +1,6 @@
 import { And, Between, Brackets, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
-import { Constructable, Entity, FindArgsInterface, getPaginationArgs, IdTypeFrom, OrderBy, Where } from "@nestjz/common";
+import { Constructable, Entity, FindArgs, getPaginationArgs, IdTypeFrom, OrderBy, Where } from "@nestjz/common";
 import { 
     DataRetrievalOptions, Relation as RelationInterface, 
     ExtendedRelationInfo, QueryBuilderConfig } from "../interfaces";
@@ -82,7 +82,7 @@ export class QueryBuilderHelper<
 
     getQueryBuilder(
         repository:Repository<EntityType>,
-        args?:FindArgsInterface<EntityType>,
+        args?:FindArgs<EntityType>,
         options?:DataRetrievalOptions<EntityType>
     ) : SelectQueryBuilder<EntityType>
     {
@@ -206,7 +206,7 @@ export class QueryBuilderHelper<
 
     applyArgs(
         queryContext:QueryContext<EntityType>, 
-        args:FindArgsInterface<EntityType>
+        args:FindArgs<EntityType>
     )
     {
         const { queryBuilder } = queryContext;

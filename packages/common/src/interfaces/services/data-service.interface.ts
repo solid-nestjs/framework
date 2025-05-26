@@ -1,74 +1,43 @@
-import { EntityManager } from 'typeorm';
-import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { 
-  TypeOrmFindManyOptions as FindManyOptions, 
-  TypeOrmFindOptionsWhere as FindOptionsWhere, 
-  TypeOrmRepository as Repository, 
-  TypeOrmSelectQueryBuilder as SelectQueryBuilder,
   BooleanType, NotNullableIf, 
   If
 } from '../../types';
-import { Context, IdTypeFrom, Entity,  FindArgsInterface, PaginationResultInterface, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
-import { QueryBuilderHelper } from '../../helpers';
+import { Context, IdTypeFrom, Entity,  FindArgs, PaginationResult } from '../misc';
 import { Where } from '../../types/find-args.type';
 
-export interface DataServiceInterface<
+export interface DataService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
   ContextType extends Context = Context
 > {
-  getRepository(context: ContextType): Repository<EntityType>;
-
-  getEntityManager(context: ContextType): EntityManager;
-
-  getRelationsInfo(context: ContextType): ExtendedRelationInfo[]
-
-  getQueryBuilder(
-    context: ContextType,
-    args?: FindArgsInterface<EntityType>,
-    options?: DataRetrievalOptions<EntityType>,
-  ): SelectQueryBuilder<EntityType>;
-
-  find(
-    context: ContextType,
-    options?: FindManyOptions<EntityType>,
-  ): Promise<EntityType[]>;
-
+  
   findAll<TBool extends BooleanType = false>(
     context: ContextType, 
-    args?: FindArgsInterface<EntityType>,
+    args?: FindArgs<EntityType>,
     withPagination?:TBool,
-    options?: DataRetrievalOptions<EntityType>,
-  ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResultInterface },EntityType[]> >;
+  ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResult },EntityType[]> >;
 
   pagination(
     context: ContextType, 
-    args?: FindArgsInterface<EntityType>,
-    options?: DataRetrievalOptions<EntityType>,
-  ): Promise<PaginationResultInterface>;
+    args?: FindArgs<EntityType>
+  ): Promise<PaginationResult>;
 
   findOne<TBool extends BooleanType = false>(
     context: ContextType,
     id: IdType,
-    orFail?: TBool,
-    options?: DataRetrievalOptions<EntityType>,
+    orFail?: TBool
   ): Promise<NotNullableIf<TBool,EntityType>>;
 
   findOneBy<TBool extends BooleanType = false>(
     context: ContextType,
     where: Where<EntityType>,
-    orFail?: TBool,
-    options?: DataRetrievalOptions<EntityType>,
+    orFail?: TBool
   ): Promise<NotNullableIf<TBool,EntityType>>;
    
   runInTransaction<ReturnType>(
     context: ContextType,
-    fn:(context:ContextType) => Promise<ReturnType>,
-    isolationLevel?: IsolationLevel,
+    fn:(context:ContextType) => Promise<ReturnType>
   ):Promise<ReturnType>;
-
-
-  get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>;
 
   audit(
     context: ContextType,
