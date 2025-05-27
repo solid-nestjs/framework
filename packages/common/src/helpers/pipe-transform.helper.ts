@@ -11,6 +11,16 @@ const TypePipeMap = new Map<ConstructorOrFunction, PipeTransformType>([
     [Boolean, ParseBoolPipe],
 ]);
 
+/**
+ * Retrieves the appropriate `PipeTransform` type for a given constructor or function type.
+ *
+ * @param type - The constructor or function to get the pipe transform for.
+ * @returns The corresponding `PipeTransform` type if found; otherwise, `undefined`.
+ *
+ * @remarks
+ * - Special handling is provided for UUID strings, returning `ParseUUIDPipe` if the type is `String` and matches a UUID type.
+ * - Otherwise, the function looks up the type in the `TypePipeMap`.
+ */
 export function getPipeTransformForType(type: ConstructorOrFunction): Type<PipeTransform> | undefined {
     // Handle UUID strings
     if (type === String && isUUIDType(type)) {

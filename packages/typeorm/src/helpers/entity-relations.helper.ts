@@ -16,6 +16,17 @@ function getAggregatedCardinality(fromCardinality: RelationType, toCardinality: 
   return fromCardinality;
 }
 
+/**
+ * Retrieves extended relation information for a given TypeORM entity repository, including both direct and nested (extended) relations up to a specified depth.
+ *
+ * This function analyzes the entity metadata to extract all direct relations and recursively explores nested relations (relations of related entities) up to `maxDepth` levels deep.
+ * It avoids cycles by tracking visited paths and entities, and aggregates relation cardinality across relation chains.
+ *
+ * @template T - The entity type extending `ObjectLiteral`.
+ * @param repository - The TypeORM repository instance for the target entity.
+ * @param maxDepth - The maximum depth for traversing nested relations (default is 2).
+ * @returns An array of `ExtendedRelationInfo` objects, each describing a direct or extended relation, including its path, cardinality, and other metadata.
+ */
 export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: Repository<T>, maxDepth = 2): ExtendedRelationInfo[] {
   const metadata: EntityMetadata = repository.metadata;
   const relations: ExtendedRelationInfo[] = [];
@@ -112,6 +123,13 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: 
   return relations;
 }
 
+/**
+ * Retrieves metadata information about the relations defined in the given TypeORM repository's entity.
+ *
+ * @typeParam T - The entity type extending `ObjectLiteral`.
+ * @param repository - The TypeORM repository instance for the target entity.
+ * @returns An array of `RelationInfo` objects, each describing a relation of the entity, including property name, relation type, target entity name, nullability, cascade options, and loading strategy (eager or lazy).
+ */
 export function getEntityRelations<T extends ObjectLiteral>(repository: Repository<T>): RelationInfo[] {
   const metadata: EntityMetadata = repository.metadata;
   

@@ -33,6 +33,16 @@ export interface CrudServiceStructure<
     }
 
 
+/**
+ * Initializes and returns a CRUD service structure for a given entity type.
+ *
+ * This generic function is used to set up a CRUD (Create, Read, Update, Delete) service structure,
+ * ensuring that the entity ID is properly filled. It accepts a structure conforming to the
+ * `CrudServiceStructure` interface and returns it after performing necessary initialization.
+ *
+ * @param input - The CRUD service structure to initialize.
+ * @returns The initialized CRUD service structure.
+ */
 export function CrudServiceStructure<
                         IdType extends IdTypeFrom<EntityType>,
                         EntityType extends Entity<unknown>,

@@ -5,6 +5,32 @@ import { Context } from "../misc";
 import { CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../event-handlers";
 import { DataService } from "./data-service.interface";
 
+/**
+ * Interface representing a generic CRUD (Create, Read, Update, Delete) service for entities.
+ * 
+ * @extends DataService
+ * @extends CommonCudService
+ * 
+ * @remarks
+ * This interface defines the contract for CRUD operations, including hooks for actions before and after
+ * create, update, remove, and hard remove operations. It is intended to be implemented by services that
+ * interact with a data repository, such as TypeORM repositories.
+ * 
+ * @method create - Creates a new entity.
+ * @method update - Updates an existing entity by its identifier.
+ * @method remove - Soft-removes (marks as deleted) an entity by its identifier.
+ * @method hardRemove - Permanently removes an entity by its identifier.
+ * 
+ * @method beforeCreate - Hook executed before creating an entity.
+ * @method beforeUpdate - Hook executed before updating an entity.
+ * @method beforeRemove - Hook executed before soft-removing an entity.
+ * @method beforeHardRemove - Hook executed before hard-removing an entity.
+ * 
+ * @method afterCreate - Hook executed after creating an entity.
+ * @method afterUpdate - Hook executed after updating an entity.
+ * @method afterRemove - Hook executed after soft-removing an entity.
+ * @method afterHardRemove - Hook executed after hard-removing an entity.
+ */
 export interface CrudService<
         IdType extends IdTypeFrom<EntityType>,
         EntityType extends Entity<unknown>,

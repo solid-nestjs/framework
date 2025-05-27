@@ -2,6 +2,25 @@ import { BooleanType, NotNullableIf, If } from '../../types';
 import { Context, IdTypeFrom, Entity,  FindArgs, PaginationResult } from '../misc';
 import { Where } from '../../types/find-args.type';
 
+/**
+ * Generic interface for a data service that provides CRUD-like operations and transactional support.
+ *
+ * @typeParam IdType - The type of the entity's identifier.
+ * @typeParam EntityType - The type of the entity managed by the service.
+ * @typeParam ContextType - The type of the context object, defaults to `Context`.
+ *
+ * @remarks
+ * This interface abstracts common data access patterns, including retrieval, pagination,
+ * transactional execution, and auditing. It is designed to be implemented by concrete data
+ * service classes that interact with a data source.
+ *
+ * @method findAll - Retrieves all entities matching the given arguments, optionally with pagination.
+ * @method pagination - Retrieves pagination metadata for entities matching the given arguments.
+ * @method findOne - Retrieves a single entity by its identifier, optionally throwing if not found.
+ * @method findOneBy - Retrieves a single entity by a custom condition, optionally throwing if not found.
+ * @method runInTransaction - Executes a function within a transactional context.
+ * @method audit - Records an audit log entry for a specified action.
+ */
 export interface DataService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,

@@ -6,6 +6,32 @@ import { applyMethodDecorators, AuditService, BooleanType, Entity, FindArgs, get
 import { Context, DataService as DataService, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { QueryBuilderHelper, runInTransaction } from '../helpers';
 
+/**
+ * Generates a dynamic NestJS data service class for a given entity type, repository, and configuration.
+ * 
+ * This factory function creates a data service class implementing the `DataService` interface, providing
+ * common data access methods such as `findAll`, `findOne`, `pagination`, and transaction support.
+ * The generated class is decorated with `@Injectable()` and can be customized via the `serviceStructure` parameter,
+ * which allows for configuration of entity type, lock mode, relation settings, and method decorators.
+ * 
+ * @param serviceStructure - The configuration object describing the entity, repository, relation settings,
+ *                          lock mode, and optional method decorators for the generated service.
+ * 
+ * @returns A NestJS `Type` representing the dynamically generated data service class, ready for dependency injection.
+ * 
+ * @example
+ * ```typescript
+ * const UserService = DataServiceFrom({
+ *   entityType: UserEntity,
+ *   lockMode: 'optimistic',
+ *   relationsConfig: { ... },
+ *   functions: {
+ *     findAll: { decorators: [SomeDecorator()] },
+ *     // ...
+ *   }
+ * });
+ * ```
+ */
 export function DataServiceFrom<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,

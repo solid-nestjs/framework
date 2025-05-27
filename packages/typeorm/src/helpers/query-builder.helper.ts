@@ -62,6 +62,35 @@ interface whereContext<EntityType extends ObjectLiteral> extends QueryContext<En
 const MAX_RECURSIVE_DEPTH = 20;
 const RECURSIVE_DEPTH_ERROR = `Max recursive depth reached`;
 
+/**
+ * Helper class for building advanced TypeORM queries with support for relations, pagination, and filtering.
+ *
+ * `QueryBuilderHelper` provides a set of utilities to construct complex queries for a given entity type,
+ * handling relation joins, pagination, ordering, and dynamic where conditions. It is designed to avoid
+ * issues such as multiplying cardinality when joining one-to-many or many-to-many relations, and to
+ * facilitate the creation of paginated queries that return distinct results.
+ *
+ * @typeParam IdType - The type of the entity's primary key.
+ * @typeParam EntityType - The entity type extending the base `Entity`.
+ *
+ * @example
+ * ```typescript
+ * const helper = new QueryBuilderHelper(UserEntity);
+ * const qb = helper.getQueryBuilder(userRepository, { where: { name: 'John' } });
+ * const users = await qb.getMany();
+ * ```
+ *
+ * @remarks
+ * - Handles relation joins and prevents multiplying cardinality in paginated queries.
+ * - Supports dynamic where conditions, including nested and/or logic.
+ * - Integrates with TypeORM's `SelectQueryBuilder` and repository patterns.
+ * - Throws exceptions for invalid relations or query conditions.
+ *
+ * @see {@link getQueryBuilder}
+ * @see {@link getNonMultiplyingPaginatedQueryBuilder}
+ * @see {@link applyArgs}
+ * @see {@link addRelation}
+ */
 export class QueryBuilderHelper<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<any>
@@ -81,6 +110,15 @@ export class QueryBuilderHelper<
         return this._relationsInfo;
     }
 
+    /**
+     * Creates and returns a TypeORM `SelectQueryBuilder` for the specified repository and entity type.
+     *
+     * @template EntityType - The type of the entity for which the query builder is created.
+     * @param repository - The TypeORM repository instance for the target entity.
+     * @param args - Optional arguments to customize the query, such as filters, sorting, or pagination.
+     * @param options - Optional data retrieval options that may further modify the query behavior.
+     * @returns A `SelectQueryBuilder` instance configured for the specified entity type.
+     */
     getQueryBuilder(
         repository: Repository<EntityType>,
         args?: FindArgs<EntityType>,

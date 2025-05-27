@@ -9,6 +9,22 @@ import {
 import { Context, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
 import { QueryBuilderHelper } from '../../helpers';
 
+/**
+ * Generic interface for a data service that provides CRUD operations and advanced querying capabilities
+ * for entities using TypeORM. Extends {@link CommonDataService} and adds methods for repository access,
+ * query building, pagination, transactional execution, and auditing.
+ *
+ * @remarks
+ * This interface is designed to abstract data access logic and provide a consistent API for
+ * working with entities, including support for advanced features such as relation info,
+ * custom query builders, and transactional execution.
+ *
+ * @see CommonDataService
+ * @see Repository
+ * @see EntityManager
+ * @see SelectQueryBuilder
+ * @see PaginationResult
+ */
 export interface DataService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,

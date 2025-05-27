@@ -34,6 +34,12 @@ export interface DataServiceStructure<
         functions?:DataServiceFunctions<EntityType>,
     }
 
+/**
+ * A utility function that processes and returns a `DataServiceStructure` object.
+ *
+ * @param input - The `DataServiceStructure` object to be processed.
+ * @returns The processed `DataServiceStructure` object with entity ID filled.
+ */
 export function DataServiceStructure<
                         IdType extends IdTypeFrom<EntityType>,
                         EntityType extends Entity<unknown>,

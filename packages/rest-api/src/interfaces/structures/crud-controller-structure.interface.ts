@@ -35,6 +35,15 @@ export interface CrudControllerStructure<
         operations?:CrudControllerOperations<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>,
     }
 
+/**
+ * Initializes and returns a `CrudControllerStructure` object with the provided input.
+ *
+ * This generic function ensures that the entity ID is filled in the input structure before returning it.
+ * It is intended to be used as a utility for setting up CRUD controller structures with strong typing.
+ *
+ * @param input - The CRUD controller structure to initialize.
+ * @returns The initialized CRUD controller structure with entity ID filled.
+ */
 export function CrudControllerStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,

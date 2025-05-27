@@ -50,6 +50,16 @@ export interface DataControllerStructure<
         classDecorators?:(() => ClassDecorator)[],
     }
 
+/**
+ * A utility function to initialize and return a `DataControllerStructure` object.
+ *
+ * This function ensures that the provided `input` structure has its entity ID field filled
+ * by invoking the `fillEntityId` helper. It is generic over several types to provide strong
+ * type safety for various data controller scenarios.
+ *
+ * @param input - The data controller structure to initialize.
+ * @returns The initialized data controller structure with the entity ID filled.
+ */
 export function DataControllerStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,

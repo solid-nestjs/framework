@@ -5,6 +5,26 @@ import { DataControllerStructure,  OperationStructure } from '../interfaces';
 import { DefaultArgs, PaginationResult } from '../classes';
 import { ApiResponses } from '../decorators';
 
+/**
+ * Generates a NestJS controller class for a given entity, service, and context, 
+ * providing standard RESTful endpoints for data access and manipulation.
+ * 
+ * This mixin function dynamically creates a controller with endpoints for:
+ * - Listing all entities (`findAll`)
+ * - Paginated listing (`pagination`)
+ * - Paginated list with data and pagination info (`findAllPaginated`)
+ * - Retrieving a single entity by ID (`findOne`)
+ * 
+ * The generated controller is decorated with OpenAPI/Swagger decorators for API documentation,
+ * and supports custom decorators, pipes, and operation settings via the `controllerStructure` parameter.
+ * 
+ * Disabled operations (set to `false` in `controllerStructure.operations`) are omitted from the controller.
+ * 
+ * @param controllerStructure - Configuration object specifying entity, service, decorators, 
+ *   operation settings, and other controller customizations.
+ * 
+ * @returns A NestJS controller class (as a mixin) with the specified endpoints and configuration.
+ */
 export function DataControllerFrom<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
