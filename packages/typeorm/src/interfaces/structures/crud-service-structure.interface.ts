@@ -1,6 +1,6 @@
 import { DeepPartial } from "typeorm";
 import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
-import { Constructable, Entity, fillEntityId, FindArgs, IdTypeFrom } from "@nestjz/common";
+import { Constructable, Entity, fillEntityId, FindArgs, IdTypeFrom } from "@solid-nestjs/common";
 import { Context } from "../misc";
 import { DataServiceFunctions, DataServiceStructure } from "./data-service-structure.interface";
 

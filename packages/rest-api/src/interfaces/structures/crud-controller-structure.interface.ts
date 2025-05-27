@@ -1,4 +1,4 @@
-import { Context, IdTypeFrom, Entity, FindArgs, CrudService, fillEntityId, DeepPartial, Constructable } from "@nestjz/common";
+import { Context, IdTypeFrom, Entity, FindArgs, CrudService, fillEntityId, DeepPartial, Constructable } from "@solid-nestjs/common";
 import { DataControllerOperations, DataControllerStructure, OperationStructure } from "./data-controller-structure.interface";
 
 

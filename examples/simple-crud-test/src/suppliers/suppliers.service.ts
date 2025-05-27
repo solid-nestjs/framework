@@ -1,4 +1,4 @@
-import { CrudServiceFrom, CrudServiceStructure } from '@nestjz/typeorm';
+import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm';
 import { Supplier } from './entities/supplier.entity';
 import { CreateSupplierDto, FindSupplierArgs, UpdateSupplierDto } from './dto';
 

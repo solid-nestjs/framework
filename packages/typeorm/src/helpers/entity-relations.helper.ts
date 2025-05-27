@@ -1,7 +1,7 @@
 import { EntityMetadata, ObjectLiteral } from 'typeorm';
 import { RelationType } from 'typeorm/metadata/types/RelationTypes';
 import { Repository } from 'typeorm';
-import { getTypeName } from '@nestjz/common';
+import { getTypeName } from '@solid-nestjs/common';
 import { ExtendedRelationInfo, RelationInfo } from '../interfaces';
 
 

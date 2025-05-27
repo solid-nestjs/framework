@@ -2,7 +2,7 @@ import { EntityManager, FindManyOptions, Repository, SelectQueryBuilder } from '
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { applyMethodDecorators, AuditService, BooleanType, Entity, FindArgs, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where } from '@nestjz/common';
+import { applyMethodDecorators, AuditService, BooleanType, Entity, FindArgs, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where } from '@solid-nestjs/common';
 import { Context, DataService as DataService, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { QueryBuilderHelper, runInTransaction } from '../helpers';
 

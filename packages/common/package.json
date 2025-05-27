@@ -1,7 +1,7 @@
 {
-  "name": "@nestjz/common",
+  "name": "@solid-nestjs/common",
   "version": "0.2.0",
-  "description": "nestjz common utilities",
+  "description": "solid-nestjs common utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,7 +9,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nestjz/typeorm-crud"
+    "url": "https://github.com/solid-nestjs/framework"
   },
   "scripts": {
     "build": "tsc",

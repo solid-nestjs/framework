@@ -1,6 +1,6 @@
 import { EntityManager } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
-import { BooleanType, Entity, FindArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where, DataService as CommonDataService } from '@nestjz/common';
+import { BooleanType, Entity, FindArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where, DataService as CommonDataService } from '@solid-nestjs/common';
 import { 
   TypeOrmFindManyOptions as FindManyOptions, 
   TypeOrmRepository as Repository, 

@@ -1,6 +1,6 @@
 import { Body, Delete, HttpCode, HttpStatus, Param, ParseIntPipe, PipeTransform, Post, Put, Type, mixin } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam  } from '@nestjs/swagger';
-import { Context, IdTypeFrom, Entity, FindArgs, CrudService, CurrentContext, applyMethodDecorators, DeepPartial } from "@nestjz/common";
+import { Context, IdTypeFrom, Entity, FindArgs, CrudService, CurrentContext, applyMethodDecorators, DeepPartial } from "@solid-nestjs/common";
 import { CrudControllerStructure } from '../interfaces';
 import { ApiResponses } from '../decorators';
 import { PaginationResult, DefaultArgs } from '../classes';

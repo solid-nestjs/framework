@@ -1,7 +1,7 @@
 import { And, Between, Brackets, FindOptionsRelations, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { RelationType } from "typeorm/metadata/types/RelationTypes";
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
-import { Constructable, Entity, FindArgs, getPaginationArgs, IdTypeFrom, OrderBy, Where } from "@nestjz/common";
+import { Constructable, Entity, FindArgs, getPaginationArgs, IdTypeFrom, OrderBy, Where } from "@solid-nestjs/common";
 import {
     DataRetrievalOptions, Relation as RelationInterface,
     ExtendedRelationInfo, QueryBuilderConfig

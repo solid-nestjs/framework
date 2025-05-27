@@ -1,6 +1,6 @@
 import { DeepPartial, Repository } from "typeorm";
 import { Injectable, Type, mixin } from "@nestjs/common";
-import { applyMethodDecorators, Entity, FindArgs, IdTypeFrom, StandardActions } from "@nestjz/common";
+import { applyMethodDecorators, Entity, FindArgs, IdTypeFrom, StandardActions } from "@solid-nestjs/common";
 import { 
     Context, CrudService as CrudService, CrudServiceStructure, 
     CreateOptions, UpdateOptions, RemoveOptions, HardRemoveOptions } from "../interfaces";

@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { PaginationResult as CommonPaginationResult } from "@nestjz/common";
+import { PaginationResult as CommonPaginationResult } from "@solid-nestjs/common";
 
 export class PaginationResult implements CommonPaginationResult {
 

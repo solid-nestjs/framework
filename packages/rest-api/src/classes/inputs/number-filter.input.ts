@@ -1,6 +1,6 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsNumber, IsOptional } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { NumberFilter as CommonNumberFilter } from "@nestjz/common";
+import { NumberFilter as CommonNumberFilter } from "@solid-nestjs/common";
 
 export class NumberFilter implements CommonNumberFilter {
     

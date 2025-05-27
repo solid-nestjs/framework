@@ -1,5 +1,5 @@
 import { EntityManager } from "typeorm";
-import { Context as CommonContext } from "@nestjz/common";
+import { Context as CommonContext } from "@solid-nestjs/common";
 
 export interface Context extends CommonContext {
     transactionManager?:EntityManager;

@@ -1,5 +1,5 @@
 import { FindOptionsRelations } from "typeorm";
-import { Constructable, Entity, EntityProviderStructure, fillEntityId, FindArgs, IdTypeFrom } from "@nestjz/common";
+import { Constructable, Entity, EntityProviderStructure, fillEntityId, FindArgs, IdTypeFrom } from "@solid-nestjs/common";
 import { Context, Relation, LockModeOptimistic, LockModeNotOptimistic } from "../misc";
 
 export interface RelationsConfig<EntityType> {

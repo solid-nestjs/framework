@@ -1,4 +1,4 @@
-# @nestjz/typeorm-crud
+# @solid-nestjs/typeorm-crud
 
 A powerful and flexible TypeORM CRUD utilities package for NestJS applications that provides mixins for quick implementation of data access and CRUD operations.
 
@@ -16,7 +16,7 @@ A powerful and flexible TypeORM CRUD utilities package for NestJS applications t
 ## Installation
 
 ```bash
-npm install @nestjz/typeorm-crud
+npm install @solid-nestjs/typeorm-crud
 ```
 
 ## Usage
@@ -24,7 +24,7 @@ npm install @nestjz/typeorm-crud
 ### Creating a CRUD Service
 
 ```typescript
-import { CrudServiceFrom, CrudServiceStructure } from '@nestjz/typeorm-crud';
+import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-crud';
 
 // Define your service structure
 export const serviceStructure = CrudServiceStructure({
@@ -42,7 +42,7 @@ export class YourService extends CrudServiceFrom(serviceStructure) {
 ### Creating a CRUD Controller
 
 ```typescript
-import { CrudControllerFrom, CrudControllerStructure } from '@nestjz/typeorm-crud';
+import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-crud';
 import { serviceStructure, YourService } from './your.service'
 
 // Define your controller structure
@@ -144,12 +144,12 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - [x] configure this project as a monorepo
 - [x] Architecture enhancements
   - Decouple data layer from presentation layer
-  - Create separate package for REST utilities (@nestjz/rest)
-  - Create separate package for TypeORM utilities (@nestjz/typeorm)
+  - Create separate package for REST utilities (@solid-nestjs/rest)
+  - Create separate package for TypeORM utilities (@solid-nestjs/typeorm)
 - [ ] Configurable relation loading through request parameters
 - [ ] Allow to specify transaction propagation option (as seen in https://github.com/Aliheym/typeorm-transactional?tab=readme-ov-file#transaction-propagation)
 - [ ] GraphQL support
-  - Create GraphQL-specific package (@nestjz/graphql)
+  - Create GraphQL-specific package (@solid-nestjs/graphql)
   - GraphQL-optimized resolvers
   - GraphQL-specific decorators
 - [ ] Custom operations support in the ControllerStructure

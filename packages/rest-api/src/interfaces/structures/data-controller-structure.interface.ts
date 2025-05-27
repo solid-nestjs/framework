@@ -1,5 +1,5 @@
 import { HttpStatus } from "@nestjs/common";
-import { Context, IdTypeFrom, Entity, FindArgs, DataService, fillEntityId, EntityProviderStructure, Constructable } from "@nestjz/common";
+import { Context, IdTypeFrom, Entity, FindArgs, DataService, fillEntityId, EntityProviderStructure, Constructable } from "@solid-nestjs/common";
 
 export interface OperationStructure {
     name:string;

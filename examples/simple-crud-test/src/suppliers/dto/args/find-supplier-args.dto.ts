@@ -1,8 +1,8 @@
 import { IsOptional, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
-import { Where } from "@nestjz/common";
-import { FindArgsFrom, StringFilter } from "@nestjz/rest-api";
+import { Where } from "@solid-nestjs/common";
+import { FindArgsFrom, StringFilter } from "@solid-nestjs/rest-api";
 import { Supplier } from "../../entities/supplier.entity";
 
 class FindSupplierWhere implements Where<Supplier>

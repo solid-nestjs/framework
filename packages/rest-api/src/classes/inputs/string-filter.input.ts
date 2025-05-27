@@ -1,6 +1,6 @@
 import { IsArray, IsOptional, IsString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { StringFilter as CommonStringFilter } from "@nestjz/common";
+import { StringFilter as CommonStringFilter } from "@solid-nestjs/common";
 
 export class StringFilter implements CommonStringFilter {
 

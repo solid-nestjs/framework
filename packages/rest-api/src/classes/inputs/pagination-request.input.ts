@@ -1,6 +1,6 @@
 import { IsNumber, IsOptional, Min } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { PaginationRequest as CommonPaginationRequest } from "@nestjz/common";
+import { PaginationRequest as CommonPaginationRequest } from "@solid-nestjs/common";
 
 export class PaginationRequest implements CommonPaginationRequest{
 

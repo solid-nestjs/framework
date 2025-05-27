@@ -1,7 +1,7 @@
 {
-  "name": "@nestjz/rest-api",
+  "name": "@solid-nestjs/rest-api",
   "version": "0.2.0",
-  "description": "nestjz Rest-API utilities",
+  "description": "solid-nestjs Rest-API utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,7 +9,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nestjz/typeorm-crud"
+    "url": "https://github.com/solid-nestjs/framework"
   },
   "scripts": {
     "build": "tsc",

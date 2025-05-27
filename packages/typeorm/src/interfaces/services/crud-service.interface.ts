@@ -1,5 +1,5 @@
 import { DeepPartial } from "typeorm";
-import { Entity, IdTypeFrom, CudService as CommonCudService, FindArgs } from "@nestjz/common";
+import { Entity, IdTypeFrom, CudService as CommonCudService, FindArgs } from "@solid-nestjs/common";
 import { TypeOrmRepository as Repository } from '../../types'
 import { Context } from "../misc";
 import { CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../event-handlers";

@@ -1,5 +1,5 @@
 import { DeepPartial, Repository } from "typeorm"
-import { IdTypeFrom, Entity } from "@nestjz/common"
+import { IdTypeFrom, Entity } from "@solid-nestjs/common"
 import { Context } from "../misc"
 
 export interface CreateEventsHandler<

@@ -2,7 +2,7 @@ import { IsArray, IsOptional, ValidateNested } from "class-validator";
 import { Type as TransformerType } from "class-transformer";
 import { SetMetadata, Type, mixin } from "@nestjs/common";
 import { ApiProperty, ApiSchema, PartialType } from "@nestjs/swagger";
-import { Constructable, FindArgs, OrderBy, Where } from "@nestjz/common";
+import { Constructable, FindArgs, OrderBy, Where } from "@solid-nestjs/common";
 import { PaginationRequest } from "../classes/inputs";
 import { FindArgsStructure } from "../interfaces";
 

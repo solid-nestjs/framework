@@ -1,7 +1,7 @@
 import { HttpStatus, Type } from "@nestjs/common";
 import { ApiProperty, ApiResponse } from "@nestjs/swagger";
 import { ReferenceObject, SchemaObject } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
-import { applyMethodDecorators, getHttpStatusDescription } from "@nestjz/common";
+import { applyMethodDecorators, getHttpStatusDescription } from "@solid-nestjs/common";
 
 class ErrorResponse {
     @ApiProperty()

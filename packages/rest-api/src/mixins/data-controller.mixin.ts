@@ -1,6 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Inject, Param, ParseIntPipe, PipeTransform, Query, Type, ValidationPipe, mixin } from '@nestjs/common';
 import { ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiTags, getSchemaPath  } from '@nestjs/swagger';
-import { Context, IdTypeFrom, Entity, FindArgs, DataService, CurrentContext, applyClassDecorators, applyMethodDecorators, QueryTransformPipe } from "@nestjz/common";
+import { Context, IdTypeFrom, Entity, FindArgs, DataService, CurrentContext, applyClassDecorators, applyMethodDecorators, QueryTransformPipe } from "@solid-nestjs/common";
 import { DataControllerStructure,  OperationStructure } from '../interfaces';
 import { DefaultArgs, PaginationResult } from '../classes';
 import { ApiResponses } from '../decorators';

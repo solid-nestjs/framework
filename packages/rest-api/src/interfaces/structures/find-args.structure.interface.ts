@@ -1,4 +1,4 @@
-import { Constructable, OrderBy, Where } from "@nestjz/common";
+import { Constructable, OrderBy, Where } from "@solid-nestjs/common";
 
 export interface FindArgsStructure<
     EntityType,
