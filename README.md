@@ -132,21 +132,17 @@ MIT License - see the [LICENSE](LICENSE) file for details.
   - [x] Implement "runInTransaction" function
   - [x] Implemente "Transactional" decorator for services
   - [x] Allow to specify isolationLevel for transaction. (as seen in https://github.com/Aliheym/typeorm-transactional?tab=readme-ov-file#isolation-levels)
-- [ ] Enhanced pagination
+- [x] Enhanced pagination
   - [x] Return both data and pagination metadata in single response
-  - [ ] Fix pagination calculations for relations with one-to-many/many-to-many cardinality
-- [ ] Advanced relation handling
+  - [x] Fix pagination calculations for relations with one-to-many/many-to-many cardinality
+- [x] Advanced relation handling
   - [x] Enable/disable specific relations at service level
-  - [ ] Allow relation specification using typeorm's FindOptionsRelations<T>
-  - [ ] Optimize relation loading performance
-- [ ] Implement bulk operations
-- [ ] support soft-deleted records recovery.
-- [ ] Query optimization improvements
-  - Query caching options
+  - [x] Allow relation specification using typeorm's FindOptionsRelations<T>
+  - [x] Optimize relation loading performance
 
 ### [0.3.0] - Architecture & GraphQL Support
-- [ ] configure this project as a monorepo
-- [ ] Architecture enhancements
+- [x] configure this project as a monorepo
+- [x] Architecture enhancements
   - Decouple data layer from presentation layer
   - Create separate package for REST utilities (@nestjz/rest)
   - Create separate package for TypeORM utilities (@nestjz/typeorm)
@@ -162,3 +158,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
   - Enable operation-specific validation and transformation
   - Provide decorators for operation configuration
 - [ ] Comprehensive documentation
+- [ ] Implement bulk operations
+- [ ] support soft-deleted records recovery.
+- [ ] Query optimization improvements
+  - Query caching options
