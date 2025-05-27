@@ -1,8 +1,7 @@
 import { IsOptional, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
-import { Where } from "@solid-nestjs/common";
-import { FindArgsFrom, getWhereClass, StringFilter } from "@solid-nestjs/rest-api";
+import { FindArgsFrom, getWhereClass, StringFilter, Where } from "@solid-nestjs/typeorm-crud";
 import { FindSupplierArgs } from "../../../suppliers/dto";
 import { Product } from "../../entities/product.entity";
 import { Supplier } from "src/suppliers/entities/supplier.entity";

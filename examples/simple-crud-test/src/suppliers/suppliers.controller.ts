@@ -1,4 +1,4 @@
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/rest-api';
+import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-crud';
 import { SuppliersService, serviceStructure } from './suppliers.service';
 
 const controllerStructure = CrudControllerStructure({

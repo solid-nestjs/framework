@@ -3,12 +3,16 @@ node_modules
 packages/**/dist
 packages/**/node_modules
 packages/**/build
+bundles/**/dist
+bundles/**/node_modules
+bundles/**/build
 examples/**/dist
 examples/**/node_modules
 examples/**/build
 
 # database-data
 packages/**/database-data
+bundles/**/database-data
 examples/**/database-data
 
 # Logs

@@ -1,7 +1,7 @@
 {
-  "name": "@solid-nestjs/typeorm",
+  "name": "@solid-nestjs/typeorm-crud",
   "version": "0.2.0",
-  "description": "solid-nestjs TypeORM utilities",
+  "description": "Complete SOLID NestJS TypeORM CRUD bundle - includes common utilities, TypeORM integration, and REST API generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "build:watch": "tsc -w"
+    "build:watch": "tsc -w",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "typescript",
@@ -23,8 +24,11 @@
     "nestjs",
     "crud",
     "crud-generator",
+    "crud-bundle",
+    "rest-api",
     "backend",
-    "frameworks"
+    "frameworks",
+    "solid-nestjs"
   ],
   "author": {
     "name": "Andres De la Ossa",
@@ -32,17 +36,20 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@solid-nestjs/common": "^0.2.0"
+    "@solid-nestjs/common": "^0.2.0",
+    "@solid-nestjs/typeorm": "^0.2.0",
+    "@solid-nestjs/rest-api": "^0.2.0"
   },
   "peerDependencies": {
     "@nestjs/core": "^11.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
-    "typeorm": "^0.3.20"  
+    "typeorm": "^0.3.20",
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
-    "tsconfig.json": "^1.0.11",
     "typescript": "^5.8.3"
   }
 }
