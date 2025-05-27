@@ -2,24 +2,32 @@ import { EntityManager, FindManyOptions, Repository, SelectQueryBuilder } from '
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuditService, BooleanType, Entity, FindArgs, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where } from '@nestjz/common';
+import { applyMethodDecorators, AuditService, BooleanType, Entity, FindArgs, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where } from '@nestjz/common';
 import { Context, DataService as DataService, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
 import { QueryBuilderHelper, runInTransaction } from '../helpers';
 
 export function DataServiceFrom<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
+    FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
     ContextType extends Context = Context
 >(
-  serviceStructure:DataServiceStructure<IdType,EntityType,ContextType>,
-): Type<DataService<IdType,EntityType, ContextType>> {
+  serviceStructure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>,
+): Type<DataService<IdType,EntityType,FindArgsType,ContextType>> {
 
-  const { entityType, queryLocksConfig: lockModesConfig, relationsConfig } = serviceStructure;
+  const { entityType, lockMode, relationsConfig } = serviceStructure;
+
+  const findAllStruct = serviceStructure.functions?.findAll;
+  const findOneStruct = serviceStructure.functions?.findOne;
+  const paginationStruct = serviceStructure.functions?.pagination;
+
+  const findAllDecorators = [ ...(findAllStruct?.decorators??[]) ];
+  const findOneDecorators = [ ...(findOneStruct?.decorators??[]) ];
+  const paginationDecorators = [ ...(paginationStruct?.decorators??[]) ];
   
-
   @Injectable()
   class DataServiceClass
-    implements DataService<IdType,EntityType,ContextType>
+    implements DataService<IdType,EntityType,FindArgsType,ContextType>
   {
     @Inject(AuditService)
     @Optional()
@@ -28,10 +36,11 @@ export function DataServiceFrom<
 
     constructor(
       @InjectRepository(entityType)
-      private readonly _repository: Repository<EntityType>
+      private readonly _repository: Repository<EntityType>,
+      @Inject(QueryBuilderHelper<IdType,EntityType>)
+      @Optional()
+      private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType> = new QueryBuilderHelper<IdType,EntityType>(entityType,{ lockMode, relationsConfig })
     ) {}
-
-    private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType> = new QueryBuilderHelper<IdType,EntityType>(entityType,{ queryLocksConfig: lockModesConfig, relationsConfig });
 
     get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>{
       return this._queryBuilderHelper;
@@ -57,12 +66,22 @@ export function DataServiceFrom<
 
     getQueryBuilder(
       context: ContextType,
-      args?: FindArgs<EntityType>,
+      args?: FindArgsType,
       options?: DataRetrievalOptions<EntityType>,
     ): SelectQueryBuilder<EntityType> {
       const repository = this.getRepository(context);
 
       return this.queryBuilderHelper.getQueryBuilder(repository, args, options);
+    }
+
+    getNonMultiplyingPaginatedQueryBuilder(
+      context: ContextType,
+      args?: FindArgsType,
+      options?: DataRetrievalOptions<EntityType>,
+    ): SelectQueryBuilder<EntityType> | false {
+      const repository = this.getRepository(context);
+
+      return this.queryBuilderHelper.getNonMultiplyingPaginatedQueryBuilder(repository, args, options);
     }
 
     async find(
@@ -73,47 +92,84 @@ export function DataServiceFrom<
       return repository.find(options);
     }
     
+    @applyMethodDecorators(findAllDecorators)
     async findAll<TBool extends BooleanType = false>(
       context: ContextType,
-      args?: FindArgs<EntityType>,
+      args?: FindArgsType,
       withPagination?:TBool,
       options?: DataRetrievalOptions<EntityType>,
     ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResult },EntityType[]> > {
-      const queryBuilder = this.getQueryBuilder(context, args, options);
+      
+      options = { 
+            ...options, 
+            lockMode:options?.lockMode ?? findAllStruct?.lockMode,
+            mainAlias:options?.mainAlias ?? findAllStruct?.relationsConfig?.mainAlias,
+            relations:options?.relations ?? findAllStruct?.relationsConfig?.relations,
+          };
 
-      const data = await queryBuilder.getMany();
+      const paginatedQueryBuilder = this.getNonMultiplyingPaginatedQueryBuilder(context, args, options);
+
+      let data:EntityType[];
+
+      if(paginatedQueryBuilder)
+      {
+        const ids = await paginatedQueryBuilder.getMany();
+
+        if(ids.length > 0)
+        {
+          const queryBuilder = this.getQueryBuilder(context, { ...args, pagination: undefined } as FindArgsType, options).andWhereInIds(ids);
+          data = await queryBuilder.getMany();
+        }
+        else
+          data = [];
+      }
+      else
+      {
+        const queryBuilder = this.getQueryBuilder(context, args, options);
+        data = await queryBuilder.getMany();
+      }
 
       if(!withPagination)
         return data as any;
 
-      const pagination = await this.getPagination(context,queryBuilder,args);
+      const pagination = await this.pagination(context,args,options);
 
       return { data, pagination } as any;
     }
 
+    @applyMethodDecorators(paginationDecorators)
     async pagination(
       context: ContextType,
-      args?: FindArgs<EntityType>,
+      args?: FindArgsType,
       options?: DataRetrievalOptions<EntityType>,
     ): Promise<PaginationResult> {
+      
+      options = { 
+            ...options, 
+            lockMode:options?.lockMode ?? paginationStruct?.lockMode,
+            mainAlias:options?.mainAlias ?? paginationStruct?.relationsConfig?.mainAlias,
+            relations:options?.relations ?? paginationStruct?.relationsConfig?.relations,
+            ignoreMultiplyingJoins: true,
+            ignoreSelects:true,
+          };
+          
       const queryBuilder = this.getQueryBuilder(context, {
         ...args,
         pagination: undefined,
         orderBy: undefined,
-      } as FindArgs<EntityType>,options);
+      } as FindArgsType,options);
 
-      return this.getPagination(context,queryBuilder,args);
+      return this.getPagination(context,await queryBuilder.getCount(),args);
     }
 
     async getPagination(
       context: ContextType,
-      queryBuilder: SelectQueryBuilder<EntityType>,
-      args?: FindArgs<EntityType>,
+      total: number,
+      args?: FindArgsType,
     ) : Promise<PaginationResult> {
 
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
 
-      const total = await queryBuilder.getCount();
       let limit = take;
       const pageCount = (!limit)?1:Math.ceil(total / limit);
       const page = (!limit)?1:Math.ceil((skip+ 1) / limit);
@@ -136,6 +192,7 @@ export function DataServiceFrom<
             };
     }
     
+    @applyMethodDecorators(findOneDecorators)
     async findOne<TBool extends BooleanType = false>(
       context: ContextType,
       id: IdType,
@@ -161,9 +218,14 @@ export function DataServiceFrom<
       options?: DataRetrievalOptions<EntityType>,
     ): Promise< NotNullableIf<TBool,EntityType> > {
 
-      const args = { where } as FindArgs<EntityType>;
+      const args = { where } as FindArgsType;
 
-      options = { ...options, lockMode:options?.lockMode ?? lockModesConfig?.findOne };
+      options = { 
+                  ...options, 
+                  lockMode:options?.lockMode ?? findOneStruct?.lockMode,
+                  mainAlias:options?.mainAlias ?? findOneStruct?.relationsConfig?.mainAlias,
+                  relations:options?.relations ?? findOneStruct?.relationsConfig?.relations,
+                };
 
       const queryBuilder = this.getQueryBuilder(context, args, options);
 

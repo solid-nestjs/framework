@@ -1,5 +1,5 @@
 import { FindOptionsRelations } from "typeorm";
-import { Constructable, Entity, EntityProviderStructure, fillEntityId, IdTypeFrom } from "@nestjz/common";
+import { Constructable, Entity, EntityProviderStructure, fillEntityId, FindArgs, IdTypeFrom } from "@nestjz/common";
 import { Context, Relation, LockModeOptimistic, LockModeNotOptimistic } from "../misc";
 
 export interface RelationsConfig<EntityType> {
@@ -7,31 +7,39 @@ export interface RelationsConfig<EntityType> {
     relations?: Relation[] | FindOptionsRelations<EntityType>;
 }
 
-export interface QueryLocksConfig<EntityType> {
-    findAll?: LockModeOptimistic | LockModeNotOptimistic;
-    findOne?: LockModeOptimistic | LockModeNotOptimistic;
-}
-
 export interface QueryBuilderConfig<EntityType> {
     relationsConfig?:RelationsConfig<EntityType>,
-    queryLocksConfig?:QueryLocksConfig<EntityType>,
+    lockMode?:LockModeOptimistic | LockModeNotOptimistic,
+}
+
+export interface DataServiceFunctionStructure<EntityType> extends QueryBuilderConfig<EntityType>  {
+    decorators?:(() => MethodDecorator)[];
+}
+
+export interface DataServiceFunctions<EntityType> {
+    findAll?:DataServiceFunctionStructure<EntityType>,
+    findOne?:DataServiceFunctionStructure<EntityType>,
+    pagination?:DataServiceFunctionStructure<EntityType>,
 }
 
 export interface DataServiceStructure<
     IdType extends IdTypeFrom<EntityType>,
     EntityType extends Entity<unknown>,
+    FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
     ContextType extends Context = Context
-    > extends EntityProviderStructure<IdType,EntityType> {
-        contextType?: Constructable<ContextType>,
-        relationsConfig?:RelationsConfig<EntityType>,
-        queryLocksConfig?:QueryLocksConfig<EntityType>,
+    > extends EntityProviderStructure<IdType,EntityType>,
+              QueryBuilderConfig<EntityType> {
+        findArgsType?:Constructable<FindArgsType>,
+        contextType?:Constructable<ContextType>,
+        functions?:DataServiceFunctions<EntityType>,
     }
 
 export function DataServiceStructure<
                         IdType extends IdTypeFrom<EntityType>,
                         EntityType extends Entity<unknown>,
+                        FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
                         ContextType extends Context = Context,
-                        >(input:DataServiceStructure<IdType,EntityType,ContextType>):DataServiceStructure<IdType,EntityType,ContextType>
+                        >(input:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>):DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>
                         {
                             fillEntityId(input);
                             

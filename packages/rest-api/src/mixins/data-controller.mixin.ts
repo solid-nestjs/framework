@@ -13,7 +13,7 @@ export function DataControllerFrom<
     EntityType,
     ContextType
   >,
-  FindArgsType extends FindArgs<EntityType> = DefaultArgs,
+  FindArgsType extends FindArgs<EntityType> = DefaultArgs<EntityType>,
   ContextType extends Context = Context,
 >(
   controllerStructure: DataControllerStructure<

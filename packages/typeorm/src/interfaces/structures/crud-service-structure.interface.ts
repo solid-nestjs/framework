@@ -1,19 +1,21 @@
 import { DeepPartial } from "typeorm";
 import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
-import { Constructable, Entity, fillEntityId, IdTypeFrom } from "@nestjz/common";
+import { Constructable, Entity, fillEntityId, FindArgs, IdTypeFrom } from "@nestjz/common";
 import { Context } from "../misc";
-import { DataServiceStructure } from "./data-service-structure.interface";
+import { DataServiceFunctions, DataServiceStructure } from "./data-service-structure.interface";
 
-export interface TransactionConfig {
-    transactional:boolean,
+
+export interface CrudServiceFunctionStructure<EntityType>  {
+    transactional?:boolean,
     isolationLevel?:IsolationLevel
+    decorators?:(() => MethodDecorator)[];
 }
 
-export interface TransactionsConfig {
-    create?:TransactionConfig,
-    update?:TransactionConfig,
-    remove?:TransactionConfig,
-    hardRemove?:TransactionConfig,
+export interface CrudServiceFunctions<EntityType> extends DataServiceFunctions<EntityType> {
+    create?:CrudServiceFunctionStructure<EntityType>,
+    update?:CrudServiceFunctionStructure<EntityType>,
+    remove?:CrudServiceFunctionStructure<EntityType>,
+    hardRemove?:CrudServiceFunctionStructure<EntityType>,
 }
 
 export interface CrudServiceStructure<
@@ -21,12 +23,13 @@ export interface CrudServiceStructure<
     EntityType extends Entity<unknown>,
     CreateInputType extends DeepPartial<EntityType>,
     UpdateInputType extends DeepPartial<EntityType>,
-    ContextType extends Context
-    > extends DataServiceStructure<IdType,EntityType,ContextType> {
+    FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
+    ContextType extends Context = Context
+    > extends DataServiceStructure<IdType,EntityType,FindArgsType,ContextType> {
 
         createInputType:Constructable<CreateInputType>,
         updateInputType:Constructable<UpdateInputType>,
-        transactionsConfig?:TransactionsConfig,
+        functions?:CrudServiceFunctions<EntityType>,
     }
 
 
@@ -35,8 +38,9 @@ export function CrudServiceStructure<
                         EntityType extends Entity<unknown>,
                         CreateInputType extends DeepPartial<EntityType>,
                         UpdateInputType extends DeepPartial<EntityType>,
-                        ContextType extends Context,
-                        >(input:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>):CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>
+                        FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
+                        ContextType extends Context = Context,
+                        >(input:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>):CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>
                         {
                             fillEntityId(input);
 

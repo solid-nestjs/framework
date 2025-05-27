@@ -18,7 +18,7 @@ export function CrudControllerFrom<
     UpdateInputType,
     ContextType
   >,
-  FindArgsType extends FindArgs<EntityType> = DefaultArgs,
+  FindArgsType extends FindArgs<EntityType> = DefaultArgs<EntityType>,
   ContextType extends Context = Context,
 >(
   controllerStructure: CrudControllerStructure<IdType,EntityType,CreateInputType,UpdateInputType,ServiceType,FindArgsType,ContextType>

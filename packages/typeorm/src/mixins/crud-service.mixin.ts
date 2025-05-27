@@ -1,6 +1,6 @@
 import { DeepPartial, Repository } from "typeorm";
 import { Injectable, Type, mixin } from "@nestjs/common";
-import { applyMethodDecorators, Entity, IdTypeFrom, StandardActions } from "@nestjz/common";
+import { applyMethodDecorators, Entity, FindArgs, IdTypeFrom, StandardActions } from "@nestjz/common";
 import { 
     Context, CrudService as CrudService, CrudServiceStructure, 
     CreateOptions, UpdateOptions, RemoveOptions, HardRemoveOptions } from "../interfaces";
@@ -14,26 +14,39 @@ export function
         EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
+        FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
         ContextType extends Context = Context
 >(
-    serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>,
+    serviceStructure:CrudServiceStructure<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>,
 
-): Type<CrudService<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>> 
+): Type<CrudService<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>> 
 {
-    var createTransactional = serviceStructure?.transactionsConfig?.create;
-    var updateTransactional = serviceStructure?.transactionsConfig?.update;
-    var removeTransactional = serviceStructure?.transactionsConfig?.remove;
-    var hardRemoveTransactional = serviceStructure?.transactionsConfig?.hardRemove;
+    const createStruct = serviceStructure.functions?.create;
+    const updateStruct = serviceStructure.functions?.update;
+    const removeStruct = serviceStructure.functions?.remove;
+    const hardRemoveStruct = serviceStructure.functions?.hardRemove;
+    
+    const createDecorators = (createStruct?.transactional)?[()=>Transactional( { isolationLevel: createStruct?.isolationLevel } )]:[];
+    const updateDecorators = (updateStruct?.transactional)?[()=>Transactional( { isolationLevel: updateStruct?.isolationLevel } )]:[];
+    const removeDecorators = (removeStruct?.transactional)?[()=>Transactional( { isolationLevel: removeStruct?.isolationLevel } )]:[];
+    const hardRemoveDecorators = (hardRemoveStruct?.transactional)?[()=>Transactional( { isolationLevel: hardRemoveStruct?.isolationLevel } )]:[];
 
-    var createDecorators = (createTransactional?.transactional)?[()=>Transactional( { isolationLevel: createTransactional?.isolationLevel } )]:[];
-    var updateDecorators = (updateTransactional?.transactional)?[()=>Transactional( { isolationLevel: updateTransactional?.isolationLevel } )]:[];
-    var removeDecorators = (removeTransactional?.transactional)?[()=>Transactional( { isolationLevel: removeTransactional?.isolationLevel } )]:[];
-    var hardRemoveDecorators = (hardRemoveTransactional?.transactional)?[()=>Transactional( { isolationLevel: hardRemoveTransactional?.isolationLevel } )]:[];
+    if(createStruct?.decorators)
+        createDecorators.push(...createStruct.decorators);
+
+    if(updateStruct?.decorators)
+        updateDecorators.push(...updateStruct.decorators);
+
+    if(removeStruct?.decorators)
+        removeDecorators.push(...removeStruct.decorators);
+
+    if(hardRemoveStruct?.decorators)
+        hardRemoveDecorators.push(...hardRemoveStruct.decorators);
 
     @Injectable()
     class CrudServiceClass
         extends DataServiceFrom(serviceStructure)
-        implements CrudService<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>{
+        implements CrudService<IdType,EntityType,CreateInputType,UpdateInputType,FindArgsType,ContextType>{
     
         @applyMethodDecorators(createDecorators)
         async create(

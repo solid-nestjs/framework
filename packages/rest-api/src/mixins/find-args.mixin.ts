@@ -1,26 +1,29 @@
 import { IsArray, IsOptional, ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
-import { SetMetadata, mixin } from "@nestjs/common";
+import { Type as TransformerType } from "class-transformer";
+import { SetMetadata, Type, mixin } from "@nestjs/common";
 import { ApiProperty, ApiSchema, PartialType } from "@nestjs/swagger";
-import { Constructable, FindArgs } from "@nestjz/common";
+import { Constructable, FindArgs, OrderBy, Where } from "@nestjz/common";
 import { PaginationRequest } from "../classes/inputs";
+import { FindArgsStructure } from "../interfaces";
 
 export const WHERE_CLASS_KEY = 'WhereClass';
 export const ORDER_BY_CLASS_KEY = 'OrderByClass';
 
 export function 
-    FindArgs<
-        WhereStructureType extends Constructable = Constructable,
-        OrderByStructureType extends Constructable = Constructable
+    FindArgsFrom<
+        EntityType,
+        WhereType extends Where<EntityType> = Where<EntityType>,
+        OrderByType extends OrderBy<EntityType> = OrderBy<EntityType>
     > (
-        whereStructureType?: WhereStructureType,
-        orderByStructureType?: OrderByStructureType
-    ){    
+        findArgsStructure?: FindArgsStructure<EntityType,WhereType,OrderByType>
+    ) : Type<FindArgs<EntityType>> {    
         
-    class ArgsClass
+    const { whereType, orderByType } = findArgsStructure ?? {};
+
+    class ArgsClass implements FindArgs<EntityType>
     {        
         @ApiProperty({ type: () => PaginationRequest, required: false })
-        @Type(() => PaginationRequest)
+        @TransformerType(() => PaginationRequest)
         @IsOptional()
         @ValidateNested()
         pagination?:PaginationRequest;
@@ -28,21 +31,21 @@ export function
 
     let returnedClass:Constructable<ArgsClass> = ArgsClass;
 
-    if(whereStructureType)
+    if(whereType)
     {
-        @ApiSchema({ name: whereStructureType.name })
-        class WhereClass extends PartialType(whereStructureType)
+        @ApiSchema({ name: whereType.name })
+        class WhereClass extends PartialType(whereType as Constructable)
         {        
-            @ApiProperty({ type: () => [whereStructureType], required: false, example: [] })
+            @ApiProperty({ type: () => [whereType], required: false, example: [] })
             @IsArray()
-            @Type(() => WhereClass)
+            @TransformerType(() => WhereClass)
             @IsOptional()
             @ValidateNested()
             _and?:WhereClass[];
         
-            @ApiProperty({ type: () => [whereStructureType], required: false, example: [] })
+            @ApiProperty({ type: () => [whereType], required: false, example: [] })
             @IsArray()
-            @Type(() => WhereClass)
+            @TransformerType(() => WhereClass)
             @IsOptional()
             @ValidateNested()
             _or?:WhereClass[];
@@ -52,7 +55,7 @@ export function
         class ArgsClassWithWhere extends returnedClass
         {
             @ApiProperty({ type: () => WhereClass, required: false })
-            @Type(() => WhereClass)
+            @TransformerType(() => WhereClass)
             @IsOptional()
             @ValidateNested()
             where?:WhereClass;
@@ -61,10 +64,10 @@ export function
         returnedClass = ArgsClassWithWhere;
     }
     
-    if(orderByStructureType)
+    if(orderByType)
     {
-        @ApiSchema({ name: orderByStructureType.name })
-        class OrderByClass extends PartialType(orderByStructureType)
+        @ApiSchema({ name: orderByType.name })
+        class OrderByClass extends PartialType(orderByType as Constructable)
         { }
 
         @SetMetadata(ORDER_BY_CLASS_KEY,OrderByClass)
@@ -72,7 +75,7 @@ export function
         {
             @ApiProperty({ type: () => [OrderByClass], required: false })
             @IsArray()
-            @Type(() => OrderByClass)
+            @TransformerType(() => OrderByClass)
             @IsOptional()
             @ValidateNested()
             orderBy?:OrderByClass[];

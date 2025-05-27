@@ -1,5 +1,5 @@
 import { DeepPartial } from "typeorm";
-import { Entity, IdTypeFrom, CudService as CommonCudService } from "@nestjz/common";
+import { Entity, IdTypeFrom, CudService as CommonCudService, FindArgs } from "@nestjz/common";
 import { TypeOrmRepository as Repository } from '../../types'
 import { Context } from "../misc";
 import { CreateEventsHandler, HardRemoveEventsHandler, RemoveEventsHandler, UpdateEventsHandler } from "../event-handlers";
@@ -10,8 +10,9 @@ export interface CrudService<
         EntityType extends Entity<unknown>,
         CreateInputType extends DeepPartial<EntityType>,
         UpdateInputType extends DeepPartial<EntityType>,
+        FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
         ContextType extends Context = Context
-        > extends DataService<IdType,EntityType,ContextType>,
+        > extends DataService<IdType,EntityType,FindArgsType,ContextType>,
                     CommonCudService<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>{
            
             create(

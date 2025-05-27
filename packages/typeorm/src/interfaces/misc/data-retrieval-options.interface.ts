@@ -24,4 +24,6 @@ export interface DataRetrievalOptions<EntityType>{
     relations?: Relation[] | FindOptionsRelations<EntityType>;
     lockMode?: LockModeOptimistic | LockModeNotOptimistic;
     withDeleted?:boolean;
+    ignoreMultiplyingJoins?:boolean;
+    ignoreSelects?:boolean;
 }

@@ -1,29 +1,19 @@
-import { Context } from '@nestjz/common';
-import { CreateOptions, CrudServiceFrom, CrudServiceStructure, Transactional, TypeOrmRepository } from '@nestjz/typeorm';
+import { CrudServiceFrom, CrudServiceStructure } from '@nestjz/typeorm';
 import { Product } from './entities/product.entity';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateProductDto, FindProductArgs, UpdateProductDto } from './dto';
 
 export const serviceStructure= CrudServiceStructure({
   entityType: Product,
   createInputType: CreateProductDto,
   updateInputType: UpdateProductDto,
+  findArgsType: FindProductArgs,
+  relationsConfig:{
+    relations:{
+      supplier:true
+    }
+  }
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure){
   
-  @Transactional()
-  override create(context: Context, createInput: CreateProductDto, options?: CreateOptions<string, Product, CreateProductDto, Context> | undefined): Promise<Product> {
-    return super.create(context,createInput,options);
-  }
-
-  override async beforeCreate(context: Context, repository: TypeOrmRepository<Product>, entity: Product, createInput: CreateProductDto): Promise<void> {
-    console.log('before create');
-    //throw new InternalServerErrorException("exception in before create");
-  }
-
-  override async afterCreate(context: Context, repository: TypeOrmRepository<Product>, entity: Product, createInput: CreateProductDto): Promise<void> {
-    console.log('after create');
-    //throw new InternalServerErrorException("exception in after create");
-  }  
 }

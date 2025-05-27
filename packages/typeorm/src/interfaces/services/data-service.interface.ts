@@ -12,6 +12,7 @@ import { QueryBuilderHelper } from '../../helpers';
 export interface DataService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context
 > extends CommonDataService<IdType,EntityType,ContextType>
 {
@@ -25,9 +26,15 @@ export interface DataService<
 
   getQueryBuilder(
     context: ContextType,
-    args?: FindArgs<EntityType>,
+    args?: FindArgsType,
     options?: DataRetrievalOptions<EntityType>,
   ): SelectQueryBuilder<EntityType>;
+
+  getNonMultiplyingPaginatedQueryBuilder(
+    context: ContextType,
+    args?: FindArgsType,
+    options?: DataRetrievalOptions<EntityType>,
+  ): SelectQueryBuilder<EntityType> | false;
 
   find(
     context: ContextType,
@@ -36,14 +43,14 @@ export interface DataService<
 
   findAll<TBool extends BooleanType = false>(
     context: ContextType, 
-    args?: FindArgs<EntityType>,
+    args?: FindArgsType,
     withPagination?:TBool,
     options?: DataRetrievalOptions<EntityType>,
   ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResult },EntityType[]> >;
 
   pagination(
     context: ContextType, 
-    args?: FindArgs<EntityType>,
+    args?: FindArgsType,
     options?: DataRetrievalOptions<EntityType>,
   ): Promise<PaginationResult>;
 
