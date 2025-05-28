@@ -1,0 +1,56 @@
+{
+  "name": "@solid-nestjs/rest-graphql",
+  "version": "0.2.0",
+  "description": "solid-nestjs Rest-API + GraphQL utilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solid-nestjs/framework"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc -w"
+  },
+  "keywords": [
+    "typescript",
+    "nest",
+    "nestjs",
+    "rest",
+    "restful",
+    "GraphQL",
+    "api",
+    "crud",
+    "crud-generator",
+    "backend",
+    "frameworks"
+  ],
+  "author": {
+    "name": "Andres De la Ossa",
+    "email": "adelaossa0129@gmail.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@solid-nestjs/common": "^0.2.0",
+    "@solid-nestjs/rest-api": "^0.2.0",    
+    "@solid-nestjs/graphql": "^0.2.0"
+  },
+  "peerDependencies": {
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/common": "^11.0.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "@nestjs/swagger": "^11.0.4",
+    "@nestjs/graphql": "^13.0.3",
+    "reflect-metadata": "^0.2.2"    
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "tsconfig.json": "^1.0.11",
+    "typescript": "^5.8.3"
+  }
+}
