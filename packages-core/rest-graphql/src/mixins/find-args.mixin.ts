@@ -1,5 +1,7 @@
-import { IsOptional } from "class-validator";
+import { IsArray, IsOptional, ValidateNested } from "class-validator";
+import { Type as TransformerType } from "class-transformer";
 import { SetMetadata, Type, mixin } from "@nestjs/common";
+import { ApiProperty, ApiSchema } from "@nestjs/swagger";
 import { ArgsType, Field, InputType } from "@nestjs/graphql";
 import { Constructable, FindArgs, OrderBy, Where } from "@solid-nestjs/common";
 import { PaginationRequest } from "../classes/inputs";
@@ -41,9 +43,11 @@ export function
 
     class ArgsClass implements FindArgs<EntityType>
     {        
-        
+        @ApiProperty({ type: () => PaginationRequest, required: false })
         @Field(() => PaginationRequest,{nullable:true})
+        @TransformerType(() => PaginationRequest)
         @IsOptional()
+        @ValidateNested()
         pagination?:PaginationRequest;
     }
 
@@ -51,15 +55,24 @@ export function
 
     if(whereType)
     {
+        @ApiSchema({ name: whereType.name })
         @InputType(whereType.name)
         class WhereClass extends PartialType(whereType as Constructable)
         {        
+            @ApiProperty({ type: () => [whereType], required: false, example: [] })
             @Field(() => [WhereClass],{nullable:true})
+            @IsArray()
+            @TransformerType(() => WhereClass)
             @IsOptional()
+            @ValidateNested()
             _and?:WhereClass[];
         
+            @ApiProperty({ type: () => [whereType], required: false, example: [] })
             @Field(() => [WhereClass],{nullable:true})
+            @IsArray()
+            @TransformerType(() => WhereClass)
             @IsOptional()
+            @ValidateNested()
             _or?:WhereClass[];
         }
 
@@ -68,7 +81,10 @@ export function
         class ArgsClassWithWhere extends returnedClass
         {
             @Field(() => WhereClass,{nullable:true})
+            @ApiProperty({ type: () => WhereClass, required: false })
+            @TransformerType(() => WhereClass)
             @IsOptional()
+            @ValidateNested()
             where?:WhereClass;
         }
 
@@ -77,6 +93,7 @@ export function
     
     if(orderByType)
     {
+        @ApiSchema({ name: orderByType.name })
         @InputType(orderByType.name)
         class OrderByClass extends PartialType(orderByType as Constructable)
         { }
@@ -86,7 +103,11 @@ export function
         class ArgsClassWithOrderBy extends returnedClass
         {
             @Field(() => [OrderByClass],{nullable:true})
+            @ApiProperty({ type: () => [OrderByClass], required: false })
+            @IsArray()
+            @TransformerType(() => OrderByClass)
             @IsOptional()
+            @ValidateNested()
             orderBy?:OrderByClass[];
         }
 

@@ -1,0 +1,191 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateProductDto {
+  """The description of the product"""
+  description: String!
+
+  """The name of the product"""
+  name: String!
+
+  """The price of the product"""
+  price: Float!
+
+  """The stock quantity of the product"""
+  stock: Int!
+
+  """product Supplier"""
+  supplier: ProductSupplierDto!
+}
+
+input CreateSupplierDto {
+  """The email of the supplier"""
+  contactEmail: String!
+
+  """The name of the supplier"""
+  name: String!
+
+  """Supplier`s products"""
+  products: [SupplierProductDto!]
+}
+
+input FindProductWhere {
+  _and: [FindProductWhere!]
+  _or: [FindProductWhere!]
+  name: StringFilter
+  supplier: FindSupplierWhere
+}
+
+input FindSupplierWhere {
+  _and: [FindSupplierWhere!]
+  _or: [FindSupplierWhere!]
+  contactEmail: StringFilter
+  name: StringFilter
+}
+
+type Mutation {
+  """creation of product record"""
+  createProduct(createInput: CreateProductDto!): Product!
+
+  """creation of supplier record"""
+  createSupplier(createInput: CreateSupplierDto!): Supplier!
+
+  """removal of product record"""
+  removeProduct(id: String!): Product!
+
+  """removal of supplier record"""
+  removeSupplier(id: String!): Supplier!
+
+  """update of product record"""
+  updateProduct(updateInput: UpdateProductDto!): Product!
+
+  """update of supplier record"""
+  updateSupplier(updateInput: UpdateSupplierDto!): Supplier!
+}
+
+type PaginationResult {
+  count: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  limit: Int
+  page: Int!
+  pageCount: Int!
+  total: Int!
+}
+
+type Product {
+  """The description of the product"""
+  description: String!
+
+  """The unique identifier of the product"""
+  id: ID!
+
+  """The name of the product"""
+  name: String!
+
+  """The price of the product"""
+  price: Float!
+
+  """The stock quantity of the product"""
+  stock: Int!
+
+  """Product Supplier"""
+  supplier: Supplier
+}
+
+input ProductSupplierDto {
+  id: ID!
+}
+
+type Query {
+  """retrieval of product record by id"""
+  product(id: String!): Product!
+
+  """list of products records"""
+  products(where: FindProductWhere): [Product!]!
+
+  """pagination of product"""
+  productsPagination(where: FindProductWhere): PaginationResult!
+
+  """retrieval of supplier record by id"""
+  supplier(id: String!): Supplier!
+
+  """list of suppliers records"""
+  suppliers(where: FindSupplierWhere): [Supplier!]!
+
+  """pagination of supplier"""
+  suppliersPagination(where: FindSupplierWhere): PaginationResult!
+}
+
+input StringFilter {
+  _contains: String
+  _endswith: String
+  _eq: String
+  _in: [String!]
+  _like: String
+  _neq: String
+  _notcontains: String
+  _notendswith: String
+  _notlike: String
+  _notstartswith: String
+  _startswith: String
+}
+
+type Supplier {
+  """email of the supplier"""
+  contactEmail: String!
+
+  """The unique identifier of the supplier"""
+  id: ID!
+
+  """The name of the supplier"""
+  name: String!
+
+  """Supplier Products"""
+  products: [Product!]
+}
+
+input SupplierProductDto {
+  """The description of the product"""
+  description: String!
+
+  """The name of the product"""
+  name: String!
+
+  """The price of the product"""
+  price: Float!
+
+  """The stock quantity of the product"""
+  stock: Int!
+}
+
+input UpdateProductDto {
+  """The description of the product"""
+  description: String
+  id: ID!
+
+  """The name of the product"""
+  name: String
+
+  """The price of the product"""
+  price: Float
+
+  """The stock quantity of the product"""
+  stock: Int
+
+  """product Supplier"""
+  supplier: ProductSupplierDto
+}
+
+input UpdateSupplierDto {
+  """The email of the supplier"""
+  contactEmail: String
+  id: ID!
+
+  """The name of the supplier"""
+  name: String
+
+  """Supplier`s products"""
+  products: [SupplierProductDto!]
+}
