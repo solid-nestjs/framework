@@ -781,20 +781,26 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 - ✅ Relation management
 - ✅ OpenAPI documentation
 - ✅ Type safety
+- ✅ GraphQL support
+- ✅ Complete GraphQL CRUD resolvers
+- ✅ GraphQL filtering and pagination
+- ✅ TypeORM + GraphQL integration
 
 ### Upcoming Features (v0.3.0)
-- 🚧 GraphQL support
 - 🚧 Prisma ORM integration
 - 🚧 Custom operation definitions
 - 🚧 Advanced caching strategies
+- 🚧 Real-time subscriptions (GraphQL)
+- 🚧 Enhanced query builder with aggregations
 
 ### Future Vision (v1.0.0)
-- 🔮 Real-time subscriptions
+- 🔮 Multi-tenant support
 - 🔮 Advanced security features
 - 🔮 Performance analytics
 - 🔮 Auto-scaling capabilities
 - 🔮 Microservices patterns
 - 🔮 Cloud-native features
+- 🔮 Event sourcing support
 
 ## 🤝 Contributing
 

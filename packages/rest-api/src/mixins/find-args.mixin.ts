@@ -9,6 +9,22 @@ import { FindArgsStructure } from "../interfaces";
 export const WHERE_CLASS_KEY = 'WhereClass';
 export const ORDER_BY_CLASS_KEY = 'OrderByClass';
 
+/**
+ * Generates a dynamic argument class for querying entities with optional pagination, filtering (where), and sorting (order by) capabilities.
+ *
+ * This mixin function creates a class based on the provided structure, supporting:
+ * - Pagination via a `pagination` property.
+ * - Filtering via a `where` property, supporting logical `_and` and `_or` operators.
+ * - Sorting via an `orderBy` property.
+ *
+ * The generated class is decorated for use with NestJS, class-validator, and Swagger/OpenAPI.
+ *
+ * @typeParam EntityType - The entity type being queried.
+ * @typeParam WhereType - The type used for filtering (where clause). Defaults to `Where<EntityType>`.
+ * @typeParam OrderByType - The type used for sorting (order by clause). Defaults to `OrderBy<EntityType>`.
+ * @param findArgsStructure - Optional structure specifying the types for where and orderBy clauses.
+ * @returns A dynamically generated class implementing `FindArgs<EntityType>`, decorated for validation and API documentation.
+ */
 export function 
     FindArgsFrom<
         EntityType,
