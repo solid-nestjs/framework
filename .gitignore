@@ -1,19 +1,19 @@
 # compiled output
 node_modules
-packages/**/dist
-packages/**/node_modules
-packages/**/build
-bundles/**/dist
-bundles/**/node_modules
-bundles/**/build
-examples/**/dist
-examples/**/node_modules
-examples/**/build
+packages-core/**/dist
+packages-core/**/node_modules
+packages-core/**/build
+packages-bundles/**/dist
+packages-bundles/**/node_modules
+packages-bundles/**/build
+apps-examples/**/dist
+apps-examples/**/node_modules
+apps-examples/**/build
 
 # database-data
-packages/**/database-data
-bundles/**/database-data
-examples/**/database-data
+packages-core/**/database-data
+packages-bundles/**/database-data
+apps-examples/**/database-data
 
 # Logs
 logs

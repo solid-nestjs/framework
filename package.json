@@ -1,9 +1,9 @@
 {
   "private": true,
   "workspaces": [
-    "packages/*",
-    "bundles/*",
-    "examples/*"
+    "packages-core/*",
+    "packages-bundles/*",
+    "apps-examples/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
