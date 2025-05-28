@@ -68,6 +68,7 @@ export function DataControllerFrom<
   const findAllSettings = extractOperationSettings(
     controllerStructure.operations?.findAll,
     {
+      disabled: controllerStructure.operations?.findAll === false,
       route: '',
       summary: 'List of ' + entityType.name.toLowerCase() + 's records',
       description: 'list of ' + entityType.name.toLowerCase() + 's records',
@@ -79,6 +80,7 @@ export function DataControllerFrom<
   const findOneSettings = extractOperationSettings(
     controllerStructure.operations?.findOne,
     {
+      disabled: controllerStructure.operations?.findOne === false,
       route: ':id',
       summary: 'Retrieve ' + entityType.name.toLowerCase() + ' record by id',
       description: 'retrieval of ' + entityType.name.toLowerCase() + ' record by id',
@@ -90,6 +92,7 @@ export function DataControllerFrom<
   const paginationSettings = extractOperationSettings(
     controllerStructure.operations?.pagination,
     {
+      disabled: !controllerStructure.operations?.pagination,
       route: 'pagination',
       summary: 'Pagination of ' + entityType.name.toLowerCase(),
       description: 'pagination of ' + entityType.name.toLowerCase(),
@@ -101,6 +104,7 @@ export function DataControllerFrom<
   const findAllPaginatedSettings = extractOperationSettings(
     controllerStructure.operations?.findAllPaginated,
     {
+      disabled: controllerStructure.operations?.findAllPaginated === false,
       route: 'paginated',
       summary: 'Paginated List of ' + entityType.name.toLowerCase() + 's records',
       description: 'paginated list of ' + entityType.name.toLowerCase() + 's records',
@@ -232,16 +236,16 @@ export function DataControllerFrom<
   }
 
   //remove controller methods if they are disabled in the structure
-  if (controllerStructure.operations?.findAll === false) {
+  if (findAllSettings.disabled) {
     delete DataController.prototype.findAll;
   }
-  if (controllerStructure.operations?.findOne === false) {
+  if (findOneSettings.disabled) {
     delete DataController.prototype.findOne;
   }
-  if (!controllerStructure.operations?.pagination) { //by default dont show this
+  if (paginationSettings.disabled) {
     delete DataController.prototype.pagination;
   }
-  if (controllerStructure.operations?.findAllPaginated === false) {
+  if (findAllPaginatedSettings.disabled) {
     delete DataController.prototype.findAllPaginated;
   }
 
@@ -251,6 +255,7 @@ export function DataControllerFrom<
 export function extractOperationSettings(
   operation:OperationStructure|boolean|undefined, 
   defaults:{
+    disabled:boolean,
     route:string|undefined, 
     summary:string, 
     description:string,
@@ -262,6 +267,7 @@ export function extractOperationSettings(
     operation = {} as OperationStructure;
   
   return {
+    disabled: defaults.disabled,
     route: operation.route ?? defaults.route,
     decorators: operation.decorators ?? [],
     summary: operation.title ?? defaults.summary,

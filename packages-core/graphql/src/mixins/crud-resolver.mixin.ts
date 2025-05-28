@@ -1,6 +1,6 @@
 import { ParseIntPipe, PipeTransform, Type, mixin } from '@nestjs/common';
 import { Args, Mutation } from '@nestjs/graphql';
-import { Context, IdTypeFrom, Entity, FindArgs, CrudService, CurrentContext, applyMethodDecorators, DeepPartial } from "@solid-nestjs/common";
+import { Context, IdTypeFrom, Entity, FindArgs, CrudService, CurrentContext, applyMethodDecorators, DeepPartial, applyMethodDecoratorsIf } from "@solid-nestjs/common";
 import { CrudResolverStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
 import { DataResolverFrom, extractOperationSettings } from './data-resolver.mixin';
@@ -78,6 +78,7 @@ export function CrudResolverFrom<
   const createSettings = extractOperationSettings(
     resolverStructure.operations?.create,
     {
+      disabled: resolverStructure.operations?.create === false,
       name: 'create' + entityType.name,
       summary:'Create ' + entityType.name.toLowerCase() + ' record',
       description:'creation of ' + entityType.name.toLowerCase() + ' record',
@@ -87,6 +88,7 @@ export function CrudResolverFrom<
   const updateSettings = extractOperationSettings(
     resolverStructure.operations?.update,
     {
+      disabled: resolverStructure.operations?.update === false,
       name: 'update' + entityType.name,
       summary:'Update ' + entityType.name.toLowerCase() + ' record',
       description:'update of ' + entityType.name.toLowerCase() + ' record'
@@ -96,6 +98,7 @@ export function CrudResolverFrom<
   const removeSettings = extractOperationSettings(
     resolverStructure.operations?.remove,
     {
+      disabled: resolverStructure.operations?.remove === false,
       name: 'remove' + entityType.name,
       summary:'Remove ' + entityType.name.toLowerCase() + ' record',
       description:'removal of ' + entityType.name.toLowerCase() + ' record'
@@ -105,6 +108,7 @@ export function CrudResolverFrom<
   const hardRemoveSettings = extractOperationSettings(
     resolverStructure.operations?.hardRemove,
     {
+      disabled: !resolverStructure.operations?.hardRemove,
       name: 'hardRemove' + entityType.name,
       summary:'Remove (HARD) ' + entityType.name.toLowerCase() + ' record',
       description:'removal (HARD) of ' + entityType.name.toLowerCase() + ' record'
@@ -113,10 +117,10 @@ export function CrudResolverFrom<
 
   class CrudController extends DataResolverFrom(resolverStructure) 
   {
-    @applyMethodDecorators((resolverStructure.operations?.create === false)?[]:[
-      () => Mutation((returns) => entityType, { name: createSettings.name, description: createSettings.description })
+    @applyMethodDecoratorsIf(!createSettings.disabled,[
+      () => Mutation((returns) => entityType, { name: createSettings.name, description: createSettings.description }),
+      ...createSettings.decorators
     ])
-    @applyMethodDecorators(createSettings?.decorators ?? [])
     async create?(
       @ContextDecorator() context: ContextType,
       @Args({ type: () => createInputType, name: 'createInput' }) createInput: CreateInputType,
@@ -125,10 +129,10 @@ export function CrudResolverFrom<
       return this.service.create(context, createInput);
     }
     
-    @applyMethodDecorators((resolverStructure.operations?.update === false)?[]:[
-      () => Mutation((returns) => entityType, { name: updateSettings.name, description: updateSettings.description })
+    @applyMethodDecoratorsIf(!updateSettings.disabled,[
+      () => Mutation((returns) => entityType, { name: updateSettings.name, description: updateSettings.description }),
+      ...updateSettings.decorators
     ])
-    @applyMethodDecorators(updateSettings?.decorators ?? [])
     async update?(
       @ContextDecorator() context: ContextType,
       @Args({ type: () => updateInputType, name: 'updateInput' }) updateInput,
@@ -137,10 +141,10 @@ export function CrudResolverFrom<
       return this.service.update(context, updateInput.id, updateInput);
     }
 
-    @applyMethodDecorators((resolverStructure.operations?.remove === false)?[]:[
-      () => Mutation((returns) => entityType, { name: removeSettings.name, description: removeSettings.description })
+    @applyMethodDecoratorsIf(!removeSettings.disabled,[
+      () => Mutation((returns) => entityType, { name: removeSettings.name, description: removeSettings.description }),
+      ...removeSettings.decorators
     ])
-    @applyMethodDecorators(removeSettings?.decorators ?? [])
     async remove?(
       @ContextDecorator() context: ContextType,
       @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
@@ -149,10 +153,10 @@ export function CrudResolverFrom<
       return this.service.remove(context, id);
     }
 
-    @applyMethodDecorators((!resolverStructure.operations?.hardRemove)?[]:[
-      () => Mutation((returns) => entityType, { name: hardRemoveSettings.name, description: hardRemoveSettings.description })
+    @applyMethodDecoratorsIf(!hardRemoveSettings.disabled,[
+      () => Mutation((returns) => entityType, { name: hardRemoveSettings.name, description: hardRemoveSettings.description }),
+      ...hardRemoveSettings.decorators
     ])
-    @applyMethodDecorators(hardRemoveSettings?.decorators ?? [])
     async hardRemove?(
       @ContextDecorator() context: ContextType,
       @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
@@ -163,17 +167,16 @@ export function CrudResolverFrom<
   }
 
   //remove controller methods if they are disabled in the structure
-  if (resolverStructure.operations?.create === false) {
+  if (createSettings.disabled) {
     delete CrudController.prototype.create;
   }
-  if (resolverStructure.operations?.update === false) {
+  if (updateSettings.disabled) {
     delete CrudController.prototype.update;
   }
-  if (resolverStructure.operations?.remove === false) {
+  if (removeSettings.disabled) {
     delete CrudController.prototype.remove;
   }
-  //this method is disabled by default
-  if (!resolverStructure.operations?.hardRemove) {
+  if (hardRemoveSettings.disabled) {
     delete CrudController.prototype.hardRemove;
   }
 

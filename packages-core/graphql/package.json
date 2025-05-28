@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/graphql",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "solid-nestjs GraphQL utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,7 +33,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@solid-nestjs/common": "^0.2.0"
+    "@solid-nestjs/common": "^0.2.1"
   },
   "peerDependencies": {
     "@nestjs/core": "^11.0.1",

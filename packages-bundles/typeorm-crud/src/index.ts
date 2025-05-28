@@ -10,18 +10,22 @@ export  {
         getOrderByClass,
         StringFilter, 
         DateFilter, 
-        NumberFilter,        
+        NumberFilter,
         } from "@solid-nestjs/rest-api";
 
 //Crud Controller
 export  { 
-        CrudControllerFrom, 
+        DataControllerFrom,
+        CrudControllerFrom,
+        DataControllerStructure, 
         CrudControllerStructure 
         } from '@solid-nestjs/rest-api';
 
 //Crud Service
-export  { 
+export  {
+        DataServiceFrom,
         CrudServiceFrom, 
+        DataServiceStructure,
         CrudServiceStructure,
         Transactional,
         } from '@solid-nestjs/typeorm';

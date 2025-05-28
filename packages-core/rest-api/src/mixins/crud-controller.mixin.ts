@@ -60,6 +60,7 @@ export function CrudControllerFrom<
   const createSettings = extractOperationSettings(
     controllerStructure.operations?.create,
     {
+      disabled: controllerStructure.operations?.create === false,
       route:undefined,
       summary:'Create ' + entityType.name.toLowerCase() + ' record',
       description:'creation of ' + entityType.name.toLowerCase() + ' record',
@@ -71,6 +72,7 @@ export function CrudControllerFrom<
   const updateSettings = extractOperationSettings(
     controllerStructure.operations?.update,
     {
+      disabled: controllerStructure.operations?.update === false,
       route:':id',
       summary:'Update ' + entityType.name.toLowerCase() + ' record',
       description:'update of ' + entityType.name.toLowerCase() + ' record',
@@ -82,6 +84,7 @@ export function CrudControllerFrom<
   const removeSettings = extractOperationSettings(
     controllerStructure.operations?.remove,
     {
+      disabled: controllerStructure.operations?.remove === false,
       route:':id',
       summary:'Remove ' + entityType.name.toLowerCase() + ' record',
       description:'removal of ' + entityType.name.toLowerCase() + ' record',
@@ -93,6 +96,7 @@ export function CrudControllerFrom<
   const hardRemoveSettings = extractOperationSettings(
     controllerStructure.operations?.hardRemove,
     {
+      disabled: !controllerStructure.operations?.hardRemove,
       route:'hard/:id',
       summary:'Remove (HARD) ' + entityType.name.toLowerCase() + ' record',
       description:'removal (HARD) of ' + entityType.name.toLowerCase() + ' record',
@@ -165,17 +169,17 @@ export function CrudControllerFrom<
   }
 
   //remove controller methods if they are disabled in the structure
-  if (controllerStructure.operations?.create === false) {
+  if (createSettings.disabled) {
     delete CrudController.prototype.create;
   }
-  if (controllerStructure.operations?.update === false) {
+  if (updateSettings.disabled) {
     delete CrudController.prototype.update;
   }
-  if (controllerStructure.operations?.remove === false) {
+  if (removeSettings.disabled) {
     delete CrudController.prototype.remove;
   }
   //this method is disabled by default
-  if (!controllerStructure.operations?.hardRemove) {
+  if (hardRemoveSettings.disabled) {
     delete CrudController.prototype.hardRemove;
   }
 
