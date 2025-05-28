@@ -1,5 +1,5 @@
 {
-  "name": "@solid-nestjs/typeorm-graph-crud",
+  "name": "@solid-nestjs/typeorm-graphql-crud",
   "version": "0.2.0",
   "description": "Complete SOLID NestJS TypeORM CRUD bundle - includes common utilities, TypeORM integration, and GraphQL API generation",
   "main": "dist/index.js",
