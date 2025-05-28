@@ -1,9 +1,9 @@
 import { IsOptional, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
+import { ApiProperty } from "@nestjs/swagger";
 import { ArgsType, Field, InputType } from "@nestjs/graphql";
 import { FindArgsFrom, StringFilter, Where } from "@solid-nestjs/typeorm-hybrid-crud";
 import { Supplier } from "../../entities/supplier.entity";
-import { ApiProperty } from "@nestjs/swagger";
 
 @InputType({ isAbstract: true })
 class FindSupplierWhere implements Where<Supplier>

@@ -41,6 +41,7 @@ export function
         
     const { whereType, orderByType } = findArgsStructure ?? {};
 
+    @ArgsType()
     class ArgsClass implements FindArgs<EntityType>
     {        
         @ApiProperty({ type: () => PaginationRequest, required: false })

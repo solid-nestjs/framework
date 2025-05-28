@@ -64,6 +64,13 @@ type Mutation {
   updateSupplier(updateInput: UpdateSupplierDto!): Supplier!
 }
 
+input PaginationRequest {
+  limit: Int
+  page: Int
+  skip: Int
+  take: Int
+}
+
 type PaginationResult {
   count: Int!
   hasNextPage: Boolean!
@@ -103,19 +110,19 @@ type Query {
   product(id: String!): Product!
 
   """list of products records"""
-  products(where: FindProductWhere): [Product!]!
+  products(pagination: PaginationRequest, where: FindProductWhere): [Product!]!
 
   """pagination of product"""
-  productsPagination(where: FindProductWhere): PaginationResult!
+  productsPagination(pagination: PaginationRequest, where: FindProductWhere): PaginationResult!
 
   """retrieval of supplier record by id"""
   supplier(id: String!): Supplier!
 
   """list of suppliers records"""
-  suppliers(where: FindSupplierWhere): [Supplier!]!
+  suppliers(pagination: PaginationRequest, where: FindSupplierWhere): [Supplier!]!
 
   """pagination of supplier"""
-  suppliersPagination(where: FindSupplierWhere): PaginationResult!
+  suppliersPagination(pagination: PaginationRequest, where: FindSupplierWhere): PaginationResult!
 }
 
 input StringFilter {
