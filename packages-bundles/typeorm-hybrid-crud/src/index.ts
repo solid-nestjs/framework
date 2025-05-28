@@ -1,6 +1,7 @@
 // Re-export everything from all packages
 export * from '@solid-nestjs/common';
 export * as TypeOrm from '@solid-nestjs/typeorm';
+export * as RestApi from '@solid-nestjs/rest-api';
 export * as GraphQL from '@solid-nestjs/graphql';
 
 //Filtering
@@ -11,7 +12,13 @@ export  {
         StringFilter, 
         DateFilter, 
         NumberFilter,
-        } from "@solid-nestjs/graphql";
+        } from "@solid-nestjs/rest-graphql";
+
+//Crud Controller
+export  { 
+        CrudControllerFrom, 
+        CrudControllerStructure 
+        } from '@solid-nestjs/rest-api';
 
 //Crud Resolver
 export  { 
@@ -36,4 +43,4 @@ export  {
 
 // Optional: Add version info
 export const SOLID_NESTJS_VERSION = '0.2.0';
-export const BUNDLE_NAME = '@solid-nestjs/typeorm-graphql-crud';
+export const BUNDLE_NAME = '@solid-nestjs/typeorm-hybrid-crud';
