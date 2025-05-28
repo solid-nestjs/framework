@@ -35,7 +35,8 @@ export interface DataResolverStructure<
         EntityProviderStructure<IdType,EntityType>
     {
         serviceType:Constructable<ServiceType>,
-        findArgsType?:Constructable<FindArgsType>
+        findArgsType?:Constructable<FindArgsType>,
+        contextType?:Constructable<ContextType>,
         operations?:DataResolverOperations<IdType,EntityType,ServiceType,FindArgsType,ContextType>,
         parameterDecorators?:ParameterDecorators,
         classDecorators?:(() => ClassDecorator)[],

@@ -32,9 +32,9 @@ export class PaginationResult implements CommonPaginationResult {
   @Field(() => Int)
   pageCount!: number;
 
-  @Field(() => Int)
+  @Field(() => Boolean)
   hasNextPage!: boolean;
 
-  @Field(() => Int)
+  @Field(() => Boolean)
   hasPreviousPage!: boolean;
 }

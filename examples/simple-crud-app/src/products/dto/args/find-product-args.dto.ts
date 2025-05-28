@@ -3,8 +3,8 @@ import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 import { FindArgsFrom, getWhereClass, StringFilter, Where } from "@solid-nestjs/typeorm-crud";
 import { FindSupplierArgs } from "../../../suppliers/dto";
+import { Supplier } from "../../../suppliers/entities/supplier.entity";
 import { Product } from "../../entities/product.entity";
-import { Supplier } from "src/suppliers/entities/supplier.entity";
 
 const SupplierWhere = getWhereClass(FindSupplierArgs);
 

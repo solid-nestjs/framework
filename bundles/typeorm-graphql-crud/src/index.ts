@@ -36,4 +36,4 @@ export  {
 
 // Optional: Add version info
 export const SOLID_NESTJS_VERSION = '0.2.0';
-export const BUNDLE_NAME = '@solid-nestjs/typeorm-graph-crud';
+export const BUNDLE_NAME = '@solid-nestjs/typeorm-graphql-crud';

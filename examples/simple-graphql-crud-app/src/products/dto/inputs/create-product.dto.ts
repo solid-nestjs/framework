@@ -1,6 +1,12 @@
-import { InputType, Field, Float, Int } from '@nestjs/graphql';
+import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
 import { IsNotEmpty, IsString, IsNumber, IsPositive, Min } from 'class-validator';
 
+@InputType()
+export class ProductSupplierDto {
+    @Field(() => ID)
+    @IsString()
+    id: string;
+}
 
 @InputType()
 export class CreateProductDto {
@@ -23,4 +29,7 @@ export class CreateProductDto {
     @IsNumber()
     @Min(0)
     stock: number;
+    
+    @Field(() => ProductSupplierDto,{ description: 'product Supplier' })
+    supplier:ProductSupplierDto;
 }

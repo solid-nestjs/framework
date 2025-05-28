@@ -43,7 +43,8 @@ export interface DataControllerStructure<
         EntityProviderStructure<IdType,EntityType>
     {
         serviceType:Constructable<ServiceType>,
-        findArgsType?:Constructable<FindArgsType>
+        findArgsType?:Constructable<FindArgsType>,        
+        contextType?:Constructable<ContextType>,
         operations?:DataControllerOperations<IdType,EntityType,ServiceType,FindArgsType,ContextType>,
         route?:string;
         parameterDecorators?:ParameterDecorators,

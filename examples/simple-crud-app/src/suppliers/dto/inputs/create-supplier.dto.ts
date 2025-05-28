@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsEmail, IsNotEmpty, IsNumber, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 
 export class CreateSupplierDto {
   @ApiProperty({ description: 'The name of the supplier' })
@@ -14,11 +14,12 @@ export class CreateSupplierDto {
   @IsEmail()
   contactEmail: string;
 
-  @ApiProperty({ description: 'The email of the supplier', type:() => [SupplierProductDto] })
+  @ApiProperty({ description: 'Supplier`s products', type:() => [SupplierProductDto], required:false })
   @Type(() => SupplierProductDto)
   @IsArray()
+  @IsOptional()
   @ValidateNested()
-  products: SupplierProductDto[];
+  products?: SupplierProductDto[];
 }
 
 export class SupplierProductDto {

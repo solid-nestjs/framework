@@ -113,7 +113,9 @@ export function CrudResolverFrom<
 
   class CrudController extends DataResolverFrom(resolverStructure) 
   {
-    @Mutation((returns) => entityType, { name: createSettings.name, description: createSettings.description })
+    @applyMethodDecorators((resolverStructure.operations?.create === false)?[]:[
+      () => Mutation((returns) => entityType, { name: createSettings.name, description: createSettings.description })
+    ])
     @applyMethodDecorators(createSettings?.decorators ?? [])
     async create?(
       @ContextDecorator() context: ContextType,
@@ -123,7 +125,9 @@ export function CrudResolverFrom<
       return this.service.create(context, createInput);
     }
     
-    @Mutation((returns) => entityType, { name: updateSettings.name, description: updateSettings.description })
+    @applyMethodDecorators((resolverStructure.operations?.update === false)?[]:[
+      () => Mutation((returns) => entityType, { name: updateSettings.name, description: updateSettings.description })
+    ])
     @applyMethodDecorators(updateSettings?.decorators ?? [])
     async update?(
       @ContextDecorator() context: ContextType,
@@ -133,7 +137,9 @@ export function CrudResolverFrom<
       return this.service.update(context, updateInput.id, updateInput);
     }
 
-    @Mutation((returns) => entityType, { name: removeSettings.name, description: removeSettings.description })
+    @applyMethodDecorators((resolverStructure.operations?.remove === false)?[]:[
+      () => Mutation((returns) => entityType, { name: removeSettings.name, description: removeSettings.description })
+    ])
     @applyMethodDecorators(removeSettings?.decorators ?? [])
     async remove?(
       @ContextDecorator() context: ContextType,
@@ -143,7 +149,9 @@ export function CrudResolverFrom<
       return this.service.remove(context, id);
     }
 
-    @Mutation((returns) => entityType, { name: hardRemoveSettings.name, description: hardRemoveSettings.description })
+    @applyMethodDecorators((!resolverStructure.operations?.hardRemove)?[]:[
+      () => Mutation((returns) => entityType, { name: hardRemoveSettings.name, description: hardRemoveSettings.description })
+    ])
     @applyMethodDecorators(hardRemoveSettings?.decorators ?? [])
     async hardRemove?(
       @ContextDecorator() context: ContextType,

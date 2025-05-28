@@ -93,7 +93,7 @@ export function DataResolverFrom<
   const paginationSettings = extractOperationSettings(
     resolverStructure.operations?.pagination,
     {
-      name: entityType.name,
+      name: findAllSettings.name+'Pagination',
       summary: 'Pagination of ' + entityType.name.toLowerCase(),
       description: 'pagination of ' + entityType.name.toLowerCase(),
     }
@@ -104,7 +104,9 @@ export function DataResolverFrom<
   class DataController {
     constructor(@Inject(serviceType) readonly service: ServiceType) {}
 
-    @Query((returns) => [entityType], { name: findAllSettings.name, description: findAllSettings.description })
+    @applyMethodDecorators((resolverStructure.operations?.findAll === false)?[]:[
+      () => Query((returns) => [entityType], { name: findAllSettings.name, description: findAllSettings.description })
+    ])
     @applyMethodDecorators(findAllSettings?.decorators ?? [])
     async findAll?(
       @ContextDecorator() context: ContextType,
@@ -114,7 +116,9 @@ export function DataResolverFrom<
       return this.service.findAll(context, args);
     }
     
-    @Query((returns) => PaginationResult, { name: paginationSettings.name, description: paginationSettings.description })
+    @applyMethodDecorators((resolverStructure.operations?.pagination === false)?[]:[
+      () => Query((returns) => PaginationResult, { name: paginationSettings.name, description: paginationSettings.description })
+    ])
     @applyMethodDecorators(paginationSettings?.decorators ?? [])
     async pagination?(
       @ContextDecorator() context: ContextType,
@@ -124,7 +128,9 @@ export function DataResolverFrom<
       return this.service.pagination(context, args);
     }
     
-    @Query((returns) => entityType, { name: findOneSettings.name, description: findOneSettings.description })
+    @applyMethodDecorators((resolverStructure.operations?.findOne === false)?[]:[
+      () => Query((returns) => entityType, { name: findOneSettings.name, description: findOneSettings.description })
+    ])
     @applyMethodDecorators(findOneSettings?.decorators ?? [])
     async findOne?(
       @ContextDecorator() context: ContextType,
@@ -142,7 +148,7 @@ export function DataResolverFrom<
   if (resolverStructure.operations?.findOne === false) {
     delete DataController.prototype.findOne;
   }
-  if (!resolverStructure.operations?.pagination) { //by default dont show this
+  if (resolverStructure.operations?.pagination === false) {
     delete DataController.prototype.pagination;
   }
 

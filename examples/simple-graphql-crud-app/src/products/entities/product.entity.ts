@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
+import { Supplier } from 'src/suppliers/entities/supplier.entity';
 
 @ObjectType()
 @Entity()
@@ -24,11 +25,7 @@ export class Product {
     @Column()
     stock: number;
 
-    @Field({ description: 'The creation date of the product' })
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
-
-    @Field({ description: 'The last update date of the product' })
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
-    updatedAt: Date;
+    @Field(()=> Supplier,{ description: 'Product Supplier', nullable:true })
+    @ManyToOne(()=>Supplier, (supplier) => supplier.products)
+    supplier:Supplier;
 }

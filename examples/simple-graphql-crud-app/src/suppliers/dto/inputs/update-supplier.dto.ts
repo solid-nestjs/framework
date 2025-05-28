@@ -1,9 +1,9 @@
 import { IsUUID } from "class-validator";
 import { Field, ID, InputType, PartialType } from "@nestjs/graphql";
-import { CreateProductDto } from "./create-product.dto";
+import { CreateSupplierDto } from "./create-supplier.dto";
 
 @InputType()
-export class UpdateProductDto extends PartialType(CreateProductDto) {
+export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {
 
     @Field(() => ID)
     @IsUUID()
