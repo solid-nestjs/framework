@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiParam  } from '@nestjs/swagger';
 import { Context, IdTypeFrom, Entity, FindArgs, CrudService, CurrentContext, applyMethodDecorators, DeepPartial } from "@solid-nestjs/common";
 import { CrudControllerStructure } from '../interfaces';
 import { ApiResponses } from '../decorators';
-import { PaginationResult, DefaultArgs } from '../classes';
+import { DefaultArgs } from '../classes';
 import { DataControllerFrom, extractOperationSettings } from './data-controller.mixin';
 
 /**
