@@ -15,6 +15,9 @@ packages-core/**/database-data
 packages-bundles/**/database-data
 apps-examples/**/database-data
 
+# Auto-generated GraphQL schema files
+schema.gql
+
 # Logs
 logs
 *.log
