@@ -53,9 +53,12 @@ interface QueryContext<EntityType extends ObjectLiteral> {
     validRelations?: (relations: Relation[]) => boolean;
 }
 
-interface whereContext<EntityType extends ObjectLiteral> extends QueryContext<EntityType> {
+interface RecursiveContext<EntityType extends ObjectLiteral> extends QueryContext<EntityType> {
     alias: string;
     recusirveDepth: number;
+}
+
+interface WhereContext<EntityType extends ObjectLiteral> extends RecursiveContext<EntityType> {
     constructField: (fieldName: string, value: any) => object;
 }
 
@@ -234,6 +237,13 @@ export class QueryBuilderHelper<
         return queryBuilder;
     }
 
+    /**
+     * Recursively constructs an array of relation metadata objects from the provided relations object.
+     *
+     * @param alias - The current alias used as a prefix for relation properties.
+     * @param relations - An object representing the relations to be included, where each key is a relation name and the value can be a nested relations object or a boolean.
+     * @returns An array of `RelationInterface` objects, each containing the fully qualified property path and its corresponding alias.
+     */
     protected getRelationsArray(alias: string, relations: FindOptionsRelations<EntityType>): RelationInterface[] {
         const resultRelations: RelationInterface[] = [];
 
@@ -257,6 +267,17 @@ export class QueryBuilderHelper<
         return resultRelations;
     }
 
+    /**
+     * Adds a relation to the query context if it does not already exist, validates the relation path,
+     * and performs the appropriate join operation on the query builder.
+     *
+     * @param queryContext - The context containing the query builder, relations, and relation info.
+     * @param property - The property name representing the relation to add. Can be a nested path.
+     * @param alias - Optional alias for the relation in the query. If not provided, it is generated from the property path.
+     * @param andSelect - If true, performs a `leftJoinAndSelect`; otherwise, performs a `leftJoin`.
+     * @returns The `Relation` object representing the added or existing relation.
+     * @throws {BadRequestException} If the relation path does not match any valid relation info.
+     */
     protected addRelation(
         queryContext: QueryContext<EntityType>,
         property: string,
@@ -304,6 +325,16 @@ export class QueryBuilderHelper<
         return relation;
     }
 
+    /**
+     * Resolves the full path of a relation property as an array of strings, handling nested relations recursively.
+     *
+     * @param relations - The list of available relations to search for parent relations.
+     * @param relation - The current relation whose path is being resolved. If undefined, returns an empty array.
+     * @param recursiveDepth - The current recursion depth, used to prevent infinite recursion.
+     * @returns An array of strings representing the path to the relation property.
+     * @throws {InternalServerErrorException} If the maximum recursion depth is exceeded.
+     * @throws {BadRequestException} If the relation property format is invalid (i.e., contains more than one dot).
+     */
     protected getRelationPath(
         relations: Relation[],
         relation: Relation | undefined,
@@ -334,6 +365,17 @@ export class QueryBuilderHelper<
         return [...this.getRelationPath(relations, parentRelation, recursiveDepth + 1), field];
     }
 
+    /**
+     * Applies filtering, ordering, and pagination arguments to the provided query context's QueryBuilder.
+     *
+     * @param queryContext - The context containing the QueryBuilder and related metadata for the entity.
+     * @param args - The arguments specifying filtering (`where`), ordering (`orderBy`), and pagination (`pagination`) options.
+     *
+     * @remarks
+     * - If `args.where` is provided, constructs and applies a WHERE condition to the query.
+     * - If `args.orderBy` is provided, applies ordering to the query.
+     * - If `args.pagination` is provided, sets the offset and limit for pagination.
+     */
     protected applyArgs(
         queryContext: QueryContext<EntityType>,
         args: FindArgs<EntityType>
@@ -351,7 +393,7 @@ export class QueryBuilderHelper<
         }
 
         if (args.orderBy)
-            this.applyOrderBy(queryContext, args.orderBy);
+            this.applyOrderBy({ ...queryContext, alias: queryBuilder.alias, recusirveDepth: 0 }, args.orderBy);
 
         if (args.pagination) {
             const { skip, take } = getPaginationArgs(args.pagination);
@@ -361,11 +403,25 @@ export class QueryBuilderHelper<
         }
     }
 
+    /**
+     * Applies ordering to the query builder based on the provided `orderBy` parameter.
+     * Supports both flat and nested ordering, recursively handling relations up to a maximum depth.
+     *
+     * @protected
+     * @param queryContext - The current context of the query, including the query builder, alias, and recursion depth.
+     * @param orderBy - An object or array of objects specifying the fields and directions to order by.
+     *                  Each key is a field name, and the value is either an order direction (e.g., 'ASC', 'DESC')
+     *                  or a nested object for ordering on related entities.
+     * @throws InternalServerErrorException If the recursive depth exceeds the maximum allowed.
+     */
     protected applyOrderBy(
-        queryContext: QueryContext<EntityType>,
+        queryContext: RecursiveContext<EntityType>,
         orderBy: OrderBy<EntityType> | OrderBy<EntityType>[]
     ) {
-        const { queryBuilder } = queryContext;
+        if (queryContext.recusirveDepth > MAX_RECURSIVE_DEPTH)
+            throw new InternalServerErrorException(RECURSIVE_DEPTH_ERROR, { cause: { queryContext, orderBy, depth: queryContext.recusirveDepth } });
+
+        const { queryBuilder, alias } = queryContext;
 
         let orderByArr = (Array.isArray(orderBy)) ? orderBy : [orderBy];
 
@@ -378,14 +434,34 @@ export class QueryBuilderHelper<
             keys.forEach((key) => {
                 const value = order[key];
 
-                if (value)
-                    queryBuilder.addOrderBy(queryBuilder.alias + '.' + key, value);
+                if (value) {
+                    if (typeof value !== 'object') {
+                        queryBuilder.addOrderBy(alias + '.' + key, value);
+                    }
+                    else {
+                        const alias = this.addRelationForConditionOrSorting(queryContext, key);
+                        this.applyOrderBy({ ...queryContext, alias, recusirveDepth: queryContext.recusirveDepth + 1 }, value);
+                    }
+                }
             });
         });
     }
 
+    /**
+     * Constructs a TypeORM `Brackets` object representing the WHERE condition for a query,
+     * based on the provided `where` object and the current `whereContext`.
+     *
+     * This method recursively processes logical operators (`_and`, `_or`) and field/relation conditions,
+     * combining them into a single bracketed condition suitable for use in a TypeORM query builder.
+     * Throws an `InternalServerErrorException` if the recursive depth exceeds the allowed maximum.
+     *
+     * @param whereContext - The context object containing query builder and recursion depth information.
+     * @param where - An object representing the WHERE conditions, which may include logical operators and field/relation filters.
+     * @returns A `Brackets` object encapsulating the constructed WHERE condition.
+     * @throws {InternalServerErrorException} If the recursive depth exceeds `MAX_RECURSIVE_DEPTH`.
+     */
     protected getWhereCondition(
-        whereContext: whereContext<EntityType>,
+        whereContext: WhereContext<EntityType>,
         where: Where<EntityType>
     ): any {
         if (whereContext.recusirveDepth > MAX_RECURSIVE_DEPTH)
@@ -440,13 +516,25 @@ export class QueryBuilderHelper<
         return orBracket;
     }
 
+    /**
+     * Builds a where condition for a related entity field within a query context.
+     *
+     * This method updates the query context to include the necessary relation alias,
+     * constructs a new field mapping function for the related field, and recursively
+     * generates the where condition for the specified relation.
+     *
+     * @param whereContext - The current context of the where clause, including alias and field construction logic.
+     * @param fieldName - The name of the related entity field to apply the condition on.
+     * @param condition - The where condition to apply to the related entity.
+     * @returns The constructed where condition for the related entity.
+     */
     protected relationCondition(
-        whereContext: whereContext<EntityType>,
+        whereContext: WhereContext<EntityType>,
         fieldName: string,
         condition: Where<EntityType>
     ) {
 
-        const alias: string = this.addRelationForCondition(whereContext, fieldName);
+        const alias: string = this.addRelationForConditionOrSorting(whereContext, fieldName);
 
         const oldConstructField = whereContext.constructField;
 
@@ -455,27 +543,53 @@ export class QueryBuilderHelper<
         return this.getWhereCondition({ ...whereContext, alias, constructField, recusirveDepth: whereContext.recusirveDepth + 1 }, condition);
     }
 
-    protected addRelationForCondition(
-        whereContext: whereContext<EntityType>,
+    /**
+     * Adds a relation to the query builder for a given field, intended for use in conditions or sorting.
+     * 
+     * This method constructs the property path using the provided context alias and field name,
+     * then attempts to add the relation. It validates that the relation's aggregated cardinality
+     * is present and not of a multiplying type, throwing an error if these conditions are not met.
+     * 
+     * @param context - The recursive context containing alias and entity information.
+     * @param fieldName - The name of the field for which the relation should be added.
+     * @returns The alias of the added relation.
+     * @throws InternalServerErrorException If the relation's aggregated cardinality is missing or invalid for use in conditions.
+     */
+    protected addRelationForConditionOrSorting(
+        context: RecursiveContext<EntityType>,
         fieldName: string
     ): string {
-        const property = whereContext.alias + '.' + fieldName;
+        const property = context.alias + '.' + fieldName;
 
-        const relation = this.addRelation(whereContext, property);
+        const relation = this.addRelation(context, property);
 
         const aggregatedCardinality = relation.relationInfo?.aggregatedCardinality;
 
         if (!aggregatedCardinality)
-            throw new InternalServerErrorException(`no aggregatedCardinality for ${property}`, { cause: { property, relation, whereContext } });
+            throw new InternalServerErrorException(`no aggregatedCardinality for ${property}`, { cause: { property, relation, context } });
 
         if (isMultiplyingCardinality(aggregatedCardinality))
-            throw new InternalServerErrorException(`invalid aggregatedCardinality (${aggregatedCardinality}) for condition in property (${property}), it will cause a multiplying join`, { cause: { property, aggregatedCardinality, relation, whereContext } });
+            throw new InternalServerErrorException(`invalid aggregatedCardinality (${aggregatedCardinality}) for condition in property (${property}), it will cause a multiplying join`, { cause: { property, aggregatedCardinality, relation, whereContext: context } });
 
         return relation.alias;
     }
 
+    /**
+     * Constructs query conditions for a given field based on the provided condition value.
+     *
+     * This method supports primitive values (string, number, boolean, Date), arrays (for `IN` queries),
+     * and objects representing advanced query operators. It validates the input and builds the appropriate
+     * query condition using the `whereContext` helper methods.
+     *
+     * @param whereContext - The context object used to construct field conditions.
+     * @param fieldName - The name of the field for which the condition is being constructed.
+     * @param fieldCondition - The condition value, which can be a primitive, array, or an object with operators.
+     * @returns The constructed field condition suitable for use in a query.
+     * @throws InternalServerErrorException If the field condition is not a valid object when expected.
+     * @throws BadRequestException If the object condition does not contain any valid operators.
+     */
     protected getFieldConditions(
-        whereContext: whereContext<EntityType>,
+        whereContext: WhereContext<EntityType>,
         fieldName: string,
         fieldCondition: unknown
     ) {
@@ -523,8 +637,15 @@ export class QueryBuilderHelper<
         return whereContext.constructField(fieldName, condition);
     }
 
+    /**
+     * Processes one or multiple where conditions and returns their corresponding query representations.
+     *
+     * @param whereContext - The context object containing metadata and utilities for building the where clause.
+     * @param conditions - A single where condition or an array of where conditions to be processed.
+     * @returns An array of processed where conditions, each transformed by `getWhereCondition`.
+     */
     protected getComplexConditions(
-        whereContext: whereContext<EntityType>,
+        whereContext: WhereContext<EntityType>,
         conditions: Where<EntityType> | Where<EntityType>[]
     ) {
         const conditionsArr = (Array.isArray(conditions)) ? conditions : [conditions];
@@ -532,6 +653,19 @@ export class QueryBuilderHelper<
         return conditionsArr.map((condition) => this.getWhereCondition(whereContext, condition));
     }
 
+    /**
+     * Checks whether the provided value for a given field name satisfies the required conditions.
+     *
+     * Throws a `BadRequestException` if the value is `null`, `undefined`, or an empty object.
+     * Returns `true` if the value is a primitive (`string`, `number`, `boolean`), a `Date`, or an array.
+     * If the value is an object, returns `true` if any of its keys match the allowed condition keys.
+     * Otherwise, returns `false`.
+     *
+     * @param fieldName - The name of the field being checked.
+     * @param value - The value to validate against the field conditions.
+     * @returns `true` if the value satisfies the field conditions, otherwise `false`.
+     * @throws {BadRequestException} If the value is `null`, `undefined`, or an empty object.
+     */
     protected hasFieldConditions(
         fieldName: string,
         value: unknown
