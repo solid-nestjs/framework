@@ -30,11 +30,24 @@ input CreateSupplierDto {
   products: [SupplierProductDto!]
 }
 
+input FindProductOrderBy {
+  description: OrderTypes
+  name: OrderTypes
+  price: OrderTypes
+  stock: OrderTypes
+  supplier: FindSupplierOrderBy
+}
+
 input FindProductWhere {
   _and: [FindProductWhere!]
   _or: [FindProductWhere!]
   name: StringFilter
   supplier: FindSupplierWhere
+}
+
+input FindSupplierOrderBy {
+  contactEmail: OrderTypes
+  name: OrderTypes
 }
 
 input FindSupplierWhere {
@@ -62,6 +75,11 @@ type Mutation {
 
   """update of supplier record"""
   updateSupplier(updateInput: UpdateSupplierDto!): Supplier!
+}
+
+enum OrderTypes {
+  ASC
+  DESC
 }
 
 input PaginationRequest {
@@ -110,19 +128,19 @@ type Query {
   product(id: String!): Product!
 
   """list of products records"""
-  products(pagination: PaginationRequest, where: FindProductWhere): [Product!]!
+  products(orderBy: [FindProductOrderBy!], pagination: PaginationRequest, where: FindProductWhere): [Product!]!
 
   """pagination of product"""
-  productsPagination(pagination: PaginationRequest, where: FindProductWhere): PaginationResult!
+  productsPagination(orderBy: [FindProductOrderBy!], pagination: PaginationRequest, where: FindProductWhere): PaginationResult!
 
   """retrieval of supplier record by id"""
   supplier(id: String!): Supplier!
 
   """list of suppliers records"""
-  suppliers(pagination: PaginationRequest, where: FindSupplierWhere): [Supplier!]!
+  suppliers(orderBy: [FindSupplierOrderBy!], pagination: PaginationRequest, where: FindSupplierWhere): [Supplier!]!
 
   """pagination of supplier"""
-  suppliersPagination(pagination: PaginationRequest, where: FindSupplierWhere): PaginationResult!
+  suppliersPagination(orderBy: [FindSupplierOrderBy!], pagination: PaginationRequest, where: FindSupplierWhere): PaginationResult!
 }
 
 input StringFilter {
