@@ -1,3 +1,4 @@
+import { OrderByTypes } from '../enums';
 import { StringFilter, NumberFilter, DateFilter } from './../interfaces/misc/filters.interfaces'
 
 /**
@@ -50,10 +51,10 @@ export type Where<T> = {
  * @template T - The type of the field to determine the order-by type for.
  */
 type OrderByField<T> =
-    T extends string ? string :
-    T extends number ? number :
-    T extends Date ? Date :
-    T extends boolean ? boolean :
+    T extends string ? OrderByTypes :
+    T extends number ? OrderByTypes :
+    T extends Date ? OrderByTypes :
+    T extends boolean ? OrderByTypes :
     OrderBy<T>;
 
 /**
