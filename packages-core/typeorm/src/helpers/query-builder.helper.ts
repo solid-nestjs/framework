@@ -4,7 +4,9 @@ import { BadRequestException, InternalServerErrorException } from "@nestjs/commo
 import { Constructable, Entity, FindArgs, getPaginationArgs, IdTypeFrom, OrderBy, Where } from "@solid-nestjs/common";
 import {
     DataRetrievalOptions, Relation as RelationInterface,
-    ExtendedRelationInfo, QueryBuilderConfig
+    ExtendedRelationInfo, QueryBuilderConfig,
+    getMainAliasFromConfig,
+    getRelationsFromConfig
 } from "../interfaces";
 import { getEntityRelationsExtended } from "./entity-relations.helper";
 
@@ -180,7 +182,7 @@ export class QueryBuilderHelper<
         if (!qb)
             return false;
 
-        const mainAlias = options?.mainAlias ?? this.defaultOptions?.relationsConfig?.mainAlias ?? this.entityType.name.toLowerCase();
+        const mainAlias = options?.mainAlias ?? getMainAliasFromConfig(this.defaultOptions?.relationsConfig) ?? this.entityType.name.toLowerCase();
 
         return qb.select(mainAlias + '.id');
     }
@@ -193,8 +195,8 @@ export class QueryBuilderHelper<
     ): SelectQueryBuilder<EntityType> | false {
         const relationsInfo = this.getRelationsInfo(repository);
 
-        const mainAlias = options?.mainAlias ?? this.defaultOptions?.relationsConfig?.mainAlias ?? this.entityType.name.toLowerCase();
-        const relations = options?.relations ?? this.defaultOptions?.relationsConfig?.relations ?? [];
+        const mainAlias = options?.mainAlias ?? getMainAliasFromConfig(this.defaultOptions?.relationsConfig) ?? this.entityType.name.toLowerCase();
+        const relations = options?.relations ?? getRelationsFromConfig(this.defaultOptions?.relationsConfig) ?? [];
         const lockMode = options?.lockMode ?? this.defaultOptions?.lockMode;
         const ignoreMultiplyingJoins = options?.ignoreMultiplyingJoins ?? baseQueryContext?.ignoreMultiplyingJoins;
         const ignoreSelects = options?.ignoreSelects ?? baseQueryContext?.ignoreSelects;

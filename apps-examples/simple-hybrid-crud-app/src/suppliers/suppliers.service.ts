@@ -14,16 +14,12 @@ export const serviceStructure = CrudServiceStructure({
     hardRemove: { transactional: true },
     findOne: {
       relationsConfig: {
-        relations: {
-          products: true
-        }
+        products: true
       }
     },
     findAll: {
       relationsConfig: {
-        relations: {
-          products: true
-        }
+        products: true
       }
     }
   },

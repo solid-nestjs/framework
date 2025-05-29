@@ -3,7 +3,7 @@ import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { applyMethodDecorators, AuditService, BooleanType, Entity, FindArgs, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where } from '@solid-nestjs/common';
-import { Context, DataService as DataService, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure } from '../interfaces';
+import { Context, DataService as DataService, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure, getMainAliasFromConfig, getRelationsFromConfig } from '../interfaces';
 import { QueryBuilderHelper, runInTransaction } from '../helpers';
 
 /**
@@ -129,8 +129,8 @@ export function DataServiceFrom<
       options = { 
             ...options, 
             lockMode:options?.lockMode ?? findAllStruct?.lockMode,
-            mainAlias:options?.mainAlias ?? findAllStruct?.relationsConfig?.mainAlias,
-            relations:options?.relations ?? findAllStruct?.relationsConfig?.relations,
+            mainAlias:options?.mainAlias ?? getMainAliasFromConfig(findAllStruct?.relationsConfig),
+            relations:options?.relations ?? getRelationsFromConfig(findAllStruct?.relationsConfig),
           };
 
       const paginatedQueryBuilder = this.getNonMultiplyingPaginatedQueryBuilder(context, args, options);
@@ -173,8 +173,8 @@ export function DataServiceFrom<
       options = { 
             ...options, 
             lockMode:options?.lockMode ?? paginationStruct?.lockMode,
-            mainAlias:options?.mainAlias ?? paginationStruct?.relationsConfig?.mainAlias,
-            relations:options?.relations ?? paginationStruct?.relationsConfig?.relations,
+            mainAlias:options?.mainAlias ?? getMainAliasFromConfig(paginationStruct?.relationsConfig),
+            relations:options?.relations ?? getRelationsFromConfig(paginationStruct?.relationsConfig),
             ignoreMultiplyingJoins: true,
             ignoreSelects:true,
           };
@@ -249,8 +249,8 @@ export function DataServiceFrom<
       options = { 
                   ...options, 
                   lockMode:options?.lockMode ?? findOneStruct?.lockMode,
-                  mainAlias:options?.mainAlias ?? findOneStruct?.relationsConfig?.mainAlias,
-                  relations:options?.relations ?? findOneStruct?.relationsConfig?.relations,
+                  mainAlias:options?.mainAlias ?? getMainAliasFromConfig(findOneStruct?.relationsConfig),
+                  relations:options?.relations ?? getRelationsFromConfig(findOneStruct?.relationsConfig),
                 };
 
       const queryBuilder = this.getQueryBuilder(context, args, options);

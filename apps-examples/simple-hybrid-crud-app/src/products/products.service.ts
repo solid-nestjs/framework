@@ -8,9 +8,7 @@ export const serviceStructure = CrudServiceStructure({
   updateInputType: UpdateProductDto,
   findArgsType: FindProductArgs,
   relationsConfig: {
-    relations: {
       supplier: true
-    }
   }
 });
 
