@@ -18,6 +18,6 @@ export class Supplier {
     contactEmail: string;
     
     @Field(()=> [Product],{ description: 'Supplier Products', nullable:true })
-    @OneToMany(()=>Product, (product) => product.supplier, { cascade:true })
+    @OneToMany(()=>Product, (product) => product.supplier, { cascade:["insert","update","remove"]  })
     products: Product[];
 }
