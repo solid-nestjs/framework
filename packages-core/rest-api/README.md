@@ -320,18 +320,18 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 
 ## 🔗 Related Packages
 
-- **[@solid-nestjs/typeorm-crud](../typeorm-crud)** - Complete TypeORM + REST API bundle
-- **[@solid-nestjs/typeorm-hybrid-crud](../typeorm-hybrid-crud)** - Complete REST + GraphQL bundle
-- **[@solid-nestjs/typeorm](../typeorm)** - TypeORM service utilities
-- **[@solid-nestjs/common](../common)** - Shared utilities and interfaces
-- **[@solid-nestjs/rest-graphql](../rest-graphql)** - Hybrid REST/GraphQL utilities
+- **[@solid-nestjs/typeorm-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-crud)** - Complete TypeORM + REST API bundle
+- **[@solid-nestjs/typeorm-hybrid-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-hybrid-crud)** - Complete REST + GraphQL bundle
+- **[@solid-nestjs/typeorm](https://github.com/solid-nestjs/framework/tree/master/packages-core/typeorm)** - TypeORM service utilities
+- **[@solid-nestjs/common](https://github.com/solid-nestjs/framework/tree/master/packages-core/common)** - Shared utilities and interfaces
+- **[@solid-nestjs/rest-graphql](https://github.com/solid-nestjs/framework/tree/master/packages-core/rest-graphql)** - Hybrid REST/GraphQL utilities
 
 ## 📝 Example Projects
 
-See the [examples directory](../../apps-examples) for complete working applications:
+See the [examples directory](https://github.com/solid-nestjs/framework/tree/master/apps-examples) for complete working applications:
 
-- **[simple-crud-app](../../apps-examples/simple-crud-app)** - REST API with TypeORM
-- **[simple-hybrid-crud-app](../../apps-examples/simple-hybrid-crud-app)** - Hybrid REST + GraphQL API
+- **[simple-crud-app](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-crud-app)** - REST API with TypeORM
+- **[simple-hybrid-crud-app](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-hybrid-crud-app)** - Hybrid REST + GraphQL API
 
 For complete documentation and tutorials, visit the [main framework documentation](https://github.com/solid-nestjs/framework).
 

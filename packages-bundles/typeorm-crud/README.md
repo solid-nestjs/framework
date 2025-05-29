@@ -509,8 +509,8 @@ This bundle automatically installs and exports:
 ## 📚 Examples
 
 For complete working examples, see:
-- [Simple CRUD App](https://github.com/solid-nestjs/framework/tree/main/apps-examples/simple-crud-app)
-- [Framework Documentation](https://github.com/solid-nestjs/framework/tree/main/docs)
+- [Simple CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-crud-app)
+- [Framework Documentation](https://github.com/solid-nestjs/framework/tree/master/docs)
 
 ## 📖 Documentation
 

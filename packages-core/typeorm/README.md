@@ -293,20 +293,20 @@ This package provides seamless integration with TypeORM:
 
 ## 🔗 Related Packages
 
-- **[@solid-nestjs/typeorm-crud](../typeorm-crud)** - Complete REST API bundle
-- **[@solid-nestjs/typeorm-graphql-crud](../typeorm-graphql-crud)** - Complete GraphQL API bundle  
-- **[@solid-nestjs/typeorm-hybrid-crud](../typeorm-hybrid-crud)** - Complete REST + GraphQL bundle
-- **[@solid-nestjs/rest-api](../rest-api)** - REST API controllers
-- **[@solid-nestjs/graphql](../graphql)** - GraphQL resolvers
-- **[@solid-nestjs/common](../common)** - Shared utilities and interfaces
+- **[@solid-nestjs/typeorm-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-crud)** - Complete REST API bundle
+- **[@solid-nestjs/typeorm-graphql-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-graphql-crud)** - Complete GraphQL API bundle  
+- **[@solid-nestjs/typeorm-hybrid-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-hybrid-crud)** - Complete REST + GraphQL bundle
+- **[@solid-nestjs/rest-api](https://github.com/solid-nestjs/framework/tree/master/packages-core/rest-api)** - REST API controllers
+- **[@solid-nestjs/graphql](https://github.com/solid-nestjs/framework/tree/master/packages-core/graphql)** - GraphQL resolvers
+- **[@solid-nestjs/common](https://github.com/solid-nestjs/framework/tree/master/packages-core/common)** - Shared utilities and interfaces
 
 ## 📝 Example Projects
 
-See the [examples directory](../../apps-examples) for complete working applications:
+See the [examples directory](https://github.com/solid-nestjs/framework/tree/master/apps-examples) for complete working applications:
 
-- **[simple-crud-app](../../apps-examples/simple-crud-app)** - REST API with TypeORM
-- **[simple-graphql-crud-app](../../apps-examples/simple-graphql-crud-app)** - GraphQL API with TypeORM
-- **[simple-hybrid-crud-app](../../apps-examples/simple-hybrid-crud-app)** - Hybrid REST + GraphQL API
+- **[simple-crud-app](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-crud-app)** - REST API with TypeORM
+- **[simple-graphql-crud-app](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-graphql-crud-app)** - GraphQL API with TypeORM
+- **[simple-hybrid-crud-app](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-hybrid-crud-app)** - Hybrid REST + GraphQL API
 
 For complete documentation and tutorials, visit the [main framework documentation](https://github.com/solid-nestjs/framework).
 

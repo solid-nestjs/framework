@@ -415,7 +415,7 @@ export {
 ## 📚 Examples
 
 Check out the complete example application:
-- [Simple GraphQL CRUD App](https://github.com/solid-nestjs/framework/tree/main/examples/simple-graphql-crud-app)
+- [Simple GraphQL CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-graphql-crud-app)
 
 ## 📖 Documentation
 

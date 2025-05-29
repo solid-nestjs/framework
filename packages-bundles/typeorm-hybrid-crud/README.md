@@ -513,8 +513,8 @@ query {
 ## 📚 Examples
 
 For complete working examples, see:
-- [Simple Hybrid CRUD App](https://github.com/solid-nestjs/framework/tree/main/apps-examples/simple-hybrid-crud-app)
-- [Framework Documentation](https://github.com/solid-nestjs/framework/tree/main/docs)
+- [Simple Hybrid CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-hybrid-crud-app)
+- [Framework Documentation](https://github.com/solid-nestjs/framework/tree/master/docs)
 
 ## 📖 Documentation
 

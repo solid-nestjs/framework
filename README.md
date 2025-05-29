@@ -27,6 +27,35 @@ The SOLID NestJS Framework is a collection of utilities and mixins that accelera
 - **📊 Audit Trail** - Optional audit logging for data changes
 - **🚀 Future-Ready** - Designed for GraphQL and Prisma integration
 
+## 🚀 Try It Now
+
+Get started immediately with our working examples:
+
+### 🎯 REST API Example
+```bash
+# Clone and run the REST API example
+git clone https://github.com/solid-nestjs/framework.git
+cd framework/apps-examples/simple-crud-app
+npm install && npm run start:dev
+# Visit http://localhost:3000/api for Swagger docs
+```
+
+### 🎮 GraphQL Example  
+```bash
+# Run the GraphQL example
+cd framework/apps-examples/simple-graphql-crud-app
+npm install && npm run start:dev
+# Visit http://localhost:3000/graphql for GraphQL Playground
+```
+
+### 🔄 Hybrid REST + GraphQL Example
+```bash
+# Run the hybrid example with both APIs
+cd framework/apps-examples/simple-hybrid-crud-app
+npm install && npm run start:dev
+# Visit http://localhost:3000/api (REST) or http://localhost:3000/graphql
+```
+
 ## 📦 Installation
 
 ```bash

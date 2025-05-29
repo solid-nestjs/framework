@@ -1,99 +1,210 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Simple CRUD App - SOLID NestJS Framework Example
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This example demonstrates how to build a complete REST API CRUD application using the **SOLID NestJS Framework** with TypeORM, SQLite, and Swagger documentation.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Features
 
-## Description
+- **📡 Complete REST API** - Full CRUD operations with RESTful endpoints
+- **💾 Database Integration** - SQLite with TypeORM for data persistence
+- **🔍 Advanced Filtering** - Query parameters with operators like `_contains`, `_gte`, `_lte`
+- **📄 Pagination Support** - Built-in pagination with metadata
+- **📝 Swagger Documentation** - Interactive API documentation
+- **🛡️ Input Validation** - Automatic validation with class-validator
+- **⚡ Auto-generated Endpoints** - Controllers generated from service structures
+- **🔗 Relation Handling** - Automatic loading of related entities
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🏗️ What's Included
 
-## Project setup
+### Entities
+- **Product** - Main entity with name, price, and supplier relation
+- **Supplier** - Related entity with company details
 
-```bash
-$ npm install
-```
+### Generated REST Endpoints
+- `GET /products` - List products with filtering and pagination
+- `GET /products/:id` - Get single product by ID
+- `POST /products` - Create new product
+- `PUT /products/:id` - Update existing product
+- `DELETE /products/:id` - Delete product (soft delete)
 
-## Compile and run the project
+### Key SOLID NestJS Features Demonstrated
+- **Service Structure** - `CrudServiceStructure()` configuration
+- **Auto-generated Services** - `CrudServiceFrom()` mixin
+- **Controller Structure** - `CrudControllerStructure()` configuration
+- **Auto-generated Controllers** - `CrudControllerFrom()` mixin
+- **Advanced Filtering** - String, number, and date filters
+- **Relation Configuration** - Automatic supplier loading
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
+## 📦 Installation
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 🎯 Running the Application
 
 ```bash
-$ npm install -g mau
-$ mau deploy
+# Development mode with hot reload
+npm run start:dev
+
+# Production mode
+npm run start:prod
+
+# Debug mode
+npm run start:debug
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 📖 API Documentation
 
-## Resources
+Once running, access the interactive Swagger documentation at:
+**[http://localhost:3000/api](http://localhost:3000/api)**
 
-Check out a few resources that may come in handy when working with NestJS:
+## 🔍 Example API Requests
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Basic Operations
 
-## Support
+```bash
+# Get all products
+GET http://localhost:3000/products
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Get product by ID
+GET http://localhost:3000/products/1
 
-## Stay in touch
+# Create new product
+POST http://localhost:3000/products
+Content-Type: application/json
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+{
+  "name": "Gaming Laptop",
+  "price": 1299.99,
+  "supplierId": 1
+}
 
-## License
+# Update product
+PUT http://localhost:3000/products/1
+Content-Type: application/json
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+{
+  "name": "Updated Gaming Laptop",
+  "price": 1199.99
+}
+
+# Delete product
+DELETE http://localhost:3000/products/1
+```
+
+### Advanced Filtering
+
+```bash
+# Search by name
+GET http://localhost:3000/products?name_contains=laptop
+
+# Price range filtering
+GET http://localhost:3000/products?price_gte=100&price_lte=1000
+
+# Pagination
+GET http://localhost:3000/products?page=1&limit=10
+
+# Sorting
+GET http://localhost:3000/products?orderBy=price&orderDirection=DESC
+
+# Combined filtering
+GET http://localhost:3000/products?name_contains=gaming&price_gte=500&page=1&limit=5&orderBy=createdAt&orderDirection=DESC
+```
+
+## 🧪 Testing
+
+```bash
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+
+# Watch mode
+npm run test:watch
+```
+
+## 📁 Project Structure
+
+```
+src/
+├── app.module.ts           # Main application module
+├── main.ts                 # Application bootstrap
+├── products/               # Products module
+│   ├── dto/               # Data Transfer Objects
+│   ├── entities/          # TypeORM entities
+│   ├── products.controller.ts  # Auto-generated REST controller
+│   ├── products.service.ts     # Auto-generated CRUD service
+│   └── products.module.ts      # Products module
+└── suppliers/             # Suppliers module
+    ├── dto/
+    ├── entities/
+    ├── suppliers.controller.ts
+    ├── suppliers.service.ts
+    └── suppliers.module.ts
+```
+
+## 🔧 Key Code Examples
+
+### Service Structure (products.service.ts)
+```typescript
+import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-crud';
+
+export const serviceStructure = CrudServiceStructure({
+  entityType: Product,
+  createInputType: CreateProductDto,
+  updateInputType: UpdateProductDto,
+  findArgsType: FindProductArgs,
+  relationsConfig: {
+    relations: {
+      supplier: true  // Auto-load supplier relation
+    }
+  }
+});
+
+export class ProductsService extends CrudServiceFrom(serviceStructure) {
+  // Automatically includes all CRUD methods
+}
+```
+
+### Controller Structure (products.controller.ts)
+```typescript
+import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-crud';
+
+const controllerStructure = CrudControllerStructure({
+  ...serviceStructure,
+  serviceType: ProductsService,
+});
+
+export class ProductsController extends CrudControllerFrom(controllerStructure) {
+  // Automatically generates all REST endpoints
+}
+```
+
+## 🛠️ Technologies Used
+
+- **[SOLID NestJS Framework](../../)** - The main framework
+- **[NestJS](https://nestjs.com/)** - Node.js framework
+- **[TypeORM](https://typeorm.io/)** - Database ORM
+- **[SQLite](https://www.sqlite.org/)** - Database
+- **[Swagger](https://swagger.io/)** - API documentation
+- **[class-validator](https://github.com/typestack/class-validator)** - Input validation
+- **[class-transformer](https://github.com/typestack/class-transformer)** - Object transformation
+
+## 🔗 Related Examples
+
+- **[simple-graphql-crud-app](../simple-graphql-crud-app)** - GraphQL API example
+- **[simple-hybrid-crud-app](../simple-hybrid-crud-app)** - REST + GraphQL hybrid example
+
+## 📚 Learn More
+
+- [SOLID NestJS Framework Documentation](../../docs)
+- [NestJS Documentation](https://docs.nestjs.com)
+- [TypeORM Documentation](https://typeorm.io/)
+
+## 📄 License
+
+This example is part of the SOLID NestJS Framework and is MIT licensed.
