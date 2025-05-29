@@ -81,9 +81,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      supplier: true
-    }
-  }
+      supplier: true,
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
@@ -95,7 +95,6 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
   // - remove(context, id): Promise<Product> - soft delete
   // - hardRemove(context, id): Promise<Product> - permanent delete
   // - pagination(context, args): Promise<PaginationResult<Product>>
-  
   // Add custom methods here if needed
 }
 ```
@@ -111,7 +110,7 @@ import { ProductsService } from './products.service';
 @Module({
   imports: [TypeOrmModule.forFeature([Product])],
   providers: [ProductsService],
-  exports: [ProductsService]
+  exports: [ProductsService],
 })
 export class ProductsModule {}
 ```
@@ -146,19 +145,19 @@ export const serviceStructure = CrudServiceStructure({
   relationsConfig: {
     relations: {
       supplier: true,
-      categories: true
-    }
+      categories: true,
+    },
   },
   functions: {
     findOne: {
       relationsConfig: {
         relations: {
           supplier: true,
-          reviews: true
-        }
-      }
-    }
-  }
+          reviews: true,
+        },
+      },
+    },
+  },
 });
 ```
 
@@ -173,12 +172,12 @@ export const serviceStructure = CrudServiceStructure({
   functions: {
     create: {
       transactional: true,
-      decorators: [() => UseGuards(AdminGuard)]
+      decorators: [() => UseGuards(AdminGuard)],
     },
     update: {
-      decorators: [() => UseInterceptors(AuditInterceptor)]
-    }
-  }
+      decorators: [() => UseInterceptors(AuditInterceptor)],
+    },
+  },
 });
 ```
 
@@ -186,18 +185,32 @@ export const serviceStructure = CrudServiceStructure({
 
 ```typescript
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
-  
-  async beforeCreate(context: Context, repository: Repository<Product>, entity: Product, createInput: CreateProductDto): Promise<void> {
+  async beforeCreate(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+    createInput: CreateProductDto,
+  ): Promise<void> {
     // Custom logic before creating
     entity.createdAt = new Date();
   }
 
-  async afterCreate(context: Context, repository: Repository<Product>, entity: Product, createInput: CreateProductDto): Promise<void> {
+  async afterCreate(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+    createInput: CreateProductDto,
+  ): Promise<void> {
     // Custom logic after creating
     await this.notificationService.sendNewProductAlert(entity);
   }
 
-  async beforeUpdate(context: Context, repository: Repository<Product>, entity: Product, updateInput: UpdateProductDto): Promise<void> {
+  async beforeUpdate(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+    updateInput: UpdateProductDto,
+  ): Promise<void> {
     // Custom validation before update
     if (updateInput.price && updateInput.price < 0) {
       throw new BadRequestException('Price cannot be negative');
@@ -211,29 +224,32 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ### Core Functions
 
 #### `CrudServiceFrom(structure)`
+
 Creates a service class with full CRUD operations.
 
 ```typescript
 function CrudServiceFrom<T>(
-  structure: CrudServiceStructure<T>
+  structure: CrudServiceStructure<T>,
 ): Constructor<CrudService<T>>;
 ```
 
 #### `DataServiceFrom(structure)`
+
 Creates a service class with read-only operations.
 
 ```typescript
 function DataServiceFrom<T>(
-  structure: DataServiceStructure<T>
+  structure: DataServiceStructure<T>,
 ): Constructor<DataService<T>>;
 ```
 
 #### `CrudServiceStructure(config)`
+
 Configuration builder for CRUD services.
 
 ```typescript
 function CrudServiceStructure<T>(
-  config: CrudServiceStructureConfig<T>
+  config: CrudServiceStructureConfig<T>,
 ): CrudServiceStructure<T>;
 ```
 
@@ -242,17 +258,20 @@ function CrudServiceStructure<T>(
 All generated services include these methods:
 
 #### Data Operations
+
 - `findAll(context, args?)` - Find all entities with optional filtering
 - `findOne(context, id, orFail?)` - Find single entity by ID
 - `pagination(context, args?)` - Get paginated results with metadata
 
 #### CRUD Operations
+
 - `create(context, createInput)` - Create new entity
 - `update(context, id, updateInput)` - Update existing entity
 - `remove(context, id)` - Soft delete entity (if delete column exists)
 - `hardRemove(context, id)` - Permanently delete entity
 
 #### Repository Access
+
 - `getRepository(context)` - Get TypeORM repository
 - `getEntityManager(context)` - Get entity manager
 - `getQueryBuilder(context, args?)` - Get query builder with filters
@@ -260,6 +279,7 @@ All generated services include these methods:
 ### Decorators
 
 #### `@Transactional(options?)`
+
 Marks methods to run in database transactions.
 
 ```typescript
@@ -272,12 +292,15 @@ async createProduct(data: CreateProductDto) {
 ### Interfaces
 
 #### `CrudService<T>`
+
 Main interface for CRUD services with all operations.
 
 #### `DataService<T>`
+
 Interface for read-only data services.
 
 #### `Context`
+
 Request context interface for dependency injection.
 
 ## 🛠️ TypeORM Integration
@@ -294,7 +317,7 @@ This package provides seamless integration with TypeORM:
 ## 🔗 Related Packages
 
 - **[@solid-nestjs/typeorm-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-crud)** - Complete REST API bundle
-- **[@solid-nestjs/typeorm-graphql-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-graphql-crud)** - Complete GraphQL API bundle  
+- **[@solid-nestjs/typeorm-graphql-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-graphql-crud)** - Complete GraphQL API bundle
 - **[@solid-nestjs/typeorm-hybrid-crud](https://github.com/solid-nestjs/framework/tree/master/packages-bundles/typeorm-hybrid-crud)** - Complete REST + GraphQL bundle
 - **[@solid-nestjs/rest-api](https://github.com/solid-nestjs/framework/tree/master/packages-core/rest-api)** - REST API controllers
 - **[@solid-nestjs/graphql](https://github.com/solid-nestjs/framework/tree/master/packages-core/graphql)** - GraphQL resolvers

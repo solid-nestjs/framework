@@ -6,7 +6,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable validation
   app.useGlobalPipes(new ValidationPipe());
 
@@ -18,10 +18,12 @@ async function bootstrap() {
     .addTag('products')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document,{ swaggerOptions: { ...swaggerRecomenedOptions } });
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: { ...swaggerRecomenedOptions },
+  });
 
   await app.listen(3000);
-  
+
   console.log('🚀 Rest-API ready at http://localhost:3000/api');
 }
 bootstrap();

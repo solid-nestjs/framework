@@ -1,4 +1,4 @@
-import { applyDecorators } from "@nestjs/common";
+import { applyDecorators } from '@nestjs/common';
 /**
  * Applies an array of method decorators to a target method.
  *
@@ -7,10 +7,9 @@ import { applyDecorators } from "@nestjs/common";
  * @returns A composite decorator that applies all provided method decorators.
  */
 export function applyMethodDecorators(decorators: (() => MethodDecorator)[]) {
-    if (!decorators)
-        return applyDecorators();
+  if (!decorators) return applyDecorators();
 
-    return applyDecorators(...(decorators?.map((decorator) => decorator())));
+  return applyDecorators(...decorators?.map(decorator => decorator()));
 }
 
 /**
@@ -20,13 +19,15 @@ export function applyMethodDecorators(decorators: (() => MethodDecorator)[]) {
  * @param decorators - An array of functions that return method decorators to be applied if the condition is true.
  * @returns The result of applying the decorators if the condition is true; otherwise, returns an empty decorator.
  */
-export function applyMethodDecoratorsIf(condition: boolean | (() => boolean), decorators: (() => MethodDecorator)[]) {
-    condition = (typeof condition === 'function') ? condition() : condition;
+export function applyMethodDecoratorsIf(
+  condition: boolean | (() => boolean),
+  decorators: (() => MethodDecorator)[],
+) {
+  condition = typeof condition === 'function' ? condition() : condition;
 
-    if (!condition)
-        return applyDecorators();
+  if (!condition) return applyDecorators();
 
-    return applyMethodDecorators(decorators);
+  return applyMethodDecorators(decorators);
 }
 
 /**
@@ -37,10 +38,9 @@ export function applyMethodDecoratorsIf(condition: boolean | (() => boolean), de
  * @returns A composite decorator that applies all provided class decorators.
  */
 export function applyClassDecorators(decorators: (() => ClassDecorator)[]) {
-    if (!decorators)
-        return applyDecorators();
+  if (!decorators) return applyDecorators();
 
-    return applyDecorators(...(decorators?.map((decorator) => decorator())));
+  return applyDecorators(...decorators?.map(decorator => decorator()));
 }
 
 /**
@@ -50,11 +50,13 @@ export function applyClassDecorators(decorators: (() => ClassDecorator)[]) {
  * @param decorators - An array of functions, each returning a `ClassDecorator`, to be applied if the condition is true.
  * @returns The result of applying the decorators if the condition is true; otherwise, returns the result of `applyDecorators()`.
  */
-export function applyClassDecoratorsIf(condition: boolean | (() => boolean), decorators: (() => ClassDecorator)[]) {
-    condition = (typeof condition === 'function') ? condition() : condition;
+export function applyClassDecoratorsIf(
+  condition: boolean | (() => boolean),
+  decorators: (() => ClassDecorator)[],
+) {
+  condition = typeof condition === 'function' ? condition() : condition;
 
-    if (!condition)
-        return applyDecorators();
+  if (!condition) return applyDecorators();
 
-    return applyClassDecorators(decorators);
+  return applyClassDecorators(decorators);
 }

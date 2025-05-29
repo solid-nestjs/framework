@@ -1,10 +1,10 @@
-export type Constructor = (new (...args: any[]) => any);
+export type Constructor = new (...args: any[]) => any;
 
 /**
  * Represents a type that can be constructed with the `new` keyword.
- * 
+ *
  * @typeParam Type - The type of the instance that will be created. Defaults to `object`.
- * 
+ *
  * @example
  * ```typescript
  * class MyClass {}

@@ -1,1 +1,1 @@
-export * from './find-product-args.dto'
+export * from './find-product-args.dto';

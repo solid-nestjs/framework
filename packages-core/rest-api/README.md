@@ -24,7 +24,10 @@ npm install @solid-nestjs/rest-api @solid-nestjs/common
 ### 1. Create Controller Structure
 
 ```typescript
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/rest-api';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/rest-api';
 import { ProductsService, serviceStructure } from './products.service';
 
 const controllerStructure = CrudControllerStructure({
@@ -33,7 +36,9 @@ const controllerStructure = CrudControllerStructure({
 });
 
 @Controller('products')
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // Automatically provides:
   // GET    /products        - findAll with filtering/pagination
   // GET    /products/:id    - findOne
@@ -48,6 +53,7 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 The controller automatically creates these endpoints:
 
 #### `GET /products` - Find All with Filtering
+
 ```bash
 # Basic usage
 GET /products
@@ -66,11 +72,13 @@ GET /products?name_contains=laptop&price_gte=100&page=1&limit=5&orderBy=createdA
 ```
 
 #### `GET /products/:id` - Find One
+
 ```bash
 GET /products/123
 ```
 
 #### `POST /products` - Create
+
 ```bash
 POST /products
 Content-Type: application/json
@@ -83,6 +91,7 @@ Content-Type: application/json
 ```
 
 #### `PUT /products/:id` - Update
+
 ```bash
 PUT /products/123
 Content-Type: application/json
@@ -94,6 +103,7 @@ Content-Type: application/json
 ```
 
 #### `DELETE /products/:id` - Remove
+
 ```bash
 DELETE /products/123
 ```
@@ -101,9 +111,11 @@ DELETE /products/123
 ## 🔍 Advanced Filtering
 
 ### String Filters
+
 Available operators for string fields:
+
 - `_eq` - Equals
-- `_ne` - Not equals  
+- `_ne` - Not equals
 - `_contains` - Contains substring
 - `_startsWith` - Starts with
 - `_endsWith` - Ends with
@@ -116,7 +128,9 @@ GET /products?category_in=electronics,computers
 ```
 
 ### Number Filters
+
 Available operators for numeric fields:
+
 - `_eq` - Equals
 - `_ne` - Not equals
 - `_gt` - Greater than
@@ -132,7 +146,9 @@ GET /products?categoryId_in=1,2,3
 ```
 
 ### Date Filters
+
 Available operators for date fields:
+
 - `_eq` - Equals date
 - `_ne` - Not equals date
 - `_gt` - After date
@@ -146,7 +162,9 @@ GET /products?updatedAt_lt=2024-12-31
 ```
 
 ### Logical Operators
+
 Combine filters with logical operators:
+
 - `_and` - All conditions must be true
 - `_or` - Any condition must be true
 
@@ -170,12 +188,12 @@ const controllerStructure = CrudControllerStructure({
     hardRemove: false, // Disable hard delete endpoint
     findAll: {
       name: 'getAllProducts',
-      summary: 'Retrieve all products with filtering'
+      summary: 'Retrieve all products with filtering',
     },
     findOne: {
-      summary: 'Get product by ID'
-    }
-  }
+      summary: 'Get product by ID',
+    },
+  },
 });
 ```
 
@@ -213,55 +231,61 @@ export class FindProductArgs extends FindArgsFrom(Product) {
 ### Core Functions
 
 #### `CrudControllerFrom(structure)`
+
 Creates a controller class with full CRUD endpoints.
 
 ```typescript
 function CrudControllerFrom<T>(
-  structure: CrudControllerStructure<T>
+  structure: CrudControllerStructure<T>,
 ): Constructor<CrudController<T>>;
 ```
 
 #### `DataControllerFrom(structure)`
+
 Creates a controller class with read-only endpoints.
 
 ```typescript
 function DataControllerFrom<T>(
-  structure: DataControllerStructure<T>
+  structure: DataControllerStructure<T>,
 ): Constructor<DataController<T>>;
 ```
 
 #### `CrudControllerStructure(config)`
+
 Configuration builder for CRUD controllers.
 
 ```typescript
 function CrudControllerStructure<T>(
-  config: CrudControllerStructureConfig<T>
+  config: CrudControllerStructureConfig<T>,
 ): CrudControllerStructure<T>;
 ```
 
 #### `FindArgsFrom(entityClass)`
+
 Creates query parameter class with filtering capabilities.
 
 ```typescript
-function FindArgsFrom<T>(
-  entityClass: Constructor<T>
-): Constructor<FindArgs<T>>;
+function FindArgsFrom<T>(entityClass: Constructor<T>): Constructor<FindArgs<T>>;
 ```
 
 ### Filter Classes
 
 #### `StringFilter`
+
 Filter input type for string fields with operators like contains, startsWith, etc.
 
 #### `NumberFilter`
+
 Filter input type for numeric fields with operators like gt, gte, lt, lte, etc.
 
 #### `DateFilter`
+
 Filter input type for date fields with operators for date comparisons.
 
 ### Response Types
 
 #### `PaginationResult<T>`
+
 Pagination metadata included with paginated responses.
 
 ```typescript
@@ -285,8 +309,9 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('products')
 @Controller('products')
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
-  
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   @ApiOperation({ summary: 'Get featured products' })
   @Get('featured')
   async getFeatured() {
@@ -299,18 +324,22 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 
 ```typescript
 @Controller('products')
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
-  
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   @Get('search')
   async search(@Query('q') query: string) {
-    return this.service.findAll({}, {
-      where: [
-        { name: Like(`%${query}%`) },
-        { description: Like(`%${query}%`) }
-      ]
-    });
+    return this.service.findAll(
+      {},
+      {
+        where: [
+          { name: Like(`%${query}%`) },
+          { description: Like(`%${query}%`) },
+        ],
+      },
+    );
   }
-  
+
   @Post(':id/activate')
   async activate(@Param('id') id: number) {
     return this.service.update({}, id, { active: true });

@@ -16,10 +16,12 @@ This example demonstrates how to build a complete REST API CRUD application usin
 ## 🏗️ What's Included
 
 ### Entities
+
 - **Product** - Main entity with name, price, and supplier relation
 - **Supplier** - Related entity with company details
 
 ### Generated REST Endpoints
+
 - `GET /products` - List products with filtering and pagination
 - `GET /products/:id` - Get single product by ID
 - `POST /products` - Create new product
@@ -27,6 +29,7 @@ This example demonstrates how to build a complete REST API CRUD application usin
 - `DELETE /products/:id` - Delete product (soft delete)
 
 ### Key SOLID NestJS Features Demonstrated
+
 - **Service Structure** - `CrudServiceStructure()` configuration
 - **Auto-generated Services** - `CrudServiceFrom()` mixin
 - **Controller Structure** - `CrudControllerStructure()` configuration
@@ -150,8 +153,12 @@ src/
 ## 🔧 Key Code Examples
 
 ### Service Structure (products.service.ts)
+
 ```typescript
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-crud';
+import {
+  CrudServiceFrom,
+  CrudServiceStructure,
+} from '@solid-nestjs/typeorm-crud';
 
 export const serviceStructure = CrudServiceStructure({
   entityType: Product,
@@ -160,9 +167,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      supplier: true  // Auto-load supplier relation
-    }
-  }
+      supplier: true, // Auto-load supplier relation
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
@@ -171,15 +178,21 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ```
 
 ### Controller Structure (products.controller.ts)
+
 ```typescript
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-crud';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/typeorm-crud';
 
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
   serviceType: ProductsService,
 });
 
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // Automatically generates all REST endpoints
 }
 ```

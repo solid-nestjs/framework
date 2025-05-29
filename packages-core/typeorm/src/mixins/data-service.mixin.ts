@@ -1,24 +1,56 @@
-import { EntityManager, FindManyOptions, Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  EntityManager,
+  FindManyOptions,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
-import { Inject, Injectable, NotFoundException, Optional, Type, mixin } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+  Type,
+  mixin,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { applyMethodDecorators, AuditService, BooleanType, Entity, FindArgs, getPaginationArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where } from '@solid-nestjs/common';
-import { Context, DataService as DataService, ExtendedRelationInfo, DataRetrievalOptions, DataServiceStructure, getMainAliasFromConfig, getRelationsFromConfig } from '../interfaces';
+import {
+  applyMethodDecorators,
+  AuditService,
+  BooleanType,
+  Entity,
+  FindArgs,
+  getPaginationArgs,
+  IdTypeFrom,
+  If,
+  NotNullableIf,
+  PaginationResult,
+  Where,
+} from '@solid-nestjs/common';
+import {
+  Context,
+  DataService as DataService,
+  ExtendedRelationInfo,
+  DataRetrievalOptions,
+  DataServiceStructure,
+  getMainAliasFromConfig,
+  getRelationsFromConfig,
+} from '../interfaces';
 import { QueryBuilderHelper, runInTransaction } from '../helpers';
 
 /**
  * Generates a dynamic NestJS data service class for a given entity type, repository, and configuration.
- * 
+ *
  * This factory function creates a data service class implementing the `DataService` interface, providing
  * common data access methods such as `findAll`, `findOne`, `pagination`, and transaction support.
  * The generated class is decorated with `@Injectable()` and can be customized via the `serviceStructure` parameter,
  * which allows for configuration of entity type, lock mode, relation settings, and method decorators.
- * 
+ *
  * @param serviceStructure - The configuration object describing the entity, repository, relation settings,
  *                          lock mode, and optional method decorators for the generated service.
- * 
+ *
  * @returns A NestJS `Type` representing the dynamically generated data service class, ready for dependency injection.
- * 
+ *
  * @example
  * ```typescript
  * const UserService = DataServiceFrom({
@@ -33,60 +65,68 @@ import { QueryBuilderHelper, runInTransaction } from '../helpers';
  * ```
  */
 export function DataServiceFrom<
-    IdType extends IdTypeFrom<EntityType>,
-    EntityType extends Entity<unknown>,
-    FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
-    ContextType extends Context = Context
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
+  ContextType extends Context = Context,
 >(
-  serviceStructure:DataServiceStructure<IdType,EntityType,FindArgsType,ContextType>,
-): Type<DataService<IdType,EntityType,FindArgsType,ContextType>> {
-
+  serviceStructure: DataServiceStructure<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
+): Type<DataService<IdType, EntityType, FindArgsType, ContextType>> {
   const { entityType, lockMode, relationsConfig } = serviceStructure;
 
   const findAllStruct = serviceStructure.functions?.findAll;
   const findOneStruct = serviceStructure.functions?.findOne;
   const paginationStruct = serviceStructure.functions?.pagination;
 
-  const findAllDecorators = [ ...(findAllStruct?.decorators??[]) ];
-  const findOneDecorators = [ ...(findOneStruct?.decorators??[]) ];
-  const paginationDecorators = [ ...(paginationStruct?.decorators??[]) ];
-  
+  const findAllDecorators = [...(findAllStruct?.decorators ?? [])];
+  const findOneDecorators = [...(findOneStruct?.decorators ?? [])];
+  const paginationDecorators = [...(paginationStruct?.decorators ?? [])];
+
   @Injectable()
   class DataServiceClass
-    implements DataService<IdType,EntityType,FindArgsType,ContextType>
+    implements DataService<IdType, EntityType, FindArgsType, ContextType>
   {
     @Inject(AuditService)
     @Optional()
     private readonly _auditService?: AuditService;
 
-
     constructor(
       @InjectRepository(entityType)
       private readonly _repository: Repository<EntityType>,
-      @Inject(QueryBuilderHelper<IdType,EntityType>)
+      @Inject(QueryBuilderHelper<IdType, EntityType>)
       @Optional()
-      private readonly _queryBuilderHelper:QueryBuilderHelper<IdType,EntityType> = new QueryBuilderHelper<IdType,EntityType>(entityType,{ lockMode, relationsConfig })
+      private readonly _queryBuilderHelper: QueryBuilderHelper<
+        IdType,
+        EntityType
+      > = new QueryBuilderHelper<IdType, EntityType>(entityType, {
+        lockMode,
+        relationsConfig,
+      }),
     ) {}
 
-    get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>{
+    get queryBuilderHelper(): QueryBuilderHelper<IdType, EntityType> {
       return this._queryBuilderHelper;
     }
 
     getRepository(context: ContextType) {
       if (context?.transactionManager)
         return context.transactionManager.getRepository(entityType);
-      
+
       return this._repository;
     }
 
     getEntityManager(context: ContextType): EntityManager {
-      
       return this.getRepository(context).manager;
     }
 
     getRelationsInfo(context: ContextType): ExtendedRelationInfo[] {
       const repository = this.getRepository(context);
-      
+
       return this.queryBuilderHelper.getRelationsInfo(repository);
     }
 
@@ -107,7 +147,11 @@ export function DataServiceFrom<
     ): SelectQueryBuilder<EntityType> | false {
       const repository = this.getRepository(context);
 
-      return this.queryBuilderHelper.getNonMultiplyingPaginatedQueryBuilder(repository, args, options);
+      return this.queryBuilderHelper.getNonMultiplyingPaginatedQueryBuilder(
+        repository,
+        args,
+        options,
+      );
     }
 
     async find(
@@ -117,48 +161,58 @@ export function DataServiceFrom<
       const repository = this.getRepository(context);
       return repository.find(options);
     }
-    
+
     @applyMethodDecorators(findAllDecorators)
     async findAll<TBool extends BooleanType = false>(
       context: ContextType,
       args?: FindArgsType,
-      withPagination?:TBool,
+      withPagination?: TBool,
       options?: DataRetrievalOptions<EntityType>,
-    ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResult },EntityType[]> > {
-      
-      options = { 
-            ...options, 
-            lockMode:options?.lockMode ?? findAllStruct?.lockMode,
-            mainAlias:options?.mainAlias ?? getMainAliasFromConfig(findAllStruct?.relationsConfig),
-            relations:options?.relations ?? getRelationsFromConfig(findAllStruct?.relationsConfig),
-          };
+    ): Promise<
+      If<
+        TBool,
+        { data: EntityType[]; pagination: PaginationResult },
+        EntityType[]
+      >
+    > {
+      options = {
+        ...options,
+        lockMode: options?.lockMode ?? findAllStruct?.lockMode,
+        mainAlias:
+          options?.mainAlias ??
+          getMainAliasFromConfig(findAllStruct?.relationsConfig),
+        relations:
+          options?.relations ??
+          getRelationsFromConfig(findAllStruct?.relationsConfig),
+      };
 
-      const paginatedQueryBuilder = this.getNonMultiplyingPaginatedQueryBuilder(context, args, options);
+      const paginatedQueryBuilder = this.getNonMultiplyingPaginatedQueryBuilder(
+        context,
+        args,
+        options,
+      );
 
-      let data:EntityType[];
+      let data: EntityType[];
 
-      if(paginatedQueryBuilder)
-      {
+      if (paginatedQueryBuilder) {
         const ids = await paginatedQueryBuilder.getMany();
 
-        if(ids.length > 0)
-        {
-          const queryBuilder = this.getQueryBuilder(context, { ...args, pagination: undefined } as FindArgsType, options).andWhereInIds(ids);
+        if (ids.length > 0) {
+          const queryBuilder = this.getQueryBuilder(
+            context,
+            { ...args, pagination: undefined } as FindArgsType,
+            options,
+          ).andWhereInIds(ids);
           data = await queryBuilder.getMany();
-        }
-        else
-          data = [];
-      }
-      else
-      {
+        } else data = [];
+      } else {
         const queryBuilder = this.getQueryBuilder(context, args, options);
         data = await queryBuilder.getMany();
       }
 
-      if(!withPagination)
-        return data as any;
+      if (!withPagination) return data as any;
 
-      const pagination = await this.pagination(context,args,options);
+      const pagination = await this.pagination(context, args, options);
 
       return { data, pagination } as any;
     }
@@ -169,72 +223,82 @@ export function DataServiceFrom<
       args?: FindArgsType,
       options?: DataRetrievalOptions<EntityType>,
     ): Promise<PaginationResult> {
-      
-      options = { 
-            ...options, 
-            lockMode:options?.lockMode ?? paginationStruct?.lockMode,
-            mainAlias:options?.mainAlias ?? getMainAliasFromConfig(paginationStruct?.relationsConfig),
-            relations:options?.relations ?? getRelationsFromConfig(paginationStruct?.relationsConfig),
-            ignoreMultiplyingJoins: true,
-            ignoreSelects:true,
-          };
-          
-      const queryBuilder = this.getQueryBuilder(context, {
-        ...args,
-        pagination: undefined,
-        orderBy: undefined,
-      } as FindArgsType,options);
+      options = {
+        ...options,
+        lockMode: options?.lockMode ?? paginationStruct?.lockMode,
+        mainAlias:
+          options?.mainAlias ??
+          getMainAliasFromConfig(paginationStruct?.relationsConfig),
+        relations:
+          options?.relations ??
+          getRelationsFromConfig(paginationStruct?.relationsConfig),
+        ignoreMultiplyingJoins: true,
+        ignoreSelects: true,
+      };
 
-      return this.getPagination(context,await queryBuilder.getCount(),args);
+      const queryBuilder = this.getQueryBuilder(
+        context,
+        {
+          ...args,
+          pagination: undefined,
+          orderBy: undefined,
+        } as FindArgsType,
+        options,
+      );
+
+      return this.getPagination(context, await queryBuilder.getCount(), args);
     }
 
     async getPagination(
       context: ContextType,
       total: number,
       args?: FindArgsType,
-    ) : Promise<PaginationResult> {
-
+    ): Promise<PaginationResult> {
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
 
       let limit = take;
-      const pageCount = (!limit)?1:Math.ceil(total / limit);
-      const page = (!limit)?1:Math.ceil((skip+ 1) / limit);
-      const count = (!limit)?total:Math.min(limit, total - skip);
-      
-      if(!limit)
-        limit = count;
+      const pageCount = !limit ? 1 : Math.ceil(total / limit);
+      const page = !limit ? 1 : Math.ceil((skip + 1) / limit);
+      const count = !limit ? total : Math.min(limit, total - skip);
 
-      const hasNextPage = (page < pageCount);
-      const hasPreviousPage = (page > 1);
+      if (!limit) limit = count;
 
-      return { 
-              total,
-              count,
-              limit,
-              page,
-              pageCount,
-              hasNextPage,
-              hasPreviousPage 
-            };
+      const hasNextPage = page < pageCount;
+      const hasPreviousPage = page > 1;
+
+      return {
+        total,
+        count,
+        limit,
+        page,
+        pageCount,
+        hasNextPage,
+        hasPreviousPage,
+      };
     }
-    
+
     @applyMethodDecorators(findOneDecorators)
     async findOne<TBool extends BooleanType = false>(
       context: ContextType,
       id: IdType,
       orFail?: TBool,
       options?: DataRetrievalOptions<EntityType>,
-    ): Promise< NotNullableIf<TBool,EntityType> > {
+    ): Promise<NotNullableIf<TBool, EntityType>> {
+      let entity = await this.findOneBy(
+        context,
+        { id: id as any },
+        false,
+        options,
+      );
 
-      let entity = await this.findOneBy(context, { id:id as any }, false, options);
-
-      if(entity)
-        return entity;
+      if (entity) return entity;
 
       if (orFail)
-        throw new NotFoundException(`${entityType.name} with id: ${JSON.stringify(id)} not found`);
+        throw new NotFoundException(
+          `${entityType.name} with id: ${JSON.stringify(id)} not found`,
+        );
 
-      return null as NotNullableIf<TBool,EntityType>;
+      return null as NotNullableIf<TBool, EntityType>;
     }
 
     async findOneBy<TBool extends BooleanType = false>(
@@ -242,39 +306,42 @@ export function DataServiceFrom<
       where: Where<EntityType>,
       orFail?: TBool,
       options?: DataRetrievalOptions<EntityType>,
-    ): Promise< NotNullableIf<TBool,EntityType> > {
-
+    ): Promise<NotNullableIf<TBool, EntityType>> {
       const args = { where } as FindArgsType;
 
-      options = { 
-                  ...options, 
-                  lockMode:options?.lockMode ?? findOneStruct?.lockMode,
-                  mainAlias:options?.mainAlias ?? getMainAliasFromConfig(findOneStruct?.relationsConfig),
-                  relations:options?.relations ?? getRelationsFromConfig(findOneStruct?.relationsConfig),
-                };
+      options = {
+        ...options,
+        lockMode: options?.lockMode ?? findOneStruct?.lockMode,
+        mainAlias:
+          options?.mainAlias ??
+          getMainAliasFromConfig(findOneStruct?.relationsConfig),
+        relations:
+          options?.relations ??
+          getRelationsFromConfig(findOneStruct?.relationsConfig),
+      };
 
       const queryBuilder = this.getQueryBuilder(context, args, options);
 
       let entity = await queryBuilder.getOne();
 
-      if(entity)
-        return entity;
+      if (entity) return entity;
 
       if (orFail)
-        throw new NotFoundException(`${entityType.name} not found with options: ${JSON.stringify(where)}`);
+        throw new NotFoundException(
+          `${entityType.name} not found with options: ${JSON.stringify(where)}`,
+        );
 
-      return entity as NotNullableIf<TBool,EntityType>;
+      return entity as NotNullableIf<TBool, EntityType>;
     }
-    
-    async runInTransaction<ReturnType>(
-        context: ContextType,
-        fn:(context:ContextType) => Promise<ReturnType>,
-        isolationLevel?: IsolationLevel,
-      ):Promise<ReturnType>
-    {
-        const manager = this.getEntityManager(context);
 
-        return runInTransaction(context,manager.connection,fn,isolationLevel);
+    async runInTransaction<ReturnType>(
+      context: ContextType,
+      fn: (context: ContextType) => Promise<ReturnType>,
+      isolationLevel?: IsolationLevel,
+    ): Promise<ReturnType> {
+      const manager = this.getEntityManager(context);
+
+      return runInTransaction(context, manager.connection, fn, isolationLevel);
     }
 
     async audit(

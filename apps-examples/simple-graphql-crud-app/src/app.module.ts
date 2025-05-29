@@ -14,9 +14,9 @@ import { SuppliersModule } from './suppliers/suppliers.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: './database-data/products.sqlite',
-      entities: [Product,Supplier],
+      entities: [Product, Supplier],
       synchronize: true, // Set to false in production
-      logging: true
+      logging: true,
     }),
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
@@ -24,9 +24,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
       introspection: true,
       sortSchema: true,
       driver: ApolloDriver,
-      plugins:[
-        ApolloServerPluginLandingPageLocalDefault()
-      ]
+      plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     ProductsModule,
     SuppliersModule,

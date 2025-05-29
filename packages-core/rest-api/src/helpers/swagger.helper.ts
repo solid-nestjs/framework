@@ -1,4 +1,4 @@
-import { SwaggerUiOptions } from "@nestjs/swagger/dist/interfaces/swagger-ui-options.interface";
+import { SwaggerUiOptions } from '@nestjs/swagger/dist/interfaces/swagger-ui-options.interface';
 
 /**
  * Recommended Swagger UI options for API documentation.
@@ -14,10 +14,10 @@ import { SwaggerUiOptions } from "@nestjs/swagger/dist/interfaces/swagger-ui-opt
  *
  * @see {@link https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/}
  */
-export const swaggerRecomenedOptions:SwaggerUiOptions = {
-    tagsSorter: "alpha",
-    operationsSorter: function (a, b) {
-        var order = {'get': '0', 'post': '1', 'put': '2', 'delete': '3'};
-        return order[a.get("method")].localeCompare(order[b.get("method")]);
-    },
-}
+export const swaggerRecomenedOptions: SwaggerUiOptions = {
+  tagsSorter: 'alpha',
+  operationsSorter: function (a, b) {
+    var order = { get: '0', post: '1', put: '2', delete: '3' };
+    return order[a.get('method')].localeCompare(order[b.get('method')]);
+  },
+};

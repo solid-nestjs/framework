@@ -6,11 +6,11 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable CORS for GraphQL playground
   app.enableCors();
 
-    // Enable validation
+  // Enable validation
   app.useGlobalPipes(new ValidationPipe());
 
   // Swagger setup
@@ -21,10 +21,12 @@ async function bootstrap() {
     .addTag('products')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document,{ swaggerOptions: { ...swaggerRecomenedOptions } });
-  
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: { ...swaggerRecomenedOptions },
+  });
+
   await app.listen(3000);
-  
+
   console.log('🚀 Rest-API ready at http://localhost:3000/api');
   console.log('🚀 GraphQL server ready at http://localhost:3000/graphql');
 }

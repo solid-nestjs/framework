@@ -1,1 +1,1 @@
-export * from './partial-type.helper'
+export * from './partial-type.helper';

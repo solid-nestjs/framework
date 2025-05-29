@@ -61,7 +61,13 @@ export class AppModule {}
 
 ```typescript
 // src/products/entities/product.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('products')
@@ -171,7 +177,6 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
   // - update(context, id, updateInput)
   // - remove(context, id) - soft delete
   // - hardRemove(context, id) - hard delete
-  
   // Add custom methods here
 }
 ```
@@ -182,7 +187,10 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 // src/products/products.controller.ts
 import { Controller } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/rest-api';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/rest-api';
 import { ProductsService, serviceStructure } from './products.service';
 
 export const controllerStructure = CrudControllerStructure({
@@ -191,37 +199,39 @@ export const controllerStructure = CrudControllerStructure({
   operations: {
     findAll: {
       summary: 'Get all products',
-      description: 'Retrieve all products with filtering, pagination, and sorting'
+      description:
+        'Retrieve all products with filtering, pagination, and sorting',
     },
     findOne: {
       summary: 'Get product by ID',
-      description: 'Retrieve a specific product by its ID'
+      description: 'Retrieve a specific product by its ID',
     },
     create: {
       summary: 'Create product',
-      description: 'Create a new product'
+      description: 'Create a new product',
     },
     update: {
       summary: 'Update product',
-      description: 'Update an existing product'
+      description: 'Update an existing product',
     },
     remove: {
       summary: 'Delete product',
-      description: 'Soft delete a product'
-    }
-  }
+      description: 'Soft delete a product',
+    },
+  },
 });
 
 @ApiTags('products')
 @Controller('products')
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // Automatically includes:
   // GET /products - List with filtering, pagination, sorting
   // GET /products/:id - Get by ID
   // POST /products - Create
   // PUT /products/:id - Update
   // DELETE /products/:id - Soft delete
-  
   // Add custom endpoints here
 }
 ```
@@ -256,13 +266,15 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // Swagger setup
   const config = new DocumentBuilder()
@@ -271,7 +283,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('products')
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
@@ -299,6 +311,7 @@ open http://localhost:3000/api
 ```
 
 **Congratulations!** You've built a complete CRUD API with:
+
 - ✅ Full CRUD operations
 - ✅ Automatic Swagger documentation
 - ✅ Input validation
@@ -336,7 +349,13 @@ export class Category {
 
 ```typescript
 // src/products/entities/product.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
 
 @Entity('products')
@@ -363,9 +382,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      category: true // Enable category loading
-    }
-  }
+      category: true, // Enable category loading
+    },
+  },
 });
 ```
 
@@ -384,13 +403,13 @@ export class CreateProductDto {
 ```
 
 Now your API supports:
+
 - Products with categories
 - Automatic relation loading
 - Filtering by category: `GET /products?filter={"category.name":"Electronics"}`
 - Sorting by category: `GET /products?orderBy={"category.name":"ASC"}`
 
 ## Advanced Examples
-
 
 ### Example: Advanced Controller with Guards and Validation
 
@@ -407,41 +426,42 @@ export const controllerStructure = CrudControllerStructure({
   operations: {
     findAll: {
       summary: 'Get all products',
-      description: 'Public endpoint to retrieve products'
+      description: 'Public endpoint to retrieve products',
     },
     findOne: {
       summary: 'Get product by ID',
-      description: 'Public endpoint to get product details'
+      description: 'Public endpoint to get product details',
     },
     create: {
       summary: 'Create product',
       description: 'Admin only - Create new product',
-      decorators: [() => UseGuards(AdminGuard)]
+      decorators: [() => UseGuards(AdminGuard)],
     },
     update: {
       summary: 'Update product',
       description: 'Admin only - Update product',
-      decorators: [() => UseGuards(AdminGuard)]
+      decorators: [() => UseGuards(AdminGuard)],
     },
     remove: {
       summary: 'Delete product',
       description: 'Admin only - Delete product',
-      decorators: [() => UseGuards(AdminGuard)]
-    }
+      decorators: [() => UseGuards(AdminGuard)],
+    },
   },
-  classDecorators: [() => UseGuards(JwtAuthGuard, RolesGuard)]
+  classDecorators: [() => UseGuards(JwtAuthGuard, RolesGuard)],
 });
 
 @ApiTags('products')
 @Controller('products')
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
-
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   @Get('low-stock')
   @ApiOperation({ summary: 'Get low stock products' })
   @Roles('admin', 'manager')
   async findLowStock(
     @CurrentUser() user: any,
-    @Query('threshold', ParseIntPipe) threshold: number = 10
+    @Query('threshold', ParseIntPipe) threshold: number = 10,
   ): Promise<Product[]> {
     const context = { user };
     return this.service.findLowStock(context, threshold);
@@ -453,7 +473,7 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
   async updateStock(
     @CurrentUser() user: any,
     @Param('id') id: string,
-    @Body() updateStockDto: UpdateStockDto
+    @Body() updateStockDto: UpdateStockDto,
   ): Promise<Product> {
     const context = { user };
     return this.service.updateStock(context, id, updateStockDto.quantity);
@@ -464,7 +484,7 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
   async findByPriceRange(
     @CurrentUser() user: any,
     @Query('min', ParseIntPipe) minPrice: number,
-    @Query('max', ParseIntPipe) maxPrice: number
+    @Query('max', ParseIntPipe) maxPrice: number,
   ): Promise<Product[]> {
     const context = { user };
     return this.service.findByPriceRange(context, minPrice, maxPrice);
@@ -524,11 +544,11 @@ describe('ProductsService', () => {
       const createDto = {
         name: 'Test Product',
         price: 99.99,
-        stock: 10
+        stock: 10,
       };
-      
+
       const savedProduct = { id: '1', ...createDto };
-      
+
       mockRepository.create.mockReturnValue(savedProduct);
       mockRepository.save.mockResolvedValue(savedProduct);
 
@@ -545,7 +565,7 @@ describe('ProductsService', () => {
     it('should find products with low stock', async () => {
       const lowStockProducts = [
         { id: '1', name: 'Product 1', stock: 5 },
-        { id: '2', name: 'Product 2', stock: 3 }
+        { id: '2', name: 'Product 2', stock: 3 },
       ];
 
       const queryBuilder = mockRepository.createQueryBuilder();
@@ -567,6 +587,7 @@ describe('ProductsService', () => {
 **Scenario**: Building a product catalog for an e-commerce platform with categories, suppliers, reviews, and inventory management.
 
 **Key Features**:
+
 - Products with multiple categories
 - Supplier management
 - Stock tracking with alerts
@@ -575,6 +596,7 @@ describe('ProductsService', () => {
 - SEO-friendly URLs
 
 **Implementation highlights**:
+
 ```typescript
 // Advanced relations configuration
 export const serviceStructure = CrudServiceStructure({
@@ -588,29 +610,29 @@ export const serviceStructure = CrudServiceStructure({
       supplier: true,
       reviews: {
         relations: {
-          user: true
-        }
+          user: true,
+        },
       },
-      priceHistory: true
-    }
+      priceHistory: true,
+    },
   },
   functions: {
     findAll: {
       relationsConfig: {
-        relations: { category: true, supplier: true } // Lighter for list view
-      }
+        relations: { category: true, supplier: true }, // Lighter for list view
+      },
     },
     findOne: {
       relationsConfig: {
-        relations: { 
-          category: true, 
-          supplier: true, 
+        relations: {
+          category: true,
+          supplier: true,
           reviews: { relations: { user: true } },
-          priceHistory: true
-        }
-      }
-    }
-  }
+          priceHistory: true,
+        },
+      },
+    },
+  },
 });
 ```
 
@@ -619,6 +641,7 @@ export const serviceStructure = CrudServiceStructure({
 **Scenario**: Building a CMS with articles, authors, categories, and tags.
 
 **Key Features**:
+
 - Articles with rich content
 - Author management
 - Category hierarchy
@@ -631,6 +654,7 @@ export const serviceStructure = CrudServiceStructure({
 **Scenario**: Building a project management tool with projects, tasks, users, and time tracking.
 
 **Key Features**:
+
 - Project hierarchy
 - Task assignments
 - Time tracking
@@ -638,18 +662,19 @@ export const serviceStructure = CrudServiceStructure({
 - Comments and activity logs
 - Notifications
 
-
 ## Next Steps
 
 After completing these examples:
 
 1. **Explore Advanced Features**:
+
    - Custom validation pipes
    - Advanced filtering patterns
    - Performance optimization techniques
    - Microservices integration
 
 2. **Production Considerations**:
+
    - Error handling strategies
    - Logging and monitoring
    - Security best practices

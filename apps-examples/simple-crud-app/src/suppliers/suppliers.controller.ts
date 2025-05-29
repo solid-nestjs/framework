@@ -1,11 +1,14 @@
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-crud';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/typeorm-crud';
 import { SuppliersService, serviceStructure } from './suppliers.service';
 
 const controllerStructure = CrudControllerStructure({
-    ...serviceStructure,
-    serviceType:SuppliersService,
+  ...serviceStructure,
+  serviceType: SuppliersService,
 });
 
-export class SuppliersController extends CrudControllerFrom(controllerStructure) {
-    
-}
+export class SuppliersController extends CrudControllerFrom(
+  controllerStructure,
+) {}

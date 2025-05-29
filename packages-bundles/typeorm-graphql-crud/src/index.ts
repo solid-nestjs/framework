@@ -4,39 +4,39 @@ export * as TypeOrm from '@solid-nestjs/typeorm';
 export * as GraphQL from '@solid-nestjs/graphql';
 
 //Filtering
-export  { 
-        FindArgsFrom, 
-        getWhereClass, 
-        getOrderByClass,
-        StringFilter, 
-        DateFilter, 
-        NumberFilter,
-        } from "@solid-nestjs/graphql";
+export {
+  FindArgsFrom,
+  getWhereClass,
+  getOrderByClass,
+  StringFilter,
+  DateFilter,
+  NumberFilter,
+} from '@solid-nestjs/graphql';
 
 //Crud Resolver
-export  { 
-        DataResolverFrom, 
-        CrudResolverFrom, 
-        DataResolverStructure,
-        CrudResolverStructure,
-        } from '@solid-nestjs/graphql';
+export {
+  DataResolverFrom,
+  CrudResolverFrom,
+  DataResolverStructure,
+  CrudResolverStructure,
+} from '@solid-nestjs/graphql';
 
 //Crud Service
-export  { 
-        DataServiceFrom, 
-        CrudServiceFrom, 
-        DataServiceStructure,
-        CrudServiceStructure,
-        Transactional,
-        } from '@solid-nestjs/typeorm';
+export {
+  DataServiceFrom,
+  CrudServiceFrom,
+  DataServiceStructure,
+  CrudServiceStructure,
+  Transactional,
+} from '@solid-nestjs/typeorm';
 
 //Interfaces
-export  { 
-        TypeOrmFindManyOptions,
-        TypeOrmFindOptionsWhere,
-        TypeOrmRepository,
-        TypeOrmSelectQueryBuilder,
-        } from '@solid-nestjs/typeorm';
+export {
+  TypeOrmFindManyOptions,
+  TypeOrmFindOptionsWhere,
+  TypeOrmRepository,
+  TypeOrmSelectQueryBuilder,
+} from '@solid-nestjs/typeorm';
 
 // Optional: Add version info
 export const SOLID_NESTJS_VERSION = '0.2.0';

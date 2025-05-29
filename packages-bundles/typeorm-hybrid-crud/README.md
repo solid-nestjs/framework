@@ -45,7 +45,7 @@ import { Supplier } from './supplier.entity';
 export class Product {
   @ApiProperty({ description: 'The unique identifier of the product' })
   @Field(() => ID, { description: 'The unique identifier of the product' })
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ApiProperty({ description: 'The name of the product' })
@@ -70,7 +70,7 @@ export class Product {
 
   @ApiProperty({ description: 'Product Supplier', type: () => Supplier })
   @Field(() => Supplier, { description: 'Product Supplier', nullable: true })
-  @ManyToOne(() => Supplier, (supplier) => supplier.products)
+  @ManyToOne(() => Supplier, supplier => supplier.products)
   supplier: Supplier;
 }
 ```
@@ -82,7 +82,14 @@ export class Product {
 import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, IsNumber, IsPositive, Min, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsPositive,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 @InputType()
 export class ProductSupplierDto {
@@ -118,7 +125,10 @@ export class CreateProductDto {
   @Min(0)
   stock: number;
 
-  @ApiProperty({ description: 'product Supplier', type: () => ProductSupplierDto })
+  @ApiProperty({
+    description: 'product Supplier',
+    type: () => ProductSupplierDto,
+  })
   @Field(() => ProductSupplierDto, { description: 'product Supplier' })
   @Type(() => ProductSupplierDto)
   @ValidateNested()
@@ -128,10 +138,10 @@ export class CreateProductDto {
 
 ```typescript
 // dto/inputs/update-product.dto.ts
-import { IsUUID } from "class-validator";
-import { Field, ID, InputType } from "@nestjs/graphql";
-import { PartialType } from "@solid-nestjs/typeorm-hybrid-crud";
-import { CreateProductDto } from "./create-product.dto";
+import { IsUUID } from 'class-validator';
+import { Field, ID, InputType } from '@nestjs/graphql';
+import { PartialType } from '@solid-nestjs/typeorm-hybrid-crud';
+import { CreateProductDto } from './create-product.dto';
 
 @InputType()
 export class UpdateProductDto extends PartialType(CreateProductDto) {
@@ -145,12 +155,16 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
 
 ```typescript
 // dto/args/find-product-args.dto.ts
-import { IsOptional, ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
-import { ApiProperty } from "@nestjs/swagger";
-import { ArgsType, Field, InputType } from "@nestjs/graphql";
-import { FindArgsFrom, StringFilter, Where } from "@solid-nestjs/typeorm-hybrid-crud";
-import { Product } from "../../entities/product.entity";
+import { IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import {
+  FindArgsFrom,
+  StringFilter,
+  Where,
+} from '@solid-nestjs/typeorm-hybrid-crud';
+import { Product } from '../../entities/product.entity';
 
 @InputType({ isAbstract: true })
 class FindProductWhere implements Where<Product> {
@@ -163,14 +177,19 @@ class FindProductWhere implements Where<Product> {
 }
 
 @ArgsType()
-export class FindProductArgs extends FindArgsFrom<Product>({ whereType: FindProductWhere }) {}
+export class FindProductArgs extends FindArgsFrom<Product>({
+  whereType: FindProductWhere,
+}) {}
 ```
 
 ### 4. Create Service
 
 ```typescript
 // products.service.ts
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  CrudServiceFrom,
+  CrudServiceStructure,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 import { Product } from './entities/product.entity';
 import { CreateProductDto, FindProductArgs, UpdateProductDto } from './dto';
 
@@ -181,9 +200,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      supplier: true
-    }
-  }
+      supplier: true,
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
@@ -195,7 +214,10 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 
 ```typescript
 // products.controller.ts
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 import { ProductsService, serviceStructure } from './products.service';
 
 const controllerStructure = CrudControllerStructure({
@@ -203,7 +225,9 @@ const controllerStructure = CrudControllerStructure({
   serviceType: ProductsService,
 });
 
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // Add custom endpoints here if needed
 }
 ```
@@ -213,7 +237,10 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 ```typescript
 // products.resolver.ts
 import { Resolver } from '@nestjs/graphql';
-import { CrudResolverFrom, CrudResolverStructure } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  CrudResolverFrom,
+  CrudResolverStructure,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 import { ProductsService, serviceStructure } from './products.service';
 import { Product } from './entities/product.entity';
 
@@ -286,7 +313,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe());
 
@@ -297,12 +324,12 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, { 
-    swaggerOptions: { ...swaggerRecomenedOptions } 
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: { ...swaggerRecomenedOptions },
   });
-  
+
   await app.listen(3000);
-  
+
   console.log('🚀 REST API ready at http://localhost:3000/api');
   console.log('🚀 GraphQL server ready at http://localhost:3000/graphql');
 }
@@ -329,10 +356,10 @@ GET    /products/pagination   # Get paginated products
 type Query {
   # Get single product by ID
   product(id: String!): Product!
-  
+
   # Get list of products with filtering
   products(where: FindProductWhere): [Product!]!
-  
+
   # Get paginated products
   productsPagination(where: FindProductWhere): PaginationResult!
 }
@@ -340,13 +367,13 @@ type Query {
 type Mutation {
   # Create new product
   createProduct(createInput: CreateProductDto!): Product!
-  
+
   # Update existing product
   updateProduct(updateInput: UpdateProductDto!): Product!
-  
+
   # Soft delete product
   removeProduct(id: String!): Product!
-  
+
   # Hard delete product (if enabled)
   hardRemoveProduct(id: String!): Product!
 }
@@ -384,17 +411,17 @@ export const serviceStructure = CrudServiceStructure({
       relationsConfig: {
         relations: {
           supplier: true,
-          categories: true
-        }
-      }
+          categories: true,
+        },
+      },
     },
     findAll: {
       relationsConfig: {
         relations: {
-          supplier: true
-        }
-      }
-    }
+          supplier: true,
+        },
+      },
+    },
   },
 });
 ```
@@ -412,9 +439,9 @@ const controllerStructure = CrudControllerStructure({
     hardRemove: false, // Disable hard delete
     findAll: {
       name: 'getAllProducts',
-      summary: 'Retrieve all products'
-    }
-  }
+      summary: 'Retrieve all products',
+    },
+  },
 });
 ```
 
@@ -452,12 +479,7 @@ query {
 
 # With logical operators
 query {
-  products(where: {
-    _or: [
-      { name: "laptop" }
-      { description: "gaming" }
-    ]
-  }) {
+  products(where: { _or: [{ name: "laptop" }, { description: "gaming" }] }) {
     id
     name
     price
@@ -486,33 +508,39 @@ query {
 ## 📊 Key Exports
 
 ### Services
+
 - `CrudServiceFrom()` - Creates TypeORM-powered service with CRUD operations
 - `DataServiceFrom()` - Creates read-only data service
 - `CrudServiceStructure()` - Service configuration builder
 - `Transactional()` - Transaction decorator
 
 ### Controllers (REST API)
+
 - `CrudControllerFrom()` - Creates REST controller with full CRUD endpoints
 - `DataControllerFrom()` - Creates read-only REST controller
 - `CrudControllerStructure()` - Controller configuration builder
 
 ### Resolvers (GraphQL)
+
 - `CrudResolverFrom()` - Creates GraphQL resolver with full CRUD operations
 - `DataResolverFrom()` - Creates read-only GraphQL resolver
 - `CrudResolverStructure()` - Resolver configuration builder
 
 ### Filtering & Arguments
+
 - `FindArgsFrom()` - Creates hybrid argument types for REST + GraphQL
 - `StringFilter`, `NumberFilter`, `DateFilter` - Filter input types
 - `getWhereClass()`, `getOrderByClass()` - Dynamic filter classes
 
 ### Utilities
+
 - `PartialType()` - Enhanced partial type helper for hybrid decorators
 - `PaginationResult` - Pagination result type
 
 ## 📚 Examples
 
 For complete working examples, see:
+
 - [Simple Hybrid CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-hybrid-crud-app)
 - [Framework Documentation](https://github.com/solid-nestjs/framework/tree/master/docs)
 
@@ -523,6 +551,7 @@ For complete documentation, examples, and advanced usage, see the [main framewor
 ## 🤝 Related Packages
 
 This bundle includes and re-exports:
+
 - `@solid-nestjs/common` - Common utilities and interfaces
 - `@solid-nestjs/typeorm` - TypeORM service implementations
 - `@solid-nestjs/rest-api` - REST API controllers and decorators

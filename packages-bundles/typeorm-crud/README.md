@@ -41,7 +41,7 @@ import { Supplier } from './supplier.entity';
 @Entity()
 export class Product {
   @ApiProperty({ description: 'The unique identifier of the product' })
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ApiProperty({ description: 'The name of the product' })
@@ -61,7 +61,7 @@ export class Product {
   stock: number;
 
   @ApiProperty({ description: 'Product Supplier', type: () => Supplier })
-  @ManyToOne(() => Supplier, (supplier) => supplier.products)
+  @ManyToOne(() => Supplier, supplier => supplier.products)
   supplier: Supplier;
 }
 ```
@@ -72,7 +72,14 @@ export class Product {
 // dto/inputs/create-product.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class ProductSupplierDto {
   @ApiProperty({ description: 'supplier id' })
@@ -103,7 +110,10 @@ export class CreateProductDto {
   @Min(0)
   stock: number;
 
-  @ApiProperty({ description: 'product Supplier', type: () => ProductSupplierDto })
+  @ApiProperty({
+    description: 'product Supplier',
+    type: () => ProductSupplierDto,
+  })
   @Type(() => ProductSupplierDto)
   @ValidateNested()
   supplier: ProductSupplierDto;
@@ -112,8 +122,8 @@ export class CreateProductDto {
 
 ```typescript
 // dto/inputs/update-product.dto.ts
-import { PartialType } from "@nestjs/swagger";
-import { CreateProductDto } from "./create-product.dto";
+import { PartialType } from '@nestjs/swagger';
+import { CreateProductDto } from './create-product.dto';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {
   // Automatically makes all fields optional
@@ -124,18 +134,18 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
 
 ```typescript
 // dto/args/find-product-args.dto.ts
-import { IsEnum, IsOptional, ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
-import { ApiProperty } from "@nestjs/swagger";
-import { 
-  FindArgsFrom, 
-  StringFilter, 
-  NumberFilter, 
-  OrderBy, 
-  OrderByTypes, 
-  Where 
-} from "@solid-nestjs/typeorm-crud";
-import { Product } from "../../entities/product.entity";
+import { IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  FindArgsFrom,
+  StringFilter,
+  NumberFilter,
+  OrderBy,
+  OrderByTypes,
+  Where,
+} from '@solid-nestjs/typeorm-crud';
+import { Product } from '../../entities/product.entity';
 
 class FindProductWhere implements Where<Product> {
   @ApiProperty({ type: () => StringFilter, required: false })
@@ -147,19 +157,19 @@ class FindProductWhere implements Where<Product> {
   @ApiProperty({ type: () => StringFilter, required: false })
   @Type(() => StringFilter)
   @IsOptional()
-  @ValidateNested()   
+  @ValidateNested()
   description?: StringFilter;
 
   @ApiProperty({ type: () => NumberFilter, required: false })
   @Type(() => NumberFilter)
   @IsOptional()
-  @ValidateNested()  
+  @ValidateNested()
   price?: NumberFilter;
 
   @ApiProperty({ type: () => NumberFilter, required: false })
   @Type(() => NumberFilter)
   @IsOptional()
-  @ValidateNested()  
+  @ValidateNested()
   stock?: NumberFilter;
 }
 
@@ -180,9 +190,9 @@ class FindProductOrderBy implements OrderBy<Product> {
   stock?: OrderByTypes;
 }
 
-export class FindProductArgs extends FindArgsFrom<Product>({ 
-  whereType: FindProductWhere, 
-  orderByType: FindProductOrderBy 
+export class FindProductArgs extends FindArgsFrom<Product>({
+  whereType: FindProductWhere,
+  orderByType: FindProductOrderBy,
 }) {}
 ```
 
@@ -190,7 +200,10 @@ export class FindProductArgs extends FindArgsFrom<Product>({
 
 ```typescript
 // products.service.ts
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-crud';
+import {
+  CrudServiceFrom,
+  CrudServiceStructure,
+} from '@solid-nestjs/typeorm-crud';
 import { Product } from './entities/product.entity';
 import { CreateProductDto, FindProductArgs, UpdateProductDto } from './dto';
 
@@ -201,9 +214,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      supplier: true
-    }
-  }
+      supplier: true,
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
@@ -215,7 +228,6 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
   // - remove(context, id): Promise<Product>
   // - hardRemove(context, id): Promise<Product>
   // - pagination(context, args): Promise<PaginationResult<Product>>
-  
   // Add custom methods here if needed
 }
 ```
@@ -224,7 +236,10 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 
 ```typescript
 // products.controller.ts
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-crud';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/typeorm-crud';
 import { ProductsService, serviceStructure } from './products.service';
 
 const controllerStructure = CrudControllerStructure({
@@ -232,7 +247,9 @@ const controllerStructure = CrudControllerStructure({
   serviceType: ProductsService,
 });
 
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // Automatically provides REST endpoints:
   // GET    /products              - findAll with filtering
   // GET    /products/:id          - findOne by ID
@@ -241,7 +258,6 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
   // DELETE /products/:id          - soft delete product
   // DELETE /products/:id/hard     - hard delete product
   // GET    /products/pagination   - paginated results
-  
   // Add custom endpoints here if needed
 }
 ```
@@ -280,7 +296,7 @@ import { ProductsModule } from './products/products.module';
       database: './database.sqlite',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true, // Set to false in production
-      logging: true
+      logging: true,
     }),
     ProductsModule,
   ],
@@ -298,7 +314,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable validation
   app.useGlobalPipes(new ValidationPipe());
 
@@ -310,12 +326,12 @@ async function bootstrap() {
     .addTag('products')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, { 
-    swaggerOptions: { ...swaggerRecomenedOptions } 
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: { ...swaggerRecomenedOptions },
   });
 
   await app.listen(3000);
-  
+
   console.log('🚀 REST API ready at http://localhost:3000/api');
 }
 bootstrap();
@@ -368,6 +384,7 @@ GET /products?where[_or][0][_and][0][name]=laptop&where[_or][0][_and][1][price][
 ### Available Filter Operators
 
 **String Filters:**
+
 - `_eq` - Equals
 - `_ne` - Not equals
 - `_contains` - Contains substring
@@ -377,6 +394,7 @@ GET /products?where[_or][0][_and][0][name]=laptop&where[_or][0][_and][1][price][
 - `_notIn` - Not in array
 
 **Number Filters:**
+
 - `_eq` - Equals
 - `_ne` - Not equals
 - `_gt` - Greater than
@@ -436,19 +454,19 @@ export const serviceStructure = CrudServiceStructure({
   relationsConfig: {
     relations: {
       supplier: true,
-      categories: true
-    }
+      categories: true,
+    },
   },
   functions: {
     findOne: {
       relationsConfig: {
         relations: {
           supplier: true,
-          reviews: true
-        }
-      }
-    }
-  }
+          reviews: true,
+        },
+      },
+    },
+  },
 });
 ```
 
@@ -465,35 +483,39 @@ const controllerStructure = CrudControllerStructure({
     hardRemove: false, // Disable hard delete
     findAll: {
       name: 'getAllProducts',
-      summary: 'Retrieve all products with filtering'
+      summary: 'Retrieve all products with filtering',
     },
     pagination: {
       name: 'getProductsPaginated',
-      summary: 'Get paginated products'
-    }
-  }
+      summary: 'Get paginated products',
+    },
+  },
 });
 ```
 
 ## 📊 Key Exports
 
 ### Services
+
 - `CrudServiceFrom()` - Creates TypeORM-powered service with CRUD operations
 - `DataServiceFrom()` - Creates read-only data service
 - `CrudServiceStructure()` - Service configuration builder
 - `Transactional()` - Transaction decorator
 
 ### Controllers
+
 - `CrudControllerFrom()` - Creates REST controller with full CRUD endpoints
 - `DataControllerFrom()` - Creates read-only REST controller
 - `CrudControllerStructure()` - Controller configuration builder
 
 ### Filtering & Arguments
+
 - `FindArgsFrom()` - Creates argument types for filtering and pagination
 - `StringFilter`, `NumberFilter`, `DateFilter` - Filter input types
 - `getWhereClass()`, `getOrderByClass()` - Extract filter classes
 
 ### Utilities
+
 - `swaggerRecomenedOptions` - Recommended Swagger configuration
 - `PaginationResult` - Pagination result type
 - All TypeORM interfaces and types
@@ -503,12 +525,13 @@ const controllerStructure = CrudControllerStructure({
 This bundle automatically installs and exports:
 
 - **`@solid-nestjs/common`** - Core utilities and interfaces
-- **`@solid-nestjs/typeorm`** - TypeORM integration utilities  
+- **`@solid-nestjs/typeorm`** - TypeORM integration utilities
 - **`@solid-nestjs/rest-api`** - REST API CRUD controllers and services
 
 ## 📚 Examples
 
 For complete working examples, see:
+
 - [Simple CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-crud-app)
 - [Framework Documentation](https://github.com/solid-nestjs/framework/tree/master/docs)
 

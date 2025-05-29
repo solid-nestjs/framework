@@ -1,6 +1,6 @@
-import { WrappedBy } from "@solid-nestjs/common";
-import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
-import { transactionalWrapper } from "../helpers/transaction.helper";
+import { WrappedBy } from '@solid-nestjs/common';
+import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
+import { transactionalWrapper } from '../helpers/transaction.helper';
 
 /**
  * Decorator to mark a method as transactional, ensuring that the method executes within a database transaction.
@@ -18,4 +18,5 @@ import { transactionalWrapper } from "../helpers/transaction.helper";
  * }
  * ```
  */
-export const Transactional = (options?:{isolationLevel?:IsolationLevel}) => WrappedBy(transactionalWrapper,options);
+export const Transactional = (options?: { isolationLevel?: IsolationLevel }) =>
+  WrappedBy(transactionalWrapper, options);

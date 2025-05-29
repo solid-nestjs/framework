@@ -17,18 +17,21 @@ This example demonstrates how to build a complete GraphQL CRUD application using
 ## 🏗️ What's Included
 
 ### Entities
+
 - **Product** - Main entity with GraphQL ObjectType decorators
 - **Supplier** - Related entity with company details and product relations
 
 ### Generated GraphQL Operations
 
 #### Queries
+
 - `products()` - List products with filtering and pagination
 - `product(id: ID!)` - Get single product by ID
 - `suppliers()` - List suppliers with their products
 - `supplier(id: ID!)` - Get single supplier by ID
 
 #### Mutations
+
 - `createProduct(createProductInput: CreateProductInput!)` - Create new product
 - `updateProduct(id: ID!, updateProductInput: UpdateProductInput!)` - Update existing product
 - `removeProduct(id: ID!)` - Delete product (soft delete)
@@ -37,6 +40,7 @@ This example demonstrates how to build a complete GraphQL CRUD application using
 - `removeSupplier(id: ID!)` - Delete supplier
 
 ### Key SOLID NestJS Features Demonstrated
+
 - **Service Structure** - `CrudServiceStructure()` with GraphQL configuration
 - **Auto-generated Services** - `CrudServiceFrom()` mixin
 - **Resolver Structure** - `CrudResolverStructure()` configuration
@@ -123,10 +127,7 @@ query {
 # Filter products by name and price range
 query {
   products(
-    where: {
-      name: { contains: "laptop" }
-      price: { gte: 500, lte: 2000 }
-    }
+    where: { name: { contains: "laptop" }, price: { gte: 500, lte: 2000 } }
   ) {
     id
     name
@@ -139,10 +140,7 @@ query {
 
 # Paginated products with sorting
 query {
-  products(
-    pagination: { page: 1, limit: 10 }
-    orderBy: { price: DESC }
-  ) {
+  products(pagination: { page: 1, limit: 10 }, orderBy: { price: DESC }) {
     id
     name
     price
@@ -176,10 +174,7 @@ mutation {
 mutation {
   updateProduct(
     id: "1"
-    updateProductInput: {
-      name: "Updated Gaming Laptop"
-      price: 1199.99
-    }
+    updateProductInput: { name: "Updated Gaming Laptop", price: 1199.99 }
   ) {
     id
     name
@@ -236,6 +231,7 @@ src/
 ## 🔧 Key Code Examples
 
 ### Entity with GraphQL Decorators (product.entity.ts)
+
 ```typescript
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
@@ -262,8 +258,12 @@ export class Product {
 ```
 
 ### Service Structure (products.service.ts)
+
 ```typescript
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-graphql-crud';
+import {
+  CrudServiceFrom,
+  CrudServiceStructure,
+} from '@solid-nestjs/typeorm-graphql-crud';
 
 export const serviceStructure = CrudServiceStructure({
   entityType: Product,
@@ -272,9 +272,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      supplier: true  // Auto-load supplier relation
-    }
-  }
+      supplier: true, // Auto-load supplier relation
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
@@ -283,9 +283,13 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ```
 
 ### Resolver Structure (products.resolver.ts)
+
 ```typescript
 import { Resolver } from '@nestjs/graphql';
-import { CrudResolverFrom, CrudResolverStructure } from '@solid-nestjs/typeorm-graphql-crud';
+import {
+  CrudResolverFrom,
+  CrudResolverStructure,
+} from '@solid-nestjs/typeorm-graphql-crud';
 
 const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
@@ -323,46 +327,50 @@ export class ProductsResolver extends CrudResolverFrom(resolverStructure) {
 ## 📄 License
 
 This example is part of the SOLID NestJS Framework and is MIT licensed.
-  products {
-    id
-    name
-    description
-    price
-    stock
-    createdAt
-    updatedAt
-  }
+products {
+id
+name
+description
+price
+stock
+createdAt
+updatedAt
+}
 }
 
 # Get a single product by ID
+
 query {
-  product(id: "your-product-id") {
-    id
-    name
-    description
-    price
-    stock
-  }
+product(id: "your-product-id") {
+id
+name
+description
+price
+stock
+}
 }
 
 # Find products by name
+
 query {
-  productsByName(name: "Product Name") {
-    id
-    name
-    price
-  }
+productsByName(name: "Product Name") {
+id
+name
+price
+}
 }
 
 # Find products by price range
+
 query {
-  productsByPriceRange(minPrice: 10.0, maxPrice: 50.0) {
-    id
-    name
-    price
-  }
+productsByPriceRange(minPrice: 10.0, maxPrice: 50.0) {
+id
+name
+price
 }
-```
+}
+
+````
 
 ### Mutations
 
@@ -404,7 +412,7 @@ mutation {
     name
   }
 }
-```
+````
 
 ## Project Structure
 

@@ -1,4 +1,7 @@
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  CrudServiceFrom,
+  CrudServiceStructure,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 import { Supplier } from './entities/supplier.entity';
 import { CreateSupplierDto, FindSupplierArgs, UpdateSupplierDto } from './dto';
 
@@ -14,17 +17,15 @@ export const serviceStructure = CrudServiceStructure({
     hardRemove: { transactional: true },
     findOne: {
       relationsConfig: {
-        products: true
-      }
+        products: true,
+      },
     },
     findAll: {
       relationsConfig: {
-        products: true
-      }
-    }
+        products: true,
+      },
+    },
   },
 });
 
-export class SuppliersService extends CrudServiceFrom(serviceStructure) {
-
-}
+export class SuppliersService extends CrudServiceFrom(serviceStructure) {}

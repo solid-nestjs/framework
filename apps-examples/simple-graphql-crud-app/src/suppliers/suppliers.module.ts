@@ -7,6 +7,6 @@ import { SuppliersResolver } from './suppliers.resolver';
 @Module({
   imports: [TypeOrmModule.forFeature([Supplier])],
   providers: [SuppliersResolver, SuppliersService],
-  exports: [SuppliersService]
+  exports: [SuppliersService],
 })
-export class SuppliersModule { }
+export class SuppliersModule {}

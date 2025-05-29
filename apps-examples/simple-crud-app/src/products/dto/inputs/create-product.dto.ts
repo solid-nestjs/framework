@@ -1,15 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
-
-
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class ProductSupplierDto {
   @ApiProperty({ description: 'supplier id' })
   @IsNotEmpty()
   @IsString()
   @IsUUID()
-  id:string;
+  id: string;
 }
 
 export class CreateProductDto {
@@ -33,8 +38,11 @@ export class CreateProductDto {
   @Min(0)
   stock: number;
 
-  @ApiProperty({ description: 'product Supplier', type:() => ProductSupplierDto })
+  @ApiProperty({
+    description: 'product Supplier',
+    type: () => ProductSupplierDto,
+  })
   @Type(() => ProductSupplierDto)
   @ValidateNested()
-  supplier:ProductSupplierDto;
+  supplier: ProductSupplierDto;
 }

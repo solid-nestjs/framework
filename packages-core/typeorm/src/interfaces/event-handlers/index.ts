@@ -1,1 +1,1 @@
-export * from "./crud-event-handlers.interface"
+export * from './crud-event-handlers.interface';

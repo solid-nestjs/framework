@@ -1,5 +1,5 @@
 export enum StandardActions {
-    Create = 'Create',
-    Update = 'Update',
-    Remove = 'Remove',
+  Create = 'Create',
+  Update = 'Update',
+  Remove = 'Remove',
 }

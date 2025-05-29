@@ -20,6 +20,7 @@ npm install @solid-nestjs/typeorm-graphql-crud
 ```
 
 This bundle includes:
+
 - `@solid-nestjs/common` - Common utilities and interfaces
 - `@solid-nestjs/typeorm` - TypeORM service implementations
 - `@solid-nestjs/graphql` - GraphQL resolver generators
@@ -101,7 +102,10 @@ export class ProductSupplierDto {
 ### 3. Create Service
 
 ```typescript
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-graphql-crud';
+import {
+  CrudServiceFrom,
+  CrudServiceStructure,
+} from '@solid-nestjs/typeorm-graphql-crud';
 import { Product } from './entities/product.entity';
 import { CreateProductDto, UpdateProductDto, FindProductArgs } from './dto';
 
@@ -116,15 +120,15 @@ export const serviceStructure = CrudServiceStructure({
     remove: { transactional: true },
     findOne: {
       relationsConfig: {
-        relations: { supplier: true }
-      }
+        relations: { supplier: true },
+      },
     },
     findAll: {
       relationsConfig: {
-        relations: { supplier: true }
-      }
-    }
-  }
+        relations: { supplier: true },
+      },
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {}
@@ -134,7 +138,10 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {}
 
 ```typescript
 import { Resolver } from '@nestjs/graphql';
-import { CrudResolverFrom, CrudResolverStructure } from '@solid-nestjs/typeorm-graphql-crud';
+import {
+  CrudResolverFrom,
+  CrudResolverStructure,
+} from '@solid-nestjs/typeorm-graphql-crud';
 import { ProductsService, serviceStructure } from './products.service';
 import { Product } from './entities/product.entity';
 
@@ -161,7 +168,7 @@ import { ProductsResolver } from './products.resolver';
 @Module({
   imports: [TypeOrmModule.forFeature([Product])],
   providers: [ProductsResolver, ProductsService],
-  exports: [ProductsService]
+  exports: [ProductsService],
 })
 export class ProductsModule {}
 ```
@@ -191,6 +198,7 @@ export class AppModule {}
 ## 🎯 Generated GraphQL Operations
 
 ### Queries
+
 ```graphql
 query GetProducts($where: FindProductWhere) {
   products(where: $where) {
@@ -234,6 +242,7 @@ query GetProductsPagination($where: FindProductWhere) {
 ```
 
 ### Mutations
+
 ```graphql
 mutation CreateProduct($createInput: CreateProductDto!) {
   createProduct(createInput: $createInput) {
@@ -267,13 +276,15 @@ mutation RemoveProduct($id: String!) {
 
 ```graphql
 query FilteredProducts {
-  products(where: {
-    _and: [
-      { name: { _contains: "laptop" } }
-      { price: { _gte: 500, _lte: 2000 } }
-      { supplier: { name: { _eq: "TechCorp" } } }
-    ]
-  }) {
+  products(
+    where: {
+      _and: [
+        { name: { _contains: "laptop" } }
+        { price: { _gte: 500, _lte: 2000 } }
+        { supplier: { name: { _eq: "TechCorp" } } }
+      ]
+    }
+  ) {
     id
     name
     price
@@ -295,17 +306,17 @@ const resolverStructure = CrudResolverStructure({
   operations: {
     findAll: {
       name: 'getAllProducts',
-      description: 'Retrieve all products with advanced filtering'
+      description: 'Retrieve all products with advanced filtering',
     },
     create: {
-      name: 'addProduct', 
-      description: 'Add a new product to the catalog'
+      name: 'addProduct',
+      description: 'Add a new product to the catalog',
     },
     update: true,
     remove: true,
     hardRemove: false, // Disable hard delete
-    pagination: true
-  }
+    pagination: true,
+  },
 });
 ```
 
@@ -320,16 +331,16 @@ export const serviceStructure = CrudServiceStructure({
   functions: {
     create: {
       transactional: true,
-      isolationLevel: 'READ_COMMITTED'
+      isolationLevel: 'READ_COMMITTED',
     },
     update: {
       transactional: true,
-      lockMode: 'pessimistic_write'
+      lockMode: 'pessimistic_write',
     },
     remove: {
-      transactional: true
-    }
-  }
+      transactional: true,
+    },
+  },
 });
 ```
 
@@ -346,44 +357,46 @@ export const serviceStructure = CrudServiceStructure({
       relationsConfig: {
         relations: {
           supplier: true,
-          category: true
-        }
-      }
+          category: true,
+        },
+      },
     },
     findOne: {
       relationsConfig: {
         relations: {
           supplier: {
             relations: {
-              address: true
-            }
+              address: true,
+            },
           },
           category: true,
           reviews: {
             relations: {
-              user: true
-            }
-          }
-        }
-      }
-    }
-  }
+              user: true,
+            },
+          },
+        },
+      },
+    },
+  },
 });
 ```
 
 ## 📚 Key Exports
 
 ### CRUD Operations
+
 ```typescript
 export {
   CrudServiceFrom,
   CrudServiceStructure,
   CrudResolverFrom,
-  CrudResolverStructure
+  CrudResolverStructure,
 } from '@solid-nestjs/typeorm-graphql-crud';
 ```
 
 ### Filtering & Queries
+
 ```typescript
 export {
   FindArgsFrom,
@@ -391,30 +404,31 @@ export {
   getOrderByClass,
   StringFilter,
   DateFilter,
-  NumberFilter
+  NumberFilter,
 } from '@solid-nestjs/typeorm-graphql-crud';
 ```
 
 ### Transactions
+
 ```typescript
-export {
-  Transactional
-} from '@solid-nestjs/typeorm-graphql-crud';
+export { Transactional } from '@solid-nestjs/typeorm-graphql-crud';
 ```
 
 ### TypeORM Types
+
 ```typescript
 export {
   TypeOrmFindManyOptions,
   TypeOrmFindOptionsWhere,
   TypeOrmRepository,
-  TypeOrmSelectQueryBuilder
+  TypeOrmSelectQueryBuilder,
 } from '@solid-nestjs/typeorm-graphql-crud';
 ```
 
 ## 📚 Examples
 
 Check out the complete example application:
+
 - [Simple GraphQL CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-graphql-crud-app)
 
 ## 📖 Documentation

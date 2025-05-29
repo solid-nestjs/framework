@@ -32,6 +32,7 @@ The SOLID NestJS Framework is a collection of utilities and mixins that accelera
 Get started immediately with our working examples:
 
 ### 🎯 REST API Example
+
 ```bash
 # Clone and run the REST API example
 git clone https://github.com/solid-nestjs/framework.git
@@ -40,7 +41,8 @@ npm install && npm run start:dev
 # Visit http://localhost:3000/api for Swagger docs
 ```
 
-### 🎮 GraphQL Example  
+### 🎮 GraphQL Example
+
 ```bash
 # Run the GraphQL example
 cd framework/apps-examples/simple-graphql-crud-app
@@ -49,6 +51,7 @@ npm install && npm run start:dev
 ```
 
 ### 🔄 Hybrid REST + GraphQL Example
+
 ```bash
 # Run the hybrid example with both APIs
 cd framework/apps-examples/simple-hybrid-crud-app
@@ -76,29 +79,29 @@ import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
 export class Product {
-    @ApiProperty({ description: 'The unique identifier of the product' })
-    @PrimaryGeneratedColumn("uuid")
-    id: string;
+  @ApiProperty({ description: 'The unique identifier of the product' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @ApiProperty({ description: 'The name of the product' })
-    @Column()
-    name: string;
+  @ApiProperty({ description: 'The name of the product' })
+  @Column()
+  name: string;
 
-    @ApiProperty({ description: 'The description of the product' })
-    @Column()
-    description: string;
+  @ApiProperty({ description: 'The description of the product' })
+  @Column()
+  description: string;
 
-    @ApiProperty({ description: 'The price of the product' })
-    @Column('decimal', { precision: 10, scale: 2 })
-    price: number;
+  @ApiProperty({ description: 'The price of the product' })
+  @Column('decimal', { precision: 10, scale: 2 })
+  price: number;
 
-    @ApiProperty({ description: 'The stock quantity of the product' })
-    @Column()
-    stock: number;
+  @ApiProperty({ description: 'The stock quantity of the product' })
+  @Column()
+  stock: number;
 
-    @ApiProperty({ description: 'Product Supplier', type: () => Supplier })
-    @ManyToOne(() => Supplier, (supplier) => supplier.products)
-    supplier: Supplier;
+  @ApiProperty({ description: 'Product Supplier', type: () => Supplier })
+  @ManyToOne(() => Supplier, supplier => supplier.products)
+  supplier: Supplier;
 }
 ```
 
@@ -110,26 +113,26 @@ import { IsString, IsNumber, IsUUID, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateProductDto {
-    @ApiProperty()
-    @IsString()
-    name: string;
+  @ApiProperty()
+  @IsString()
+  name: string;
 
-    @ApiProperty()
-    @IsString()
-    description: string;
+  @ApiProperty()
+  @IsString()
+  description: string;
 
-    @ApiProperty()
-    @IsNumber()
-    price: number;
+  @ApiProperty()
+  @IsNumber()
+  price: number;
 
-    @ApiProperty()
-    @IsNumber()
-    stock: number;
+  @ApiProperty()
+  @IsNumber()
+  stock: number;
 
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsUUID()
-    supplierId?: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUUID()
+  supplierId?: string;
 }
 
 // update-product.dto.ts
@@ -160,9 +163,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      supplier: true
-    }
-  }
+      supplier: true,
+    },
+  },
 });
 
 // Create service extending CRUD functionality
@@ -174,17 +177,22 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ### 4. Create Controller with REST Endpoints
 
 ```typescript
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/rest-api';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/rest-api';
 import { ProductsService, serviceStructure } from './products.service';
 
 // Define controller structure
 const controllerStructure = CrudControllerStructure({
-    ...serviceStructure,
-    serviceType: ProductsService,
+  ...serviceStructure,
+  serviceType: ProductsService,
 });
 
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
-    // Add custom endpoints here if needed
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
+  // Add custom endpoints here if needed
 }
 ```
 
@@ -201,7 +209,7 @@ import { Product } from './entities/product.entity';
   imports: [TypeOrmModule.forFeature([Product])],
   controllers: [ProductsController],
   providers: [ProductsService],
-  exports: [ProductsService]
+  exports: [ProductsService],
 })
 export class ProductsModule {}
 ```
@@ -216,6 +224,7 @@ The framework automatically generates the following REST endpoints:
 - `PUT /products/:id` - Update an existing product
 - `DELETE /products/:id` - Soft delete a product
 - `DELETE /products/hard/:id` - Hard delete a product (if enabled)
+
 ## 🔧 Advanced Configuration
 
 ### Service Structure Options
@@ -226,7 +235,7 @@ export const serviceStructure = CrudServiceStructure({
   createInputType: CreateProductDto,
   updateInputType: UpdateProductDto,
   findArgsType: FindProductArgs,
-  
+
   // Relations configuration
   relationsConfig: {
     mainAlias: 'product',
@@ -234,10 +243,10 @@ export const serviceStructure = CrudServiceStructure({
       supplier: true,
       category: {
         relations: {
-          parentCategory: true
-        }
-      }
-    }
+          parentCategory: true,
+        },
+      },
+    },
   },
 
   // Lock mode for database operations
@@ -247,29 +256,29 @@ export const serviceStructure = CrudServiceStructure({
   functions: {
     findAll: {
       relationsConfig: {
-        relations: { supplier: true }
+        relations: { supplier: true },
       },
-      decorators: [() => CacheInterceptor()]
+      decorators: [() => CacheInterceptor()],
     },
     findOne: {
       lockMode: 'optimistic',
       relationsConfig: {
-        relations: { supplier: true, category: true }
-      }
+        relations: { supplier: true, category: true },
+      },
     },
     create: {
       transactional: true,
       isolationLevel: 'READ_COMMITTED',
-      decorators: [() => UseGuards(AdminGuard)]
+      decorators: [() => UseGuards(AdminGuard)],
     },
     update: {
       transactional: true,
-      isolationLevel: 'REPEATABLE_READ'
+      isolationLevel: 'REPEATABLE_READ',
     },
     remove: {
-      transactional: true
-    }
-  }
+      transactional: true,
+    },
+  },
 });
 ```
 
@@ -279,48 +288,49 @@ export const serviceStructure = CrudServiceStructure({
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
   serviceType: ProductsService,
-  
+
   // Custom route configuration
   route: 'products',
-  
+
   // API documentation
   apiTags: ['Products'],
-  
+
   // Operation configurations
   operations: {
     findAll: {
       summary: 'Get all products',
-      description: 'Retrieve a list of all products with filtering and pagination',
-      decorators: [() => UseGuards(JwtAuthGuard)]
+      description:
+        'Retrieve a list of all products with filtering and pagination',
+      decorators: [() => UseGuards(JwtAuthGuard)],
     },
     findOne: {
       summary: 'Get product by ID',
-      description: 'Retrieve a specific product by its ID'
+      description: 'Retrieve a specific product by its ID',
     },
     create: {
       summary: 'Create new product',
       description: 'Create a new product in the system',
-      decorators: [() => UseGuards(AdminGuard)]
+      decorators: [() => UseGuards(AdminGuard)],
     },
     update: {
       summary: 'Update product',
-      description: 'Update an existing product'
+      description: 'Update an existing product',
     },
     remove: {
       summary: 'Delete product',
-      description: 'Soft delete a product'
+      description: 'Soft delete a product',
     },
     hardRemove: true, // Enable hard delete endpoint
-    pagination: true   // Enable pagination endpoint
+    pagination: true, // Enable pagination endpoint
   },
 
   // Custom decorators
   classDecorators: [() => UseGuards(JwtAuthGuard)],
-  
+
   // Parameter decorators
   parameterDecorators: {
-    context: CurrentUser
-  }
+    context: CurrentUser,
+  },
 });
 ```
 
@@ -360,15 +370,21 @@ const controllerStructure = CrudControllerStructure({
 
 ```typescript
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
-  
-  async findBySupplier(context: Context, supplierId: string): Promise<Product[]> {
+  async findBySupplier(
+    context: Context,
+    supplierId: string,
+  ): Promise<Product[]> {
     return this.findAll(context, {
-      where: { supplier: { id: supplierId } }
+      where: { supplier: { id: supplierId } },
     });
   }
 
-  async updateStock(context: Context, id: string, quantity: number): Promise<Product> {
-    return this.runInTransaction(context, async (transactionContext) => {
+  async updateStock(
+    context: Context,
+    id: string,
+    quantity: number,
+  ): Promise<Product> {
+    return this.runInTransaction(context, async transactionContext => {
       const product = await this.findOne(transactionContext, id, true);
       product.stock += quantity;
       return this.getRepository(transactionContext).save(product);
@@ -376,12 +392,22 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
   }
 
   // Override lifecycle hooks
-  async beforeCreate(context: Context, repository: Repository<Product>, entity: Product, createInput: CreateProductDto): Promise<void> {
+  async beforeCreate(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+    createInput: CreateProductDto,
+  ): Promise<void> {
     // Custom logic before creating
     entity.slug = this.generateSlug(entity.name);
   }
 
-  async afterUpdate(context: Context, repository: Repository<Product>, entity: Product, updateInput: UpdateProductDto): Promise<void> {
+  async afterUpdate(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+    updateInput: UpdateProductDto,
+  ): Promise<void> {
     // Custom logic after updating
     await this.notifyStockChange(entity);
   }
@@ -391,13 +417,14 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ### Custom Controller Endpoints
 
 ```typescript
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
-  
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   @Get('by-supplier/:supplierId')
   @ApiOperation({ summary: 'Get products by supplier' })
   async findBySupplier(
     @CurrentContext() context: Context,
-    @Param('supplierId') supplierId: string
+    @Param('supplierId') supplierId: string,
   ): Promise<Product[]> {
     return this.service.findBySupplier(context, supplierId);
   }
@@ -407,7 +434,7 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
   async updateStock(
     @CurrentContext() context: Context,
     @Param('id') id: string,
-    @Body() stockUpdate: { quantity: number }
+    @Body() stockUpdate: { quantity: number },
   ): Promise<Product> {
     return this.service.updateStock(context, id, stockUpdate.quantity);
   }
@@ -419,7 +446,14 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 ### Input Validation
 
 ```typescript
-import { IsString, IsNumber, IsOptional, Min, Max, Length } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  Min,
+  Max,
+  Length,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateProductDto {
@@ -453,23 +487,23 @@ export class CreateProductDto {
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
   serviceType: ProductsService,
-  
+
   // Apply guards to all operations
   classDecorators: [() => UseGuards(JwtAuthGuard)],
-  
+
   operations: {
     findAll: true, // Public access
     findOne: true, // Public access
     create: {
-      decorators: [() => UseGuards(AdminGuard)] // Admin only
+      decorators: [() => UseGuards(AdminGuard)], // Admin only
     },
     update: {
-      decorators: [() => UseGuards(OwnerOrAdminGuard)] // Owner or Admin
+      decorators: [() => UseGuards(OwnerOrAdminGuard)], // Owner or Admin
     },
     remove: {
-      decorators: [() => UseGuards(AdminGuard)] // Admin only
-    }
-  }
+      decorators: [() => UseGuards(AdminGuard)], // Admin only
+    },
+  },
 });
 ```
 
@@ -477,31 +511,42 @@ const controllerStructure = CrudControllerStructure({
 
 ```typescript
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
-  
   async transferStock(
-    context: Context, 
-    fromProductId: string, 
-    toProductId: string, 
-    quantity: number
+    context: Context,
+    fromProductId: string,
+    toProductId: string,
+    quantity: number,
   ): Promise<{ from: Product; to: Product }> {
-    return this.runInTransaction(context, async (transactionContext) => {
-      const fromProduct = await this.findOne(transactionContext, fromProductId, true);
-      const toProduct = await this.findOne(transactionContext, toProductId, true);
+    return this.runInTransaction(
+      context,
+      async transactionContext => {
+        const fromProduct = await this.findOne(
+          transactionContext,
+          fromProductId,
+          true,
+        );
+        const toProduct = await this.findOne(
+          transactionContext,
+          toProductId,
+          true,
+        );
 
-      if (fromProduct.stock < quantity) {
-        throw new BadRequestException('Insufficient stock');
-      }
+        if (fromProduct.stock < quantity) {
+          throw new BadRequestException('Insufficient stock');
+        }
 
-      fromProduct.stock -= quantity;
-      toProduct.stock += quantity;
+        fromProduct.stock -= quantity;
+        toProduct.stock += quantity;
 
-      const repository = this.getRepository(transactionContext);
-      
-      const from = await repository.save(fromProduct);
-      const to = await repository.save(toProduct);
+        const repository = this.getRepository(transactionContext);
 
-      return { from, to };
-    }, 'REPEATABLE_READ');
+        const from = await repository.save(fromProduct);
+        const to = await repository.save(toProduct);
+
+        return { from, to };
+      },
+      'REPEATABLE_READ',
+    );
   }
 }
 ```
@@ -517,25 +562,25 @@ export const serviceStructure = CrudServiceStructure({
   createInputType: CreateProductDto,
   updateInputType: UpdateProductDto,
   findArgsType: FindProductArgs,
-  
+
   functions: {
     findAll: {
       relationsConfig: {
         // Only load essential relations for list view
-        relations: { supplier: true }
-      }
+        relations: { supplier: true },
+      },
     },
     findOne: {
       relationsConfig: {
         // Load all relations for detail view
-        relations: { 
-          supplier: true, 
+        relations: {
+          supplier: true,
           category: true,
-          reviews: true 
-        }
-      }
-    }
-  }
+          reviews: true,
+        },
+      },
+    },
+  },
 });
 ```
 
@@ -544,8 +589,9 @@ export const serviceStructure = CrudServiceStructure({
 ```typescript
 // The framework automatically handles complex pagination scenarios
 // It prevents the N+1 problem and optimizes query performance for relations
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
-  
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // This endpoint automatically handles pagination optimization
   // even with complex relations
   async findAll() {
@@ -590,7 +636,7 @@ describe('ProductsService', () => {
   it('should create a product', async () => {
     const createDto = { name: 'Test Product', price: 100, stock: 10 };
     const context = { user: { id: '1' } };
-    
+
     jest.spyOn(repository, 'create').mockReturnValue(createDto as Product);
     jest.spyOn(repository, 'save').mockResolvedValue(createDto as Product);
 
@@ -684,22 +730,22 @@ export const serviceStructure = CrudServiceStructure({
   createInputType: CreateProductDto,
   updateInputType: UpdateProductDto,
   findArgsType: FindProductArgs,
-  
+
   // Production-optimized settings
-  lockMode: process.env.NODE_ENV === 'production' ? 'pessimistic_read' : undefined,
-  
+  lockMode:
+    process.env.NODE_ENV === 'production' ? 'pessimistic_read' : undefined,
+
   functions: {
     findAll: {
       // Add caching in production
-      decorators: process.env.NODE_ENV === 'production' 
-        ? [() => CacheInterceptor()] 
-        : []
+      decorators:
+        process.env.NODE_ENV === 'production' ? [() => CacheInterceptor()] : [],
     },
     create: {
       transactional: true,
-      isolationLevel: 'READ_COMMITTED'
-    }
-  }
+      isolationLevel: 'READ_COMMITTED',
+    },
+  },
 });
 ```
 
@@ -710,7 +756,7 @@ export const serviceStructure = CrudServiceStructure({
 ```typescript
 @Entity()
 export class Product {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   // Always add created/updated timestamps
@@ -739,21 +785,21 @@ export class Product {
 
 ```typescript
 export class CreateProductDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Product name',
     minLength: 1,
     maxLength: 100,
-    example: 'MacBook Pro'
+    example: 'MacBook Pro',
   })
   @IsString()
   @Length(1, 100)
   @Transform(({ value }) => value?.trim())
   name: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Product price in USD',
     minimum: 0,
-    example: 999.99
+    example: 999.99,
   })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
@@ -766,8 +812,11 @@ export class CreateProductDto {
 
 ```typescript
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
-  
-  async findOne(context: Context, id: string, orFail = false): Promise<Product> {
+  async findOne(
+    context: Context,
+    id: string,
+    orFail = false,
+  ): Promise<Product> {
     try {
       return await super.findOne(context, id, orFail);
     } catch (error) {
@@ -786,15 +835,21 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
   private readonly logger = new Logger(ProductsService.name);
 
-  async create(context: Context, createInput: CreateProductDto): Promise<Product> {
+  async create(
+    context: Context,
+    createInput: CreateProductDto,
+  ): Promise<Product> {
     this.logger.log(`Creating product: ${createInput.name}`);
-    
+
     try {
       const result = await super.create(context, createInput);
       this.logger.log(`Product created successfully: ${result.id}`);
       return result;
     } catch (error) {
-      this.logger.error(`Failed to create product: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create product: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -804,6 +859,7 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ## 🔮 Roadmap
 
 ### Current Status (v0.2.0)
+
 - ✅ Core CRUD operations
 - ✅ Advanced filtering and pagination
 - ✅ Transaction support
@@ -816,6 +872,7 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 - ✅ TypeORM + GraphQL integration
 
 ### Upcoming Features (v0.3.0)
+
 - 🚧 Prisma ORM integration
 - 🚧 Custom operation definitions
 - 🚧 Advanced caching strategies
@@ -823,6 +880,7 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 - 🚧 Enhanced query builder with aggregations
 
 ### Future Vision (v1.0.0)
+
 - 🔮 Multi-tenant support
 - 🔮 Advanced security features
 - 🔮 Performance analytics
@@ -865,6 +923,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) 
 ## 👨‍💻 Author
 
 **Andres De la Ossa**
+
 - Email: adelaossa0129@gmail.com
 - GitHub: [@solid-nestjs](https://github.com/solid-nestjs)
 
@@ -877,4 +936,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) 
 
 ---
 
-*Made with ❤️ for the NestJS community*
+_Made with ❤️ for the NestJS community_
