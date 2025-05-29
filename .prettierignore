@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Compiled files
+*.d.ts
+*.js.map
+
+# Database files
+*.sqlite
+*.db
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+**/coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated schema files
+schema.gql

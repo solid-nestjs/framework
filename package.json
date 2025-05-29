@@ -4,9 +4,14 @@
     "packages-core/*",
     "packages-bundles/*",
     "apps-examples/*"
-  ],
-  "scripts": {
+  ],  "scripts": {
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces"
-    }
+    "test": "npm run test --workspaces",
+    "format": "prettier --write \"**/*.{ts,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
+    "format:workspaces": "npm run format --workspaces --if-present"
+    },
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  }
 }
