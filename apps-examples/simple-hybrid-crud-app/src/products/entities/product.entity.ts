@@ -33,6 +33,8 @@ export class Product {
 
   @ApiProperty({ description: 'Product Supplier', type: () => Supplier })
   @Field(() => Supplier, { description: 'Product Supplier', nullable: true })
-  @ManyToOne(() => Supplier, supplier => supplier.products)
+  @ManyToOne(() => Supplier, supplier => supplier.products, {
+    onDelete: 'CASCADE',
+  })
   supplier: Supplier;
 }

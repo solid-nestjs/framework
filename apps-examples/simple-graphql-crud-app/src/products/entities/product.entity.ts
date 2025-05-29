@@ -26,6 +26,8 @@ export class Product {
   stock: number;
 
   @Field(() => Supplier, { description: 'Product Supplier', nullable: true })
-  @ManyToOne(() => Supplier, supplier => supplier.products)
+  @ManyToOne(() => Supplier, supplier => supplier.products, {
+    onDelete: 'CASCADE',
+  })
   supplier: Supplier;
 }
