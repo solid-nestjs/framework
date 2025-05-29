@@ -17,6 +17,6 @@ export class Supplier {
     contactEmail: string;
     
     @ApiProperty({ description: 'Supplier Products', type: ()=> [Product] })
-    @OneToMany(()=>Product, (product) => product.supplier, { cascade:true })
+    @OneToMany(()=>Product, (product) => product.supplier, { cascade:["insert","update","remove"] })
     products: Product[];
 }

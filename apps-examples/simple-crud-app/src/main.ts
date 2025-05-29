@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { swaggerRecomenedOptions } from '@solid-nestjs/rest-api';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -17,7 +18,7 @@ async function bootstrap() {
     .addTag('products')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document,{ swaggerOptions: { ...swaggerRecomenedOptions } });
 
   await app.listen(3000);
   

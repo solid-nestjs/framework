@@ -1,6 +1,6 @@
 import { Inject, ParseIntPipe, PipeTransform, Type, mixin } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Context, IdTypeFrom, Entity, FindArgs, DataService, CurrentContext, applyClassDecorators, applyMethodDecorators } from "@solid-nestjs/common";
+import { Context, IdTypeFrom, Entity, FindArgs, DataService, CurrentContext, applyClassDecorators, applyMethodDecorators, applyMethodDecoratorsIf } from "@solid-nestjs/common";
 import { DataResolverStructure,  OperationStructure } from '../interfaces';
 import { DefaultArgs, PaginationResult } from '../classes';
 
@@ -75,6 +75,7 @@ export function DataResolverFrom<
   const findAllSettings = extractOperationSettings(
     resolverStructure.operations?.findAll,
     {
+      disabled: resolverStructure.operations?.findAll === false,
       name: entityType.name.toLowerCase()+'s',
       summary: 'List of ' + entityType.name.toLowerCase() + 's records',
       description: 'list of ' + entityType.name.toLowerCase() + 's records',
@@ -84,6 +85,7 @@ export function DataResolverFrom<
   const findOneSettings = extractOperationSettings(
     resolverStructure.operations?.findOne,
     {
+      disabled: resolverStructure.operations?.findOne === false,
       name: entityType.name.toLowerCase(),
       summary: 'Retrieve ' + entityType.name.toLowerCase() + ' record by id',
       description: 'retrieval of ' + entityType.name.toLowerCase() + ' record by id',
@@ -93,6 +95,7 @@ export function DataResolverFrom<
   const paginationSettings = extractOperationSettings(
     resolverStructure.operations?.pagination,
     {
+      disabled: resolverStructure.operations?.pagination === false,
       name: findAllSettings.name+'Pagination',
       summary: 'Pagination of ' + entityType.name.toLowerCase(),
       description: 'pagination of ' + entityType.name.toLowerCase(),
@@ -104,10 +107,10 @@ export function DataResolverFrom<
   class DataController {
     constructor(@Inject(serviceType) readonly service: ServiceType) {}
 
-    @applyMethodDecorators((resolverStructure.operations?.findAll === false)?[]:[
-      () => Query((returns) => [entityType], { name: findAllSettings.name, description: findAllSettings.description })
+    @applyMethodDecoratorsIf(!findAllSettings.disabled,[
+      () => Query((returns) => [entityType], { name: findAllSettings.name, description: findAllSettings.description }),
+      ...findAllSettings.decorators
     ])
-    @applyMethodDecorators(findAllSettings?.decorators ?? [])
     async findAll?(
       @ContextDecorator() context: ContextType,
       @Args(undefined as any, { type: () => argsType }) args,
@@ -116,10 +119,10 @@ export function DataResolverFrom<
       return this.service.findAll(context, args);
     }
     
-    @applyMethodDecorators((resolverStructure.operations?.pagination === false)?[]:[
-      () => Query((returns) => PaginationResult, { name: paginationSettings.name, description: paginationSettings.description })
+    @applyMethodDecoratorsIf(!paginationSettings.disabled,[
+      () => Query((returns) => PaginationResult, { name: paginationSettings.name, description: paginationSettings.description }),
+      ...paginationSettings.decorators
     ])
-    @applyMethodDecorators(paginationSettings?.decorators ?? [])
     async pagination?(
       @ContextDecorator() context: ContextType,
       @Args(undefined as any, { type: () => argsType }) args
@@ -128,10 +131,10 @@ export function DataResolverFrom<
       return this.service.pagination(context, args);
     }
     
-    @applyMethodDecorators((resolverStructure.operations?.findOne === false)?[]:[
-      () => Query((returns) => entityType, { name: findOneSettings.name, description: findOneSettings.description })
+    @applyMethodDecoratorsIf(!findOneSettings.disabled,[
+      () => Query((returns) => entityType, { name: findOneSettings.name, description: findOneSettings.description }),
+      ...findOneSettings.decorators
     ])
-    @applyMethodDecorators(findOneSettings?.decorators ?? [])
     async findOne?(
       @ContextDecorator() context: ContextType,
       @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType
@@ -142,13 +145,13 @@ export function DataResolverFrom<
   }
 
   //remove resolver methods if they are disabled in the structure
-  if (resolverStructure.operations?.findAll === false) {
+  if (findAllSettings.disabled) {
     delete DataController.prototype.findAll;
   }
-  if (resolverStructure.operations?.findOne === false) {
+  if (findOneSettings.disabled) {
     delete DataController.prototype.findOne;
   }
-  if (resolverStructure.operations?.pagination === false) {
+  if (paginationSettings.disabled) {
     delete DataController.prototype.pagination;
   }
 
@@ -158,6 +161,7 @@ export function DataResolverFrom<
 export function extractOperationSettings(
   operation:OperationStructure|boolean|undefined, 
   defaults:{
+    disabled:boolean;
     name:string,
     summary:string, 
     description:string
@@ -167,6 +171,7 @@ export function extractOperationSettings(
     operation = {} as OperationStructure;
   
   return {
+    disabled: defaults.disabled,
     name: operation.name ?? defaults.name,
     decorators: operation.decorators ?? [],
     summary: operation.title ?? defaults.summary,

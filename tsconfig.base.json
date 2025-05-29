@@ -20,7 +20,7 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "allowSyntheticDefaultImports": true,
-    "removeComments": true,
+    "removeComments": false,
   },
   "exclude": ["node_modules", "dist"]
 }

@@ -273,8 +273,8 @@ export const serviceStructure = CrudServiceStructure({
 ## 📚 Examples
 
 For complete examples, see:
-- [Simple GraphQL CRUD App](https://github.com/solid-nestjs/framework/tree/main/examples/simple-graphql-crud-app)
-- [Advanced GraphQL Examples](https://github.com/solid-nestjs/framework/tree/main/docs/EXAMPLES.md)
+- [Simple GraphQL CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-graphql-crud-app)
+- [Advanced GraphQL Examples](https://github.com/solid-nestjs/framework/tree/master/docs/EXAMPLES.md)
 
 ## 📖 Documentation
 
