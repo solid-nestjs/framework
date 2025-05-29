@@ -153,7 +153,9 @@ export function DataControllerFrom<
   @applyClassDecorators(controllerDecorators)
   @ApiExtraModels(argsType, PaginationResult)
   class DataController {
-    constructor(@Inject(serviceType) readonly service: ServiceType) {}
+    @Inject(serviceType) readonly service!: ServiceType;
+
+    constructor() {}
 
     @Get(findAllSettings?.route ?? '')
     @applyMethodDecorators(findAllSettings?.decorators ?? [])

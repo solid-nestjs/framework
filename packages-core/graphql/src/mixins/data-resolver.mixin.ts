@@ -115,7 +115,9 @@ export function DataResolverFrom<
   @Resolver(of => entityType)
   @applyClassDecorators(controllerDecorators)
   class DataController {
-    constructor(@Inject(serviceType) readonly service: ServiceType) {}
+    @Inject(serviceType) readonly service!: ServiceType;
+
+    constructor() {}
 
     @applyMethodDecoratorsIf(!findAllSettings.disabled, [
       () =>

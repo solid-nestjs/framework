@@ -95,19 +95,20 @@ export function DataServiceFrom<
     @Optional()
     private readonly _auditService?: AuditService;
 
-    constructor(
-      @InjectRepository(entityType)
-      private readonly _repository: Repository<EntityType>,
-      @Inject(QueryBuilderHelper<IdType, EntityType>)
-      @Optional()
-      private readonly _queryBuilderHelper: QueryBuilderHelper<
-        IdType,
-        EntityType
-      > = new QueryBuilderHelper<IdType, EntityType>(entityType, {
-        lockMode,
-        relationsConfig,
-      }),
-    ) {}
+    @InjectRepository(entityType)
+    private readonly _repository!: Repository<EntityType>;
+
+    @Inject(QueryBuilderHelper<IdType, EntityType>)
+    @Optional()
+    private readonly _queryBuilderHelper: QueryBuilderHelper<
+      IdType,
+      EntityType
+    > = new QueryBuilderHelper<IdType, EntityType>(entityType, {
+      lockMode,
+      relationsConfig,
+    });
+
+    constructor() {}
 
     get queryBuilderHelper(): QueryBuilderHelper<IdType, EntityType> {
       return this._queryBuilderHelper;
