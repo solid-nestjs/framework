@@ -9,19 +9,34 @@ import { hasDeleteDateColumn } from "../helpers";
 import { DataServiceFrom } from "./data-service.mixin";
 import { Transactional } from "../decorators";
 
+
 /**
- * Generates a CRUD service class based on the provided service structure, supporting customizable
- * transactional behavior and method decorators for create, update, remove, and hardRemove operations.
+ * Generates a CRUD service class based on the provided service structure.
  *
- * @param serviceStructure - The structure defining repository access, event hooks, and method options/decorators.
- * @returns A class constructor implementing the `CrudService` interface for the specified entity and context types.
+ * This mixin function dynamically creates a service class that implements standard CRUD operations
+ * (`create`, `update`, `remove`, `hardRemove`) for a given entity type, using TypeORM repositories.
+ * It supports transactional operations and allows for custom decorators and event hooks before and after
+ * each operation. The generated class extends a base data service and can be further customized by overriding
+ * event handler methods.
+ *
+ * @template IdType - The type of the entity's identifier.
+ * @template EntityType - The entity type managed by the service.
+ * @template CreateInputType - The type used for creating new entities.
+ * @template UpdateInputType - The type used for updating existing entities.
+ * @template FindArgsType - The type used for find/query arguments.
+ * @template ContextType - The context type passed to service methods.
+ *
+ * @param serviceStructure - An object describing the structure and behavior of the CRUD service,
+ * including custom functions, decorators, and transactional options for each operation.
+ *
+ * @returns A class constructor implementing the `CrudService` interface for the specified types.
  *
  * @remarks
- * - The generated service class extends a data service and implements standard CRUD operations.
- * - Each CRUD method supports optional transactional execution and custom decorators, as specified in the structure.
- * - Event hooks (`beforeCreate`, `afterCreate`, etc.) are provided as overridable methods for custom logic.
- * - The service handles both soft and hard removal, depending on the entity's delete date column.
- * - Method decorators are applied dynamically based on the configuration in `serviceStructure`.
+ * - The generated service methods (`create`, `update`, `remove`, `hardRemove`) are decorated as specified
+ *   in the `serviceStructure`, and support transactional execution if configured.
+ * - Event handler methods (`beforeCreate`, `afterCreate`, etc.) are provided as extension points and can be
+ *   overridden in subclasses or passed via options.
+ * - The service automatically handles soft deletes if the entity has a delete date column.
  */
 export function
     CrudServiceFrom<

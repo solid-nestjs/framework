@@ -819,12 +819,14 @@ npm install
 # Build all packages
 npm run build
 
-# Run tests
-npm run test
+# Run the typeorm & rest-api example
+npm run start:dev -w apps-examples/simple-crud-app
 
-# Run the example
-cd examples/simple-crud-test
-npm run start:dev
+# Run the typeorm & graphql example
+npm run start:dev -w apps-examples/simple-graphql-crud-app
+
+# Run the typeorm & rest-api + graphql example
+npm run start:dev -w apps-examples/simple-hybrid-crud-app
 ```
 
 ## 📄 License

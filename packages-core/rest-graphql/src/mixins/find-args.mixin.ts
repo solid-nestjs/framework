@@ -28,7 +28,7 @@ export const ORDER_BY_CLASS_KEY = 'OrderByClass';
  * - The returned class is decorated for use with GraphQL and class-validator.
  * - If `whereType` is provided, a nested input type is created to support logical `_and` and `_or` conditions.
  * - If `orderByType` is provided, an array of sorting criteria is supported.
- * - Useful for building flexible and type-safe GraphQL query argument types in NestJS applications.
+ * - Useful for building flexible and type-safe Rest-Api + GraphQL query argument types in NestJS applications.
  */
 export function 
     FindArgsFrom<
