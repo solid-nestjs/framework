@@ -6,7 +6,13 @@ const httpStatusDescriptions: Map<HttpStatus, string> = new Map<
 >();
 
 function formatStatusDescription(status: HttpStatus): string {
-  return HttpStatus[status]
+  const statusName = HttpStatus[status];
+
+  if (!statusName) {
+    return 'Unknown Status';
+  }
+
+  return statusName
     .toLowerCase()
     .replace(/_/g, ' ')
     .replace(/\b\w/g, l => l.toUpperCase());
