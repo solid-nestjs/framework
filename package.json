@@ -10,9 +10,19 @@
     "test": "npm run test --workspaces",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
-    "format:workspaces": "npm run format --workspaces --if-present"
+    "format:workspaces": "npm run format --workspaces --if-present",
+    "version:patch": "lerna version patch --conventional-commits",
+    "version:minor": "lerna version minor --conventional-commits",
+    "version:major": "lerna version major --conventional-commits",
+    "version:prerelease": "lerna version prerelease --conventional-commits",
+    "publish": "lerna publish from-package",
+    "publish:ci": "lerna publish from-package --yes",
+    "version-and-publish": "lerna publish --conventional-commits"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "lerna": "^8.2.2",
     "prettier": "^3.5.3"
   }
 }
