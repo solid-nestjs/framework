@@ -18,10 +18,12 @@ This example demonstrates how to build a **hybrid REST + GraphQL CRUD applicatio
 ## 🏗️ What's Included
 
 ### Entities with Dual Decorators
+
 - **Product** - Entity with both `@ApiProperty` (REST) and `@Field` (GraphQL) decorators
 - **Supplier** - Related entity supporting both REST and GraphQL operations
 
 ### Generated REST Endpoints
+
 - `GET /products` - List products with filtering and pagination
 - `GET /products/:id` - Get single product by ID
 - `POST /products` - Create new product
@@ -29,10 +31,12 @@ This example demonstrates how to build a **hybrid REST + GraphQL CRUD applicatio
 - `DELETE /products/:id` - Delete product (soft delete)
 
 ### Generated GraphQL Operations
+
 - **Queries**: `products()`, `product(id)`, `suppliers()`, `supplier(id)`
 - **Mutations**: `createProduct()`, `updateProduct()`, `removeProduct()`, etc.
 
 ### Key SOLID NestJS Features Demonstrated
+
 - **Hybrid Service Structure** - `CrudServiceStructure()` supporting both APIs
 - **Auto-generated Services** - `CrudServiceFrom()` mixin
 - **Dual Controllers** - `CrudControllerFrom()` for REST endpoints
@@ -75,10 +79,10 @@ Once running, access both API interfaces:
 GET http://localhost:3000/products
 
 # Filter products by name and price
-GET http://localhost:3000/products?name_contains=laptop&price_gte=500&price_lte=2000
+GET http://localhost:3000/products?where={"name":{"_contains":"laptop"}},"price":{"_gte":100, "_lte":1000}}
 
 # Paginated and sorted
-GET http://localhost:3000/products?page=1&limit=10&orderBy=price&orderDirection=DESC
+GET http://localhost:3000/products?pagination={"page":1,"limit":10}&orderBy=[{"price":"DESC"}]
 
 # Create new product
 POST http://localhost:3000/products
@@ -120,10 +124,7 @@ query {
 # Filter products with GraphQL arguments
 query {
   products(
-    where: {
-      name: { contains: "laptop" }
-      price: { gte: 500, lte: 2000 }
-    }
+    where: { name: { contains: "laptop" }, price: { gte: 500, lte: 2000 } }
     pagination: { page: 1, limit: 10 }
     orderBy: { price: DESC }
   ) {
@@ -156,10 +157,7 @@ mutation {
 mutation {
   updateProduct(
     id: "1"
-    updateProductInput: {
-      name: "Updated Gaming Laptop"
-      price: 1199.99
-    }
+    updateProductInput: { name: "Updated Gaming Laptop", price: 1199.99 }
   ) {
     id
     name
@@ -210,65 +208,71 @@ src/
 ## 🔧 Key Code Examples
 
 ### Hybrid Entity (product.entity.ts)
+
 ```typescript
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 
-@ObjectType()  // GraphQL
-@Entity()      // TypeORM
+@ObjectType() // GraphQL
+@Entity() // TypeORM
 export class Product {
-  @Field(() => ID)           // GraphQL
-  @ApiProperty()             // REST/Swagger
-  @PrimaryGeneratedColumn()  // TypeORM
+  @Field(() => ID) // GraphQL
+  @ApiProperty() // REST/Swagger
+  @PrimaryGeneratedColumn() // TypeORM
   id: number;
 
-  @Field()                   // GraphQL
-  @ApiProperty()             // REST/Swagger
-  @Column()                  // TypeORM
+  @Field() // GraphQL
+  @ApiProperty() // REST/Swagger
+  @Column() // TypeORM
   name: string;
 
-  @Field()                   // GraphQL
-  @ApiProperty()             // REST/Swagger
+  @Field() // GraphQL
+  @ApiProperty() // REST/Swagger
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Field(() => Supplier)     // GraphQL
-  @ApiProperty({ type: () => Supplier })  // REST/Swagger
+  @Field(() => Supplier) // GraphQL
+  @ApiProperty({ type: () => Supplier }) // REST/Swagger
   @ManyToOne(() => Supplier, supplier => supplier.products)
   supplier: Supplier;
 }
 ```
 
 ### Hybrid DTO (create-product.dto.ts)
+
 ```typescript
 import { InputType, Field } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsPositive } from 'class-validator';
 
-@InputType()  // GraphQL
+@InputType() // GraphQL
 export class CreateProductDto {
-  @Field()                    // GraphQL
-  @ApiProperty()              // REST/Swagger
-  @IsString()                 // Validation
+  @Field() // GraphQL
+  @ApiProperty() // REST/Swagger
+  @IsString() // Validation
   name: string;
 
-  @Field()                    // GraphQL
-  @ApiProperty()              // REST/Swagger
-  @IsNumber()                 // Validation
+  @Field() // GraphQL
+  @ApiProperty() // REST/Swagger
+  @IsNumber() // Validation
   @IsPositive()
   price: number;
 
-  @Field()                    // GraphQL
-  @ApiProperty()              // REST/Swagger
+  @Field() // GraphQL
+  @ApiProperty() // REST/Swagger
   @IsNumber()
   supplierId: number;
 }
 ```
 
 ### Shared Service Structure (products.service.ts)
+
 ```typescript
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  CrudServiceFrom,
+  CrudServiceStructure,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 
 export const serviceStructure = CrudServiceStructure({
   entityType: Product,
@@ -277,9 +281,9 @@ export const serviceStructure = CrudServiceStructure({
   findArgsType: FindProductArgs,
   relationsConfig: {
     relations: {
-      supplier: true  // Auto-load for both REST and GraphQL
-    }
-  }
+      supplier: true, // Auto-load for both REST and GraphQL
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
@@ -288,9 +292,13 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ```
 
 ### REST Controller (products.controller.ts)
+
 ```typescript
 import { Controller } from '@nestjs/common';
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
@@ -298,15 +306,21 @@ const controllerStructure = CrudControllerStructure({
 });
 
 @Controller('products')
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // Automatically generates REST endpoints
 }
 ```
 
 ### GraphQL Resolver (products.resolver.ts)
+
 ```typescript
 import { Resolver } from '@nestjs/graphql';
-import { CrudResolverFrom, CrudResolverStructure } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  CrudResolverFrom,
+  CrudResolverStructure,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 
 const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
@@ -356,46 +370,50 @@ This example demonstrates the power of the SOLID NestJS Framework's hybrid appro
 ## 📄 License
 
 This example is part of the SOLID NestJS Framework and is MIT licensed.
-  products {
-    id
-    name
-    description
-    price
-    stock
-    createdAt
-    updatedAt
-  }
+products {
+id
+name
+description
+price
+stock
+createdAt
+updatedAt
+}
 }
 
 # Get a single product by ID
+
 query {
-  product(id: "your-product-id") {
-    id
-    name
-    description
-    price
-    stock
-  }
+product(id: "your-product-id") {
+id
+name
+description
+price
+stock
+}
 }
 
 # Find products by name
+
 query {
-  productsByName(name: "Product Name") {
-    id
-    name
-    price
-  }
+productsByName(name: "Product Name") {
+id
+name
+price
+}
 }
 
 # Find products by price range
+
 query {
-  productsByPriceRange(minPrice: 10.0, maxPrice: 50.0) {
-    id
-    name
-    price
-  }
+productsByPriceRange(minPrice: 10.0, maxPrice: 50.0) {
+id
+name
+price
 }
-```
+}
+
+````
 
 ### Mutations
 
@@ -437,7 +455,7 @@ mutation {
     name
   }
 }
-```
+````
 
 ## Project Structure
 

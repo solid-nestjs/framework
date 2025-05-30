@@ -106,16 +106,19 @@ export class ProductsResolver {
 The `FindArgsFrom` mixin automatically generates:
 
 ### REST API Support
+
 - **OpenAPI Documentation** - Swagger decorators for all fields
 - **Query Parameters** - Proper query parameter parsing
 - **Validation** - class-validator integration
 
 ### GraphQL Support
+
 - **GraphQL Schema** - InputType and ArgsType decorators
 - **Type Definitions** - Proper GraphQL type generation
 - **Nested Inputs** - Support for complex filtering with `_and`/`_or`
 
 ### Common Features
+
 - **Pagination** - Built-in pagination request handling
 - **Filtering** - Complex where conditions with logical operators
 - **Sorting** - Flexible orderBy field support
@@ -167,16 +170,20 @@ query {
 ## 📊 Key Exports
 
 ### Mixins
+
 - `FindArgsFrom()` - Creates hybrid argument types for REST + GraphQL
 
 ### Helpers
+
 - `PartialType()` - Enhanced partial type helper for hybrid decorators
 
 ### Utilities
+
 - `getWhereClass()` - Extract where class from FindArgs type
 - `getOrderByClass()` - Extract orderBy class from FindArgs type
 
 ### Classes
+
 - `PaginationRequest` - Common pagination input type
 
 ## 🎨 Integration Examples
@@ -188,7 +195,7 @@ query {
 export class ProductsService {
   async findAll(args: FindProductArgsDto) {
     const { where, orderBy, pagination } = args;
-    
+
     // Your business logic here
     return this.repository.findAndCount({
       where: this.buildWhereCondition(where),
@@ -216,7 +223,7 @@ import { ProductsResolver } from './products.resolver';
   imports: [TypeOrmModule.forFeature([Product])],
   providers: [ProductsService, ProductsResolver],
   controllers: [ProductsController],
-  exports: [ProductsService]
+  exports: [ProductsService],
 })
 export class ProductsModule {}
 ```
@@ -226,13 +233,14 @@ export class ProductsModule {}
 Works seamlessly with:
 
 - **@solid-nestjs/rest-api** - REST controller mixins
-- **@solid-nestjs/graphql** - GraphQL resolver mixins  
+- **@solid-nestjs/graphql** - GraphQL resolver mixins
 - **@solid-nestjs/typeorm** - TypeORM service implementations
 - **Standard NestJS** - Controllers and resolvers
 
 ## 📚 Examples
 
 For complete examples, see:
+
 - [Simple Hybrid CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-hybrid-crud-app)
 - [Framework Documentation](https://github.com/solid-nestjs/framework/tree/master/docs)
 

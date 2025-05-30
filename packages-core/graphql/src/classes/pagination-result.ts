@@ -1,11 +1,11 @@
-import { Field, Int, ObjectType } from "@nestjs/graphql";
-import { PaginationResult as CommonPaginationResult } from "@solid-nestjs/common";
+import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { PaginationResult as CommonPaginationResult } from '@solid-nestjs/common';
 
 /**
  * Represents the result of a paginated query.
- * 
+ *
  * @implements {CommonPaginationResult}
- * 
+ *
  * @property {number} total - The total number of items available.
  * @property {number} count - The number of items returned in the current page.
  * @property {number} [limit] - The maximum number of items per page (optional).
@@ -16,14 +16,13 @@ import { PaginationResult as CommonPaginationResult } from "@solid-nestjs/common
  */
 @ObjectType()
 export class PaginationResult implements CommonPaginationResult {
-
   @Field(() => Int)
   total!: number;
 
   @Field(() => Int)
   count!: number;
 
-  @Field(() => Int,{ nullable:true })
+  @Field(() => Int, { nullable: true })
   limit?: number;
 
   @Field(() => Int)

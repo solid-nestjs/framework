@@ -1,7 +1,7 @@
-import { DataSource, QueryRunner } from "typeorm";
-import { IsolationLevel } from "typeorm/driver/types/IsolationLevel";
-import { InternalServerErrorException } from "@nestjs/common";
-import { Context, EntityManagerProvider } from "../interfaces";
+import { DataSource, QueryRunner } from 'typeorm';
+import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
+import { InternalServerErrorException } from '@nestjs/common';
+import { Context, EntityManagerProvider } from '../interfaces';
 
 /**
  * Executes the provided asynchronous function within a database transaction context.
@@ -20,42 +20,39 @@ import { Context, EntityManagerProvider } from "../interfaces";
  * @returns A promise that resolves with the result of the provided function.
  * @throws Rethrows any error encountered during the execution of the function, after rolling back the transaction.
  */
-export async function runInTransaction<ContextType extends Context,ReturnType>(
-    context:ContextType,
-    dataSource:DataSource,
-    fn:(context:ContextType) => Promise<ReturnType>,
-    isolationLevel?: IsolationLevel
-):Promise<ReturnType>{
+export async function runInTransaction<ContextType extends Context, ReturnType>(
+  context: ContextType,
+  dataSource: DataSource,
+  fn: (context: ContextType) => Promise<ReturnType>,
+  isolationLevel?: IsolationLevel,
+): Promise<ReturnType> {
+  //If there is a transactionManager already, do not start a new transaction
+  if (context.transactionManager)
+    //If a different transaction is needed, then remove the transactionManager from the context before calling this function
+    return fn(context);
 
-    //If there is a transactionManager already, do not start a new transaction
-    if(context.transactionManager)      //If a different transaction is needed, then remove the transactionManager from the context before calling this function
-        return fn(context);
+  const queryRunner: QueryRunner = dataSource.createQueryRunner();
 
-    const queryRunner: QueryRunner = dataSource.createQueryRunner();
+  await queryRunner.connect();
 
-    await queryRunner.connect();
-   
-    await queryRunner.startTransaction(isolationLevel);
+  await queryRunner.startTransaction(isolationLevel);
 
-    try {
+  try {
+    const transactionManager = queryRunner.manager;
 
-        const transactionManager = queryRunner.manager;
+    const newContext = { ...context, transactionManager };
 
-        const newContext = {...context, transactionManager };
+    const result = await fn(newContext);
 
-        const result = await fn(newContext);
+    await queryRunner.commitTransaction();
 
-        await queryRunner.commitTransaction();
-
-        return result;
-    } catch (error) {
-
-        await queryRunner.rollbackTransaction();
-        throw error;
-    } finally {
-
-        await queryRunner.release();
-    }
+    return result;
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw error;
+  } finally {
+    await queryRunner.release();
+  }
 }
 
 /**
@@ -68,20 +65,27 @@ export async function runInTransaction<ContextType extends Context,ReturnType>(
  * @throws InternalServerErrorException If the `injectable` service does not provide a `getEntityManager` function.
  */
 export async function transactionalWrapper(
-    options:any,
-    next: (...args:any[]) => Promise<any>,
-    args:any[]
-): Promise<any>
-{
-    if(typeof(options?.injectable?.getEntityManager) !== 'function')
-        throw new InternalServerErrorException("cannot injectTransaction, function getEntityManager is needed in the service class",{ cause:{ obj: options, args } });
+  options: any,
+  next: (...args: any[]) => Promise<any>,
+  args: any[],
+): Promise<any> {
+  if (typeof options?.injectable?.getEntityManager !== 'function')
+    throw new InternalServerErrorException(
+      'cannot injectTransaction, function getEntityManager is needed in the service class',
+      { cause: { obj: options, args } },
+    );
 
-    const service = options.injectable as EntityManagerProvider<Context>;
-    const isolationLevel = options.isolationLevel as IsolationLevel
+  const service = options.injectable as EntityManagerProvider<Context>;
+  const isolationLevel = options.isolationLevel as IsolationLevel;
 
-    const [ context, ...otherArgs ] = args as [ Context, ...any[] ];
-    
-    const manager = service.getEntityManager(context);
+  const [context, ...otherArgs] = args as [Context, ...any[]];
 
-    return runInTransaction(context,manager.connection,(context) => next(context,...otherArgs),isolationLevel);
+  const manager = service.getEntityManager(context);
+
+  return runInTransaction(
+    context,
+    manager.connection,
+    context => next(context, ...otherArgs),
+    isolationLevel,
+  );
 }

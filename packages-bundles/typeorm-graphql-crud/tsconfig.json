@@ -6,10 +6,5 @@
     "baseUrl": "./"
   },
   "include": ["src/**/*"],
-  "exclude": [
-    "node_modules",
-    "**/*.spec.ts",
-    "tests",
-    "dist"
-  ]
+  "exclude": ["node_modules", "**/*.spec.ts", "tests", "dist"]
 }

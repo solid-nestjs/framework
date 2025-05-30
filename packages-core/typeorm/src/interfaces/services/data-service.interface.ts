@@ -1,9 +1,19 @@
 import { EntityManager } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
-import { BooleanType, Entity, FindArgs, IdTypeFrom, If, NotNullableIf, PaginationResult, Where, DataService as CommonDataService } from '@solid-nestjs/common';
-import { 
-  TypeOrmFindManyOptions as FindManyOptions, 
-  TypeOrmRepository as Repository, 
+import {
+  BooleanType,
+  Entity,
+  FindArgs,
+  IdTypeFrom,
+  If,
+  NotNullableIf,
+  PaginationResult,
+  Where,
+  DataService as CommonDataService,
+} from '@solid-nestjs/common';
+import {
+  TypeOrmFindManyOptions as FindManyOptions,
+  TypeOrmRepository as Repository,
   TypeOrmSelectQueryBuilder as SelectQueryBuilder,
 } from '../../types';
 import { Context, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
@@ -29,16 +39,15 @@ export interface DataService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
-  ContextType extends Context = Context
-> extends CommonDataService<IdType,EntityType,ContextType>
-{
+  ContextType extends Context = Context,
+> extends CommonDataService<IdType, EntityType, ContextType> {
   getRepository(context: ContextType): Repository<EntityType>;
 
   getEntityManager(context: ContextType): EntityManager;
 
-  getRelationsInfo(context: ContextType): ExtendedRelationInfo[]
+  getRelationsInfo(context: ContextType): ExtendedRelationInfo[];
 
-  get queryBuilderHelper():QueryBuilderHelper<IdType,EntityType>;
+  get queryBuilderHelper(): QueryBuilderHelper<IdType, EntityType>;
 
   getQueryBuilder(
     context: ContextType,
@@ -58,14 +67,20 @@ export interface DataService<
   ): Promise<EntityType[]>;
 
   findAll<TBool extends BooleanType = false>(
-    context: ContextType, 
+    context: ContextType,
     args?: FindArgsType,
-    withPagination?:TBool,
+    withPagination?: TBool,
     options?: DataRetrievalOptions<EntityType>,
-  ): Promise< If<TBool,{ data:EntityType[], pagination:PaginationResult },EntityType[]> >;
+  ): Promise<
+    If<
+      TBool,
+      { data: EntityType[]; pagination: PaginationResult },
+      EntityType[]
+    >
+  >;
 
   pagination(
-    context: ContextType, 
+    context: ContextType,
     args?: FindArgsType,
     options?: DataRetrievalOptions<EntityType>,
   ): Promise<PaginationResult>;
@@ -75,20 +90,20 @@ export interface DataService<
     id: IdType,
     orFail?: TBool,
     options?: DataRetrievalOptions<EntityType>,
-  ): Promise<NotNullableIf<TBool,EntityType>>;
+  ): Promise<NotNullableIf<TBool, EntityType>>;
 
   findOneBy<TBool extends BooleanType = false>(
     context: ContextType,
     where: Where<EntityType>,
     orFail?: TBool,
     options?: DataRetrievalOptions<EntityType>,
-  ): Promise<NotNullableIf<TBool,EntityType>>;
-   
+  ): Promise<NotNullableIf<TBool, EntityType>>;
+
   runInTransaction<ReturnType>(
     context: ContextType,
-    fn:(context:ContextType) => Promise<ReturnType>,
+    fn: (context: ContextType) => Promise<ReturnType>,
     isolationLevel?: IsolationLevel,
-  ):Promise<ReturnType>;
+  ): Promise<ReturnType>;
 
   audit(
     context: ContextType,

@@ -122,7 +122,7 @@ import { ProductsResolver } from './products.resolver';
 @Module({
   imports: [TypeOrmModule.forFeature([Product])],
   providers: [ProductsResolver, ProductsService],
-  exports: [ProductsService]
+  exports: [ProductsService],
 })
 export class ProductsModule {}
 ```
@@ -132,37 +132,40 @@ export class ProductsModule {}
 The resolver automatically generates:
 
 ### Queries
+
 ```graphql
 type Query {
   # Get single product by ID
   product(id: String!): Product!
-  
+
   # Get list of products with filtering
   products(where: FindProductWhere): [Product!]!
-  
+
   # Get paginated products
   productsPagination(where: FindProductWhere): PaginationResult!
 }
 ```
 
 ### Mutations
+
 ```graphql
 type Mutation {
   # Create new product
   createProduct(createInput: CreateProductDto!): Product!
-  
+
   # Update existing product
   updateProduct(updateInput: UpdateProductDto!): Product!
-  
+
   # Soft delete product
   removeProduct(id: String!): Product!
-  
+
   # Hard delete product (if enabled)
   hardRemoveProduct(id: String!): Product!
 }
 ```
 
 ### Filtering
+
 ```graphql
 input FindProductWhere {
   _and: [FindProductWhere!]
@@ -195,17 +198,17 @@ const resolverStructure = CrudResolverStructure({
   operations: {
     findAll: {
       name: 'getAllProducts',
-      description: 'Retrieve all products with advanced filtering'
+      description: 'Retrieve all products with advanced filtering',
     },
     create: {
       name: 'addProduct',
-      description: 'Add a new product to the catalog'
+      description: 'Add a new product to the catalog',
     },
     update: true,
     remove: true,
     hardRemove: false, // Disable hard delete
-    pagination: true
-  }
+    pagination: true,
+  },
 });
 ```
 
@@ -218,8 +221,8 @@ const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
   serviceType: ProductsService,
   parameterDecorators: {
-    context: CurrentUser
-  }
+    context: CurrentUser,
+  },
 });
 ```
 
@@ -237,42 +240,46 @@ export const serviceStructure = CrudServiceStructure({
       relationsConfig: {
         relations: {
           category: true,
-          supplier: true
-        }
-      }
+          supplier: true,
+        },
+      },
     },
     findOne: {
       relationsConfig: {
         relations: {
           category: true,
           supplier: true,
-        }
-      }
-    }
-  }
+        },
+      },
+    },
+  },
 });
 ```
 
 ## 📊 Key Exports
 
 ### Resolvers
+
 - `CrudResolverFrom()` - Creates complete CRUD resolver
 - `DataResolverFrom()` - Creates read-only resolver
 - `CrudResolverStructure()` - Configuration builder
 - `DataResolverStructure()` - Read-only configuration builder
 
 ### Filtering
+
 - `FindArgsFrom()` - Generates GraphQL filter args
 - `StringFilter`, `NumberFilter`, `DateFilter` - Filter input types
 - `getWhereClass()`, `getOrderByClass()` - Dynamic filter classes
 
 ### Types
+
 - `PaginationResult` - GraphQL pagination result type
 - `DefaultArgs` - Default query arguments
 
 ## 📚 Examples
 
 For complete examples, see:
+
 - [Simple GraphQL CRUD App](https://github.com/solid-nestjs/framework/tree/master/apps-examples/simple-graphql-crud-app)
 - [Advanced GraphQL Examples](https://github.com/solid-nestjs/framework/tree/master/docs/EXAMPLES.md)
 

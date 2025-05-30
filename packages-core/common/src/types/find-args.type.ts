@@ -1,5 +1,9 @@
 import { OrderByTypes } from '../enums';
-import { StringFilter, NumberFilter, DateFilter } from './../interfaces/misc/filters.interfaces'
+import {
+  StringFilter,
+  NumberFilter,
+  DateFilter,
+} from './../interfaces/misc/filters.interfaces';
 
 /**
  * Represents a flexible filter type for a given field type `T` in query operations.
@@ -14,29 +18,32 @@ import { StringFilter, NumberFilter, DateFilter } from './../interfaces/misc/fil
  *
  * @template T - The type of the field to generate a filter for.
  */
-type WhereField<T> =
-    T extends string ? string | string[] | StringFilter :
-    T extends number ? number | number[] | NumberFilter :
-    T extends Date ? Date | Date[] | DateFilter :
-    T extends boolean ? boolean :
-    Where<T>;
+type WhereField<T> = T extends string
+  ? string | string[] | StringFilter
+  : T extends number
+    ? number | number[] | NumberFilter
+    : T extends Date
+      ? Date | Date[] | DateFilter
+      : T extends boolean
+        ? boolean
+        : Where<T>;
 
 /**
  * Represents a flexible filter type for querying objects of type `T`.
- * 
+ *
  * - Each property of `T` can be filtered using a corresponding `WhereField`.
  * - Supports logical composition with `_and` and `_or` operators, allowing for nested and/or conditions.
- * 
+ *
  * @template T The type of the object to filter.
  * @property {WhereField<T[K]>} [K] Optional filter for each property of `T`.
  * @property {Where<T> | Where<T>[]} [_and] Optional logical AND composition of filters.
  * @property {Where<T> | Where<T>[]} [_or] Optional logical OR composition of filters.
  */
 export type Where<T> = {
-    [K in keyof T]?: WhereField<T[K]>;
-} & { 
-    _and?:Where<T> | Where<T>[] ,  
-    _or?: Where<T> | Where<T>[],  
+  [K in keyof T]?: WhereField<T[K]>;
+} & {
+  _and?: Where<T> | Where<T>[];
+  _or?: Where<T> | Where<T>[];
 };
 
 /**
@@ -50,12 +57,15 @@ export type Where<T> = {
  *
  * @template T - The type of the field to determine the order-by type for.
  */
-type OrderByField<T> =
-    T extends string ? OrderByTypes :
-    T extends number ? OrderByTypes :
-    T extends Date ? OrderByTypes :
-    T extends boolean ? OrderByTypes :
-    OrderBy<T>;
+type OrderByField<T> = T extends string
+  ? OrderByTypes
+  : T extends number
+    ? OrderByTypes
+    : T extends Date
+      ? OrderByTypes
+      : T extends boolean
+        ? OrderByTypes
+        : OrderBy<T>;
 
 /**
  * Represents an object for specifying sorting order for each property of type `T`.
@@ -64,5 +74,5 @@ type OrderByField<T> =
  * @template T - The type whose properties can be used for ordering.
  */
 export type OrderBy<T> = {
-    [K in keyof T]?: OrderByField<T[K]>;
+  [K in keyof T]?: OrderByField<T[K]>;
 };

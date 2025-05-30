@@ -12,7 +12,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
       database: './database-data/products.sqlite',
       entities: [Product, Supplier],
       synchronize: true, // Set to false in production
-      logging: true
+      logging: true,
     }),
     ProductsModule,
     SuppliersModule,

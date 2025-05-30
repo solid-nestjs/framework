@@ -1,1 +1,1 @@
-export * from './typeorm-wrappers.types'
+export * from './typeorm-wrappers.types';

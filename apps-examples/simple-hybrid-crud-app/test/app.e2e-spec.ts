@@ -41,7 +41,7 @@ describe('GraphQL CRUD App (e2e)', () => {
       .post('/graphql')
       .send({ query: createProductMutation })
       .expect(200)
-      .expect((res) => {
+      .expect(res => {
         expect(res.body.data.createProduct).toBeDefined();
         expect(res.body.data.createProduct.name).toBe('Test Product');
         expect(res.body.data.createProduct.price).toBe(29.99);
@@ -65,7 +65,7 @@ describe('GraphQL CRUD App (e2e)', () => {
       .post('/graphql')
       .send({ query: getAllProductsQuery })
       .expect(200)
-      .expect((res) => {
+      .expect(res => {
         expect(res.body.data.products).toBeDefined();
         expect(Array.isArray(res.body.data.products)).toBe(true);
       });

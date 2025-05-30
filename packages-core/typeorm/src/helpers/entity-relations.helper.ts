@@ -4,13 +4,20 @@ import { Repository } from 'typeorm';
 import { getTypeName } from '@solid-nestjs/common';
 import { ExtendedRelationInfo, RelationInfo } from '../interfaces';
 
-
-function getAggregatedCardinality(fromCardinality: RelationType, toCardinality: RelationType): RelationType {
-  if (fromCardinality === 'one-to-many' && toCardinality === 'many-to-one') return 'many-to-many';
-  if (fromCardinality === 'one-to-many' && toCardinality === 'one-to-many') return 'one-to-many';
-  if (fromCardinality === 'many-to-one' && toCardinality === 'many-to-one') return 'many-to-one';
-  if (fromCardinality === 'many-to-one' && toCardinality === 'one-to-many') return 'many-to-many';
-  if (fromCardinality === 'many-to-many' || toCardinality === 'many-to-many') return 'many-to-many';
+function getAggregatedCardinality(
+  fromCardinality: RelationType,
+  toCardinality: RelationType,
+): RelationType {
+  if (fromCardinality === 'one-to-many' && toCardinality === 'many-to-one')
+    return 'many-to-many';
+  if (fromCardinality === 'one-to-many' && toCardinality === 'one-to-many')
+    return 'one-to-many';
+  if (fromCardinality === 'many-to-one' && toCardinality === 'many-to-one')
+    return 'many-to-one';
+  if (fromCardinality === 'many-to-one' && toCardinality === 'one-to-many')
+    return 'many-to-many';
+  if (fromCardinality === 'many-to-many' || toCardinality === 'many-to-many')
+    return 'many-to-many';
   if (fromCardinality === 'one-to-one') return toCardinality;
   if (toCardinality === 'one-to-one') return fromCardinality;
   return fromCardinality;
@@ -27,7 +34,10 @@ function getAggregatedCardinality(fromCardinality: RelationType, toCardinality: 
  * @param maxDepth - The maximum depth for traversing nested relations (default is 2).
  * @returns An array of `ExtendedRelationInfo` objects, each describing a direct or extended relation, including its path, cardinality, and other metadata.
  */
-export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: Repository<T>, maxDepth = 2): ExtendedRelationInfo[] {
+export function getEntityRelationsExtended<T extends ObjectLiteral>(
+  repository: Repository<T>,
+  maxDepth = 2,
+): ExtendedRelationInfo[] {
   const metadata: EntityMetadata = repository.metadata;
   const relations: ExtendedRelationInfo[] = [];
   const visitedPaths = new Set<string>();
@@ -44,19 +54,22 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: 
         aggregatedCardinality: relation.relationType,
         target: getTypeName(relation.type),
         isNullable: relation.isNullable,
-        isCascade: relation.isCascadeInsert || relation.isCascadeUpdate || relation.isCascadeRemove,
+        isCascade:
+          relation.isCascadeInsert ||
+          relation.isCascadeUpdate ||
+          relation.isCascadeRemove,
         isEager: relation.isEager,
         isLazy: relation.isLazy,
         path: [metadata.name, relation.propertyName],
-        isExtended: false
+        isExtended: false,
       });
     }
   });
 
   // Add extended relations
   function addExtendedRelations(
-    currentMetadata: EntityMetadata, 
-    currentPath: string[], 
+    currentMetadata: EntityMetadata,
+    currentPath: string[],
     depth: number,
     visitedEntities: Set<string>,
     aggregatedCardinality?: RelationType,
@@ -69,14 +82,16 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: 
       const currentCardinality = aggregatedCardinality ?? relation.relationType;
 
       // Changed to include property names in path
-      const entityPath = currentPath.map((p, i) => 
-        i % 2 === 0 ? p : `.${p}`
-      ).join('');
-      
+      const entityPath = currentPath
+        .map((p, i) => (i % 2 === 0 ? p : `.${p}`))
+        .join('');
+
       // Skip if we've already visited this entity in this path
       if (visitedEntities.has(targetMetadata.name)) return;
-      
-      const newVisitedEntities = new Set(visitedEntities).add(targetMetadata.name);
+
+      const newVisitedEntities = new Set(visitedEntities).add(
+        targetMetadata.name,
+      );
       const newPath = [...currentPath, relation.propertyName];
 
       targetMetadata.relations.forEach(extendedRelation => {
@@ -84,11 +99,14 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: 
         if (newVisitedEntities.has(getTypeName(extendedRelation.type))) return;
 
         const fullPath = [...newPath, extendedRelation.propertyName];
-        const pathKey = fullPath.map((p, i) => 
-          i % 2 === 0 ? p : `.${p}`
-        ).join('->');
-        
-        const newCardinality = getAggregatedCardinality(currentCardinality, extendedRelation.relationType)
+        const pathKey = fullPath
+          .map((p, i) => (i % 2 === 0 ? p : `.${p}`))
+          .join('->');
+
+        const newCardinality = getAggregatedCardinality(
+          currentCardinality,
+          extendedRelation.relationType,
+        );
 
         if (!visitedPaths.has(pathKey)) {
           visitedPaths.add(pathKey);
@@ -98,21 +116,24 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: 
             aggregatedCardinality: newCardinality,
             target: getTypeName(extendedRelation.type),
             isNullable: relation.isNullable || extendedRelation.isNullable,
-            isCascade: relation.isCascadeInsert || relation.isCascadeUpdate || relation.isCascadeRemove,
+            isCascade:
+              relation.isCascadeInsert ||
+              relation.isCascadeUpdate ||
+              relation.isCascadeRemove,
             isEager: relation.isEager && extendedRelation.isEager,
             isLazy: relation.isLazy,
             path: fullPath,
-            isExtended: true
+            isExtended: true,
           });
         }
 
         // Recursively add deeper relations
         addExtendedRelations(
-          targetMetadata, 
-          newPath, 
+          targetMetadata,
+          newPath,
           depth + 1,
           newVisitedEntities,
-          newCardinality
+          newCardinality,
         );
       });
     });
@@ -130,15 +151,20 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(repository: 
  * @param repository - The TypeORM repository instance for the target entity.
  * @returns An array of `RelationInfo` objects, each describing a relation of the entity, including property name, relation type, target entity name, nullability, cascade options, and loading strategy (eager or lazy).
  */
-export function getEntityRelations<T extends ObjectLiteral>(repository: Repository<T>): RelationInfo[] {
+export function getEntityRelations<T extends ObjectLiteral>(
+  repository: Repository<T>,
+): RelationInfo[] {
   const metadata: EntityMetadata = repository.metadata;
-  
+
   return metadata.relations.map(relation => ({
     propertyName: relation.propertyName,
     relationType: relation.relationType,
     target: getTypeName(relation.type),
     isNullable: relation.isNullable,
-    isCascade: relation.isCascadeInsert || relation.isCascadeUpdate || relation.isCascadeRemove,
+    isCascade:
+      relation.isCascadeInsert ||
+      relation.isCascadeUpdate ||
+      relation.isCascadeRemove,
     isEager: relation.isEager,
     isLazy: relation.isLazy,
   }));

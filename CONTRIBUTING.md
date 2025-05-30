@@ -62,12 +62,15 @@ framework/
 The framework is organized as a monorepo with multiple packages:
 
 ### @solid-nestjs/common
+
 Contains shared interfaces, types, and utilities used across all packages.
 
 ### @solid-nestjs/typeorm
+
 Contains TypeORM-specific service implementations and decorators.
 
 ### @solid-nestjs/rest-api
+
 Contains REST API controller implementations and Swagger utilities.
 
 ## Testing

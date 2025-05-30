@@ -1,7 +1,8 @@
 {
   "name": "simple-crud-app",
   "version": "0.2.1",
-  "description": "Complete REST API CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, auto-generated endpoints, advanced filtering, and Swagger documentation",  "author": "SOLID NestJS Framework",
+  "description": "Complete REST API CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, auto-generated endpoints, advanced filtering, and Swagger documentation",
+  "author": "SOLID NestJS Framework",
   "private": true,
   "license": "MIT",
   "scripts": {

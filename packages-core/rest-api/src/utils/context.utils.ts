@@ -1,10 +1,9 @@
-import { ExecutionContext } from "@nestjs/common";
+import { ExecutionContext } from '@nestjs/common';
 
 export class ContextUtils {
-    static getRequest(context: ExecutionContext){
+  static getRequest(context: ExecutionContext) {
+    let request = context.switchToHttp().getRequest();
 
-        let request = context.switchToHttp().getRequest();
-
-        return request;
-    }
+    return request;
+  }
 }

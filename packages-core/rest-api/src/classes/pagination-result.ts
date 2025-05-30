@@ -1,11 +1,11 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { PaginationResult as CommonPaginationResult } from "@solid-nestjs/common";
+import { ApiProperty } from '@nestjs/swagger';
+import { PaginationResult as CommonPaginationResult } from '@solid-nestjs/common';
 
 /**
  * Represents the result of a paginated query.
- * 
+ *
  * @implements {CommonPaginationResult}
- * 
+ *
  * @property {number} total - The total number of items available.
  * @property {number} count - The number of items returned in the current page.
  * @property {number} [limit] - The maximum number of items per page (optional).
@@ -15,7 +15,6 @@ import { PaginationResult as CommonPaginationResult } from "@solid-nestjs/common
  * @property {boolean} hasPreviousPage - Indicates if there is a previous page.
  */
 export class PaginationResult implements CommonPaginationResult {
-
   @ApiProperty()
   total!: number;
 

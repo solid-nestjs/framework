@@ -1,6 +1,6 @@
-import { DeepPartial } from '../../types'
-import { Context, IdTypeFrom, Entity } from "../misc";
-import { DataService } from "./data-service.interface";
+import { DeepPartial } from '../../types';
+import { Context, IdTypeFrom, Entity } from '../misc';
+import { DataService } from './data-service.interface';
 
 /**
  * Interface defining Create, Update, and Delete (CUD) operations for a service.
@@ -37,35 +37,27 @@ import { DataService } from "./data-service.interface";
  * @returns A promise resolving to the hard-removed entity.
  */
 export interface CudService<
-        IdType extends IdTypeFrom<EntityType>,
-        EntityType extends Entity<unknown>,
-        CreateInputType extends DeepPartial<EntityType>,
-        UpdateInputType extends DeepPartial<EntityType>,
-        ContextType extends Context = Context
-        > {
-           
-            create(
-                context:ContextType,
-                createInput: CreateInputType
-                ): Promise<EntityType>;
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  CreateInputType extends DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType>,
+  ContextType extends Context = Context,
+> {
+  create(
+    context: ContextType,
+    createInput: CreateInputType,
+  ): Promise<EntityType>;
 
-            update(
-                context:ContextType,
-                id: IdType, 
-                updateInput: UpdateInputType
-                ): Promise<EntityType>;
+  update(
+    context: ContextType,
+    id: IdType,
+    updateInput: UpdateInputType,
+  ): Promise<EntityType>;
 
-            remove(
-                context:ContextType,
-                id: IdType
-                ): Promise<EntityType>;
-            
-            hardRemove(
-                context:ContextType,
-                id: IdType
-                ): Promise<EntityType>; 
+  remove(context: ContextType, id: IdType): Promise<EntityType>;
 
-        }
+  hardRemove(context: ContextType, id: IdType): Promise<EntityType>;
+}
 
 /**
  * Generic interface for a CRUD (Create, Read, Update, Delete) service.
@@ -81,13 +73,16 @@ export interface CudService<
  * for entities. It is intended to be implemented by services that provide full CRUD functionality.
  */
 export interface CrudService<
-        IdType extends IdTypeFrom<EntityType>,
-        EntityType extends Entity<unknown>,
-        CreateInputType extends DeepPartial<EntityType>,
-        UpdateInputType extends DeepPartial<EntityType>,
-        ContextType extends Context = Context
-        > extends DataService<IdType,EntityType,ContextType>,
-                    CudService<IdType,EntityType,CreateInputType,UpdateInputType,ContextType>{
-           
-
-        }
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  CreateInputType extends DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType>,
+  ContextType extends Context = Context,
+> extends DataService<IdType, EntityType, ContextType>,
+    CudService<
+      IdType,
+      EntityType,
+      CreateInputType,
+      UpdateInputType,
+      ContextType
+    > {}

@@ -5,37 +5,44 @@ Welcome to the comprehensive documentation for the SOLID NestJS Framework! This 
 ## 📚 Documentation Structure
 
 ### Getting Started
+
 - **[README](../README.md)** - Framework overview and quick start guide
 - **[Examples & Tutorials](EXAMPLES.md)** - Step-by-step tutorials and real-world examples
 - **[Migration Guide](MIGRATION_GUIDE.md)** - Upgrade between versions and migrate from other frameworks
 
 ### Reference & Advanced Topics
+
 - **[API Reference](API_REFERENCE.md)** - Comprehensive API documentation
 - **[Architecture Decisions](ARCHITECTURE.md)** - Framework design decisions and rationale
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### Contributing
+
 - **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute to the framework
 
 ## 🚀 Quick Navigation
 
 ### New to SOLID NestJS?
+
 1. Start with the [Framework Overview](../README.md#-overview)
 2. Follow the [Quick Start Guide](../README.md#️-quick-start)
 3. Try the [Basic Tutorial](EXAMPLES.md#tutorial-1-building-your-first-crud-api)
 
 ### Building Your First App?
+
 1. [Tutorial: Building Your First CRUD API](EXAMPLES.md#tutorial-1-building-your-first-crud-api)
 2. [Tutorial: Adding Relations](EXAMPLES.md#tutorial-2-adding-relations)
 3. [Advanced Examples](EXAMPLES.md#advanced-examples)
 
 ### Looking for Specific Information?
+
 - **Types & Interfaces**: [API Reference - Types and Interfaces](API_REFERENCE.md#types-and-interfaces)
 - **Service Configuration**: [API Reference - TypeORM Package](API_REFERENCE.md#typeorm-package)
 - **Controller Setup**: [API Reference - REST API Package](API_REFERENCE.md#rest-api-package)
 - **Common Issues**: [Troubleshooting Guide](TROUBLESHOOTING.md)
 
 ### Migrating or Upgrading?
+
 - **From v0.1.x to v0.2.x**: [Migration Guide](MIGRATION_GUIDE.md#from-v01x-to-v02x)
 - **From @nestjsx/crud**: [Migration Guide](MIGRATION_GUIDE.md#from-nestjs-crud-nestjsxcrud)
 - **Breaking Changes**: [Migration Guide - Breaking Changes](MIGRATION_GUIDE.md#breaking-changes)
@@ -43,6 +50,7 @@ Welcome to the comprehensive documentation for the SOLID NestJS Framework! This 
 ## 🎯 Framework Features
 
 ### Core Capabilities
+
 - ✅ **Auto-generated CRUD Operations** - Services and controllers with full CRUD functionality
 - ✅ **Advanced Query System** - Filtering, pagination, sorting, and relation handling
 - ✅ **Transaction Support** - Built-in transaction management with isolation levels
@@ -50,6 +58,7 @@ Welcome to the comprehensive documentation for the SOLID NestJS Framework! This 
 - ✅ **OpenAPI Integration** - Automatic Swagger documentation generation
 
 ### Advanced Features
+
 - ✅ **Flexible Relations** - Easy configuration of entity relationships and eager loading
 - ✅ **Input Validation** - Integrated class-validator support
 - ✅ **Modular Architecture** - Clean separation following SOLID principles
@@ -61,25 +70,31 @@ Welcome to the comprehensive documentation for the SOLID NestJS Framework! This 
 The framework is organized into focused packages:
 
 ### `@solid-nestjs/common`
+
 Common utilities, interfaces, and decorators shared across all packages.
 
 **Key exports:**
+
 - `Context` - Request context interface
 - `FindArgs` - Generic query arguments type
 - Base interfaces and types
 
 ### `@solid-nestjs/typeorm`
+
 TypeORM-specific service implementations and utilities.
 
 **Key exports:**
+
 - `CrudServiceFrom()` - Service mixin factory
 - `CrudServiceStructure()` - Service configuration builder
 - `DataServiceFrom()` - Data service mixin factory
 
 ### `@solid-nestjs/rest-api`
+
 REST API controller implementations with Swagger integration.
 
 **Key exports:**
+
 - `CrudControllerFrom()` - Controller mixin factory
 - `CrudControllerStructure()` - Controller configuration builder
 - `FindArgsMixin()` - Query arguments mixin
@@ -94,7 +109,7 @@ export const serviceStructure = CrudServiceStructure({
   entityType: Product,
   createInputType: CreateProductDto,
   updateInputType: UpdateProductDto,
-  findArgsType: FindProductArgs
+  findArgsType: FindProductArgs,
 });
 
 // 2. Create service using mixin
@@ -102,18 +117,21 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
   // Inherits all CRUD operations + custom methods
 }
 
-// 3. Create controller using mixin  
+// 3. Create controller using mixin
 export const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
-  serviceType: ProductsService
+  serviceType: ProductsService,
 });
 
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   // Inherits all REST endpoints + custom endpoints
 }
 ```
 
 **Benefits:**
+
 - **Flexible**: Compose multiple behaviors easily
 - **Type-safe**: Full TypeScript inference
 - **Testable**: Easy mocking and dependency injection
@@ -122,30 +140,38 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 ## 🔍 Common Use Cases
 
 ### Basic CRUD API
+
 Perfect for simple entity management with standard operations.
 
 ```typescript
 // Minimal setup for complete CRUD API
 export class ProductsService extends CrudServiceFrom(serviceStructure) {}
-export class ProductsController extends CrudControllerFrom(controllerStructure) {}
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {}
 ```
 
 ### Advanced Business Logic
+
 Extend with custom operations and complex business rules.
 
 ```typescript
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
   async findLowStock(context: Context, threshold: number): Promise<Product[]> {
     return this.findAll(context, {
-      filter: { stock: { $lte: threshold } }
+      filter: { stock: { $lte: threshold } },
     });
   }
 
-  async updateStock(context: Context, id: string, quantity: number): Promise<Product> {
-    return this.runInTransaction(context, async (txContext) => {
+  async updateStock(
+    context: Context,
+    id: string,
+    quantity: number,
+  ): Promise<Product> {
+    return this.runInTransaction(context, async txContext => {
       const product = await this.findOne(txContext, id, true);
-      return this.update(txContext, id, { 
-        stock: product.stock + quantity 
+      return this.update(txContext, id, {
+        stock: product.stock + quantity,
       });
     });
   }
@@ -153,6 +179,7 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ```
 
 ### Complex Relations
+
 Handle nested entities and complex relationships.
 
 ```typescript
@@ -166,43 +193,47 @@ export const serviceStructure = CrudServiceStructure({
       category: true,
       supplier: {
         relations: {
-          address: true
-        }
+          address: true,
+        },
       },
       reviews: {
         relations: {
-          user: true
-        }
-      }
-    }
-  }
+          user: true,
+        },
+      },
+    },
+  },
 });
 ```
 
 ## 🛠️ Development Workflow
 
 ### 1. Design Phase
+
 - Define entities and relationships
 - Plan DTOs and validation rules
 - Consider business logic requirements
 
 ### 2. Implementation Phase
+
 ```bash
 # 1. Create entity
 # 2. Create DTOs (Create, Update, FindArgs)
 # 3. Define service structure
 # 4. Create service class
-# 5. Define controller structure  
+# 5. Define controller structure
 # 6. Create controller class
 # 7. Register in module
 ```
 
 ### 3. Testing Phase
+
 - Unit test custom service methods
 - Integration test API endpoints
 - Validate business logic
 
 ### 4. Documentation Phase
+
 - Update Swagger documentation
 - Add code examples
 - Document custom endpoints
@@ -210,18 +241,21 @@ export const serviceStructure = CrudServiceStructure({
 ## 🎓 Learning Path
 
 ### Beginner (New to NestJS or SOLID NestJS)
+
 1. **NestJS Fundamentals** - Understand modules, services, controllers
 2. **TypeORM Basics** - Entity definitions, relations, repositories
 3. **SOLID NestJS Tutorial** - Follow the [basic tutorial](EXAMPLES.md#tutorial-1-building-your-first-crud-api)
 4. **Simple Project** - Build a basic CRUD API
 
 ### Intermediate (Familiar with NestJS)
+
 1. **Advanced Configuration** - Relations, transactions, custom operations
 2. **Authentication & Authorization** - Guards, decorators, context usage
 3. **Testing Strategies** - Unit and integration testing patterns
 4. **Real-world Project** - E-commerce or CMS system
 
 ### Advanced (Framework Extension)
+
 1. **Custom Mixins** - Create your own service/controller mixins
 2. **Framework Contribution** - Add features, fix bugs
 3. **Performance Optimization** - Query optimization, caching strategies
@@ -230,36 +264,43 @@ export const serviceStructure = CrudServiceStructure({
 ## 🔗 External Resources
 
 ### NestJS Official
+
 - [NestJS Documentation](https://docs.nestjs.com/)
 - [NestJS Fundamentals Course](https://courses.nestjs.com/)
 
 ### TypeORM
+
 - [TypeORM Documentation](https://typeorm.io/)
 - [TypeORM Entity Relations](https://typeorm.io/relations)
 
 ### TypeScript
+
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [TypeScript Mixins](https://www.typescriptlang.org/docs/handbook/mixins.html)
 
 ### Testing
+
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [NestJS Testing Guide](https://docs.nestjs.com/fundamentals/testing)
 
 ## 🤝 Community & Support
 
 ### Getting Help
+
 - **GitHub Issues** - Bug reports and feature requests
 - **Discussions** - Community questions and ideas
 - **Discord** - Real-time chat and support
 - **Stack Overflow** - Tag questions with `solid-nestjs`
 
 ### Contributing
+
 - **Code Contributions** - See [Contributing Guide](../CONTRIBUTING.md)
 - **Documentation** - Help improve these docs
 - **Examples** - Share your implementations
 - **Bug Reports** - Help us fix issues
 
 ### Staying Updated
+
 - **GitHub Releases** - Watch for new versions
 - **Roadmap** - See planned features in [README](../README.md#-roadmap)
 - **Changelog** - Review changes between versions

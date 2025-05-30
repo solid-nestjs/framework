@@ -1,7 +1,8 @@
 {
   "name": "simple-graphql-crud-app",
   "version": "0.2.1",
-  "description": "Complete GraphQL CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, auto-generated resolvers, and Apollo GraphQL Playground",  "author": "SOLID NestJS Framework",
+  "description": "Complete GraphQL CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, auto-generated resolvers, and Apollo GraphQL Playground",
+  "author": "SOLID NestJS Framework",
   "private": true,
   "license": "MIT",
   "scripts": {

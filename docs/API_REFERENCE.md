@@ -106,7 +106,7 @@ enum StandardActions {
   CREATE = 'create',
   UPDATE = 'update',
   REMOVE = 'remove',
-  HARD_REMOVE = 'hardRemove'
+  HARD_REMOVE = 'hardRemove',
 }
 ```
 
@@ -117,7 +117,7 @@ Sort order types.
 ```typescript
 enum OrderByType {
   ASC = 'ASC',
-  DESC = 'DESC'
+  DESC = 'DESC',
 }
 ```
 
@@ -131,11 +131,12 @@ Creates a service class with CRUD operations based on the provided structure.
 
 ```typescript
 function CrudServiceFrom<T>(
-  structure: CrudServiceStructure<T>
+  structure: CrudServiceStructure<T>,
 ): Constructor<ICrudService<T>>;
 ```
 
 **Parameters:**
+
 - `structure`: Service configuration structure
 
 **Returns:** Service class constructor
@@ -146,7 +147,7 @@ Creates a data service class for database operations.
 
 ```typescript
 function DataServiceFrom<T>(
-  structure: DataServiceStructure<T>
+  structure: DataServiceStructure<T>,
 ): Constructor<IDataService<T>>;
 ```
 
@@ -186,9 +187,11 @@ Configuration for entity relations.
 interface RelationsConfig {
   mainAlias?: string;
   relations?: {
-    [key: string]: boolean | {
-      relations?: RelationsConfig['relations'];
-    };
+    [key: string]:
+      | boolean
+      | {
+          relations?: RelationsConfig['relations'];
+        };
   };
 }
 ```
@@ -221,7 +224,7 @@ interface OperationConfig {
 #### Lock Modes
 
 ```typescript
-type LockMode = 
+type LockMode =
   | 'optimistic'
   | 'pessimistic_read'
   | 'pessimistic_write'
@@ -251,7 +254,7 @@ Creates a REST controller with CRUD endpoints.
 
 ```typescript
 function CrudControllerFrom<T>(
-  structure: CrudControllerStructure<T>
+  structure: CrudControllerStructure<T>,
 ): Constructor<ICrudController<T>>;
 ```
 
@@ -261,7 +264,7 @@ Creates a data controller for REST operations.
 
 ```typescript
 function DataControllerFrom<T>(
-  structure: DataControllerStructure<T>
+  structure: DataControllerStructure<T>,
 ): Constructor<IDataController<T>>;
 ```
 
@@ -418,7 +421,7 @@ Calculates pagination metadata.
 ```typescript
 function calculatePagination(
   input: PaginationInput,
-  total: number
+  total: number,
 ): PaginationMeta;
 ```
 
@@ -449,10 +452,7 @@ type Constructor<T = {}> = new (...args: any[]) => T;
 Builds WHERE clause from filter input.
 
 ```typescript
-function buildWhereClause(
-  filter: FilterInput,
-  alias: string
-): string;
+function buildWhereClause(filter: FilterInput, alias: string): string;
 ```
 
 #### `buildOrderClause(orderBy, alias)`
@@ -460,10 +460,7 @@ function buildWhereClause(
 Builds ORDER BY clause from order input.
 
 ```typescript
-function buildOrderClause(
-  orderBy: OrderByInput,
-  alias: string
-): string;
+function buildOrderClause(orderBy: OrderByInput, alias: string): string;
 ```
 
 ## Error Handling
@@ -515,17 +512,17 @@ class ValidationException extends CrudException {
 const DEFAULT_CONFIG = {
   pagination: {
     defaultLimit: 20,
-    maxLimit: 100
+    maxLimit: 100,
   },
   relations: {
-    maxDepth: 3
+    maxDepth: 3,
   },
   transactions: {
-    isolationLevel: 'READ_COMMITTED' as const
+    isolationLevel: 'READ_COMMITTED' as const,
   },
   locks: {
-    timeout: 10000
-  }
+    timeout: 10000,
+  },
 };
 ```
 
@@ -564,25 +561,28 @@ export const serviceStructure = CrudServiceStructure({
   relationsConfig: {
     relations: {
       supplier: true,
-      category: true
-    }
+      category: true,
+    },
   },
   functions: {
     create: {
       transactional: true,
-      isolationLevel: 'READ_COMMITTED'
+      isolationLevel: 'READ_COMMITTED',
     },
     update: {
       transactional: true,
-      lockMode: 'pessimistic_write'
-    }
-  }
+      lockMode: 'pessimistic_write',
+    },
+  },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
-  async findByCategory(context: Context, categoryId: string): Promise<Product[]> {
+  async findByCategory(
+    context: Context,
+    categoryId: string,
+  ): Promise<Product[]> {
     return this.findAll(context, {
-      where: { category: { id:categoryId } }
+      where: { category: { id: categoryId } },
     });
   }
 }
@@ -591,7 +591,10 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 ### Complete Controller Implementation
 
 ```typescript
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/rest-api';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/rest-api';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard, AdminGuard } from '../guards';
 import { ProductsService } from './products.service';
@@ -603,28 +606,30 @@ export const controllerStructure = CrudControllerStructure({
   operations: {
     findAll: {
       summary: 'Get all products',
-      description: 'Retrieve all products with filtering and pagination'
+      description: 'Retrieve all products with filtering and pagination',
     },
     create: {
       summary: 'Create product',
       description: 'Create a new product',
-      decorators: [() => UseGuards(AdminGuard)]
+      decorators: [() => UseGuards(AdminGuard)],
     },
     update: {
-      decorators: [() => UseGuards(AdminGuard)]
+      decorators: [() => UseGuards(AdminGuard)],
     },
     remove: {
-      decorators: [() => UseGuards(AdminGuard)]
-    }
+      decorators: [() => UseGuards(AdminGuard)],
+    },
   },
-  classDecorators: [() => UseGuards(JwtAuthGuard)]
+  classDecorators: [() => UseGuards(JwtAuthGuard)],
 });
 
-export class ProductsController extends CrudControllerFrom(controllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
   @Get('category/:categoryId')
   async findByCategory(
     @Param('categoryId') categoryId: string,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ): Promise<Product[]> {
     const context = { user };
     return this.service.findByCategory(context, categoryId);

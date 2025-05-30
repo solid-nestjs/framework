@@ -1,5 +1,5 @@
-import { Where, OrderBy } from "../../types/find-args.type";
-import { PaginationRequest } from "./pagination-request.interface";
+import { Where, OrderBy } from '../../types/find-args.type';
+import { PaginationRequest } from './pagination-request.interface';
 
 export interface FindArgs<T> {
   pagination?: PaginationRequest;

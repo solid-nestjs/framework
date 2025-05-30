@@ -34,6 +34,7 @@ We chose a **composition-over-inheritance** architecture using mixins and struct
 ### Consequences
 
 **Positive:**
+
 - High flexibility and extensibility
 - Better testability through composition
 - Clear separation of concerns
@@ -41,10 +42,12 @@ We chose a **composition-over-inheritance** architecture using mixins and struct
 - Easy to extend with new ORMs (Prisma, Mongoose, etc.)
 
 **Negative:**
+
 - Slightly more complex initial setup compared to decorator-based approaches
 - Learning curve for developers unfamiliar with mixin patterns
 
 **Mitigation:**
+
 - Comprehensive documentation and examples
 - TypeScript IntelliSense support for better developer experience
 
@@ -59,6 +62,7 @@ We chose a **composition-over-inheritance** architecture using mixins and struct
 ### Context
 
 We evaluated several approaches for generating CRUD functionality:
+
 1. Inheritance-based (traditional OOP)
 2. Decorator-based (like @nestjsx/crud)
 3. Mixin-based (composition)
@@ -71,16 +75,20 @@ We chose **mixin-based design** with factory functions like `CrudServiceFrom()` 
 ```typescript
 // Mixin approach
 export class ProductsService extends CrudServiceFrom(serviceStructure) {}
-export class ProductsController extends CrudControllerFrom(controllerStructure) {}
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {}
 ```
 
 ### Alternatives Considered
 
 1. **Decorator-based approach**:
+
    ```typescript
    @Crud({ entity: Product })
    export class ProductsController {}
    ```
+
    - Rejected: Less flexible, harder to test, couples configuration to implementation
 
 2. **Pure inheritance**:
@@ -92,6 +100,7 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 ### Consequences
 
 **Positive:**
+
 - Enables multiple inheritance patterns
 - Better type inference
 - Easy to compose multiple behaviors
@@ -99,6 +108,7 @@ export class ProductsController extends CrudControllerFrom(controllerStructure) 
 - Flexible structure configuration
 
 **Negative:**
+
 - More verbose than decorator approach
 - Requires understanding of TypeScript mixins
 
@@ -129,6 +139,7 @@ We chose a **multi-package monorepo structure**:
 ### Alternatives Considered
 
 1. **Single package approach**:
+
    - Rejected: Would create bloated dependencies, users would install unused ORM adapters
 
 2. **Framework-per-ORM approach**:
@@ -137,6 +148,7 @@ We chose a **multi-package monorepo structure**:
 ### Consequences
 
 **Positive:**
+
 - Users only install what they need
 - Clear separation of concerns
 - Easy to add new ORM support
@@ -144,11 +156,13 @@ We chose a **multi-package monorepo structure**:
 - Smaller bundle sizes
 
 **Negative:**
+
 - More complex build and release process
 - Need to maintain compatibility between packages
 - More complex dependency management
 
 **Mitigation:**
+
 - Shared build tooling and CI/CD
 - Semantic versioning with compatibility guarantees
 - Comprehensive integration testing
@@ -178,6 +192,7 @@ We chose a **TypeScript-first approach** with strong type safety:
 ### Alternatives Considered
 
 1. **JavaScript-first with TypeScript definitions**:
+
    - Rejected: Would compromise type safety benefits
 
 2. **TypeScript with JavaScript compatibility**:
@@ -186,6 +201,7 @@ We chose a **TypeScript-first approach** with strong type safety:
 ### Consequences
 
 **Positive:**
+
 - Excellent IntelliSense and IDE support
 - Compile-time error detection
 - Better refactoring capabilities
@@ -193,11 +209,13 @@ We chose a **TypeScript-first approach** with strong type safety:
 - Better developer experience
 
 **Negative:**
+
 - Excludes JavaScript-only projects
 - Requires TypeScript knowledge
 - Slightly more complex build process
 
 **Mitigation:**
+
 - Comprehensive documentation with examples
 - TypeScript learning resources in docs
 - Clear error messages for type mismatches
@@ -213,6 +231,7 @@ We chose a **TypeScript-first approach** with strong type safety:
 ### Context
 
 We needed to design transaction management that is:
+
 - Easy to use by default
 - Configurable for advanced use cases
 - Compatible with different ORMs
@@ -244,19 +263,22 @@ async customOperation(context: Context) {
 ```
 
 ### Alternative Use
-**Decorator-based transactions**:
-   ```typescript
-   @Transaction()
-   async createProduct(context:Context) {
-    //everything in here is executed in the same transaction
-   }
-   ```
-   - This decorator can be used over any function implemented inside a DataService or CrudService.
 
+**Decorator-based transactions**:
+
+```typescript
+@Transaction()
+async createProduct(context:Context) {
+ //everything in here is executed in the same transaction
+}
+```
+
+- This decorator can be used over any function implemented inside a DataService or CrudService.
 
 ### Consequences
 
 **Positive:**
+
 - Flexible transaction control
 - Supports nested transactions
 - Easy to test with mock contexts
@@ -264,10 +286,12 @@ async customOperation(context: Context) {
 - Configurable isolation levels
 
 **Negative:**
+
 - Context parameter required for all methods
 - Learning curve for transaction patterns
 
 **Mitigation:**
+
 - Clear documentation with examples
 - TypeScript types enforce correct usage
 - Helper methods for common patterns
@@ -283,6 +307,7 @@ async customOperation(context: Context) {
 ### Context
 
 We needed a configuration approach that is:
+
 - Type-safe
 - Flexible for different use cases
 - Reusable between services and controllers
@@ -300,31 +325,43 @@ export const serviceStructure = CrudServiceStructure({
   createInputType: CreateProductDto,
   updateInputType: UpdateProductDto,
   findArgsType: FindProductArgs,
-  relationsConfig: { /* ... */ },
-  functions: { /* ... */ }
+  relationsConfig: {
+    /* ... */
+  },
+  functions: {
+    /* ... */
+  },
 });
 
 // Controller structure - extends service structure with API concerns
 export const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
   serviceType: ProductsService,
-  operations: { /* ... */ },
-  routeConfig: { /* ... */ }
+  operations: {
+    /* ... */
+  },
+  routeConfig: {
+    /* ... */
+  },
 });
 ```
 
 ### Alternatives Considered
 
 1. **Single configuration object**:
+
    ```typescript
    const config = { service: {}, controller: {} };
    ```
+
    - Rejected: Mixes concerns, harder to reuse
 
 2. **Class-based configuration**:
+
    ```typescript
    class ProductConfig extends BaseConfig {}
    ```
+
    - Rejected: Less flexible, harder to compose
 
 3. **Decorator-based configuration**:
@@ -333,6 +370,7 @@ export const controllerStructure = CrudControllerStructure({
 ### Consequences
 
 **Positive:**
+
 - Clear separation of concerns
 - Type-safe configuration
 - Reusable structures
@@ -341,11 +379,13 @@ export const controllerStructure = CrudControllerStructure({
 - IntelliSense support
 
 **Negative:**
+
 - Slightly more verbose
 - Two configuration objects to maintain
 - Learning curve for structure pattern
 
 **Mitigation:**
+
 - Helper functions for common configurations
 - Comprehensive examples and documentation
 - TypeScript types guide correct usage
@@ -365,12 +405,14 @@ export const controllerStructure = CrudControllerStructure({
 ### Review Process
 
 ADRs should be reviewed:
+
 - When new major features are added
 - When architectural decisions need to be reconsidered
 - When community feedback suggests alternative approaches
 - Before major version releases
 
 Each ADR should include:
+
 - Clear context and problem statement
 - Decision made and rationale
 - Alternatives considered

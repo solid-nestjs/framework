@@ -1,7 +1,8 @@
 {
   "name": "simple-hybrid-crud-app",
   "version": "0.2.1",
-  "description": "Hybrid REST + GraphQL CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, dual API support, and comprehensive documentation",  "author": "SOLID NestJS Framework",
+  "description": "Hybrid REST + GraphQL CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, dual API support, and comprehensive documentation",
+  "author": "SOLID NestJS Framework",
   "private": true,
   "license": "MIT",
   "scripts": {

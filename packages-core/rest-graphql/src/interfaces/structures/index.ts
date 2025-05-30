@@ -1,1 +1,1 @@
-export * from './find-args.structure.interface'
+export * from './find-args.structure.interface';

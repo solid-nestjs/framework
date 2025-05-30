@@ -1,4 +1,4 @@
-import { Transform } from "class-transformer";
+import { Transform } from 'class-transformer';
 
 /**
  * Property decorator that transforms a JSON string property into its parsed object form
@@ -17,7 +17,8 @@ import { Transform } from "class-transformer";
  * }
  * ```
  */
-export const TransformFromJson = () => Transform(
+export const TransformFromJson = () =>
+  Transform(
     ({ value }) => {
       try {
         return JSON.parse(value);
@@ -26,4 +27,4 @@ export const TransformFromJson = () => Transform(
       }
     },
     { toClassOnly: true },
-  )
+  );
