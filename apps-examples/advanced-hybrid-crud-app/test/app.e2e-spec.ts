@@ -928,10 +928,6 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
 
         createdInvoice = response.body.data.createInvoice;
       } else {
-        console.log(
-          'Invoice creation response:',
-          JSON.stringify(response.body, null, 2),
-        );
         // Create invoice via REST as fallback for other tests
         const invoiceResponse = await request(app.getHttpServer())
           .post('/invoices')

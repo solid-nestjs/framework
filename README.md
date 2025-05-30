@@ -643,6 +643,27 @@ export class ProductsController extends CrudControllerFrom(
 
 ## 🧪 Testing
 
+### Test Commands
+
+The framework includes comprehensive testing support for both unit and end-to-end (E2E) tests:
+
+```bash
+# Run all unit tests
+npm run test
+
+# Run end-to-end tests
+npm run test:e2e
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate test coverage report
+npm run test:coverage
+
+# Run tests in debug mode
+npm run test:debug
+```
+
 ### Service Testing
 
 ```typescript
