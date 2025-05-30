@@ -5,10 +5,10 @@ import {
   CrudServiceStructure,
   TypeOrmRepository,
 } from '@solid-nestjs/typeorm';
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Invoice } from './entities/invoice.entity';
 import { CreateInvoiceDto, FindInvoiceArgs, UpdateInvoiceDto } from './dto';
-import { ProductsService } from 'src/products/products.service';
+import { ProductsService } from '../products/products.service';
 
 export const serviceStructure = CrudServiceStructure({
   entityType: Invoice,
@@ -41,6 +41,10 @@ export class InvoicesService extends CrudServiceFrom(serviceStructure) {
     entity: Invoice,
     input: DeepPartial<Invoice>,
   ): Promise<void> {
+    //if there is no detail
+    if (!entity?.details || entity.details.length === 0)
+      throw new BadRequestException('Invoice must have at least one detail.');
+
     // Check that all products in the details exist
     const productIds = [
       ...new Set(entity.details.map((detail) => detail.productId)),

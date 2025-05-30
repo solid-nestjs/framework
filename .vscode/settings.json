@@ -8,7 +8,7 @@
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": "explicit"
     },
-    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
     "[typescript]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
