@@ -1,4 +1,6 @@
 {
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.preferences.includePackageJsonAutoImports": "off",
     "material-icon-theme.activeIconPack": "nest",
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
