@@ -13,7 +13,23 @@ describe('GraphQL CRUD App (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(DataSource)
+      .useFactory({
+        factory: async () => {
+          const { DataSource } = await import('typeorm');
+          const dataSource = new DataSource({
+            type: 'sqlite',
+            database: ':memory:',
+            dropSchema: true,
+            entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
+            synchronize: true,
+          });
+          await dataSource.initialize();
+          return dataSource;
+        },
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
