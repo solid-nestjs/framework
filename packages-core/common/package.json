@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/common",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "solid-nestjs common utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -28,8 +28,8 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "@nestjs/core": "^11.0.1",
-    "@nestjs/common": "^11.0.1"
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
