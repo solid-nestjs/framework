@@ -6,7 +6,7 @@
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": "explicit"
     },
-    "terminal.integrated.defaultProfile.windows": "Ubuntu (WSL)",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
     "[typescript]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },

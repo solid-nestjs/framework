@@ -18,6 +18,10 @@ export const swaggerRecomenedOptions: SwaggerUiOptions = {
   tagsSorter: 'alpha',
   operationsSorter: function (a, b) {
     var order = { get: '0', post: '1', put: '2', delete: '3' };
-    return order[a.get('method')].localeCompare(order[b.get('method')]);
+    var aMethod = a.get('method');
+    var bMethod = b.get('method');
+    var aOrder = order[aMethod] || '4';
+    var bOrder = order[bMethod] || '4';
+    return aOrder.localeCompare(bOrder);
   },
 };
