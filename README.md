@@ -27,6 +27,44 @@ The SOLID NestJS Framework is a collection of utilities and mixins that accelera
 - **📊 Audit Trail** - Optional audit logging for data changes
 - **🚀 Future-Ready** - Designed for GraphQL and Prisma integration
 
+## 🗺️ What's Coming in v0.3.0
+
+We're excited to share a preview of upcoming features in version 0.3.0:
+
+### 🛠️ Enhanced Developer Experience
+
+- **Framework CLI Generator** - Scaffold controllers, services, and modules with interactive prompts
+
+#### 🔐 Advanced Authentication & Authorization
+
+- **Role-Based Access Control (RBAC)** - Built-in decorators for fine-grained permissions
+- **JWT Integration** - Seamless authentication middleware
+- **Resource-Level Security** - Per-endpoint authorization with custom guards
+- **Audit Trail Enhancement** - User tracking and action logging
+
+#### 📊 Performance & Monitoring
+
+- **Query Optimization** - Automatic query analysis and optimization suggestions
+- **Performance Metrics** - Built-in monitoring for response times and database queries
+- **Caching Layer** - Redis integration for improved performance
+
+#### 🔄 Advanced Relations & Data Management
+
+- **Polymorphic Relations** - Support for complex entity relationships
+- **Bulk Operations** - Efficient batch create, update, and delete operations
+- **Data Seeding** - Framework for populating test and development data
+- **Schema Versioning** - Support for API versioning with backward compatibility
+- **Recovery Operations** - Built-in soft delete recovery and data restoration capabilities
+- **Custom Operation Definitions** - Framework for defining custom business operations beyond CRUD
+
+#### 🎨 Enhanced GraphQL Features
+
+- **Subscription Support** - Real-time data updates via GraphQL subscriptions
+- **DataLoader Integration** - Optimized N+1 query resolution
+- **Custom Scalar Types** - Extended type system for complex data types
+
+_Want to influence the roadmap? Check out our [full roadmap](ROADMAP.md) and join the discussion!_
+
 ## 🚀 Try It Now
 
 Get started immediately with our working examples:
@@ -855,42 +893,6 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
   }
 }
 ```
-
-## 🔮 Roadmap
-
-### Current Status (v0.2.0)
-
-- ✅ Core CRUD operations
-- ✅ Advanced filtering and pagination
-- ✅ Transaction support
-- ✅ Relation management
-- ✅ OpenAPI documentation
-- ✅ Type safety
-- ✅ GraphQL support
-- ✅ Complete GraphQL CRUD resolvers
-- ✅ GraphQL filtering and pagination
-- ✅ TypeORM + GraphQL integration
-
-### Upcoming Features (v0.3.0)
-
-- 🚧 Recovery opteration support
-- 🚧 Batch opterations support
-- 🚧 Custom operation definitions
-- 🚧 Advanced caching strategies
-- 🚧 Real-time subscriptions (GraphQL)
-- 🚧 Microservices patterns
-- 🚧 Enhanced query builder with aggregations
-
-### Future Vision (v1.0.0)
-
-- 🔮 Prisma ORM integration
-- 🔮 Clean code architecture support (hexagonal architecture)
-- 🔮 Multi-tenant support
-- 🔮 Advanced security features
-- 🔮 Performance analytics
-- 🔮 Auto-scaling capabilities
-- 🔮 Cloud-native features
-- 🔮 Event sourcing support
 
 ## 🤝 Contributing
 
