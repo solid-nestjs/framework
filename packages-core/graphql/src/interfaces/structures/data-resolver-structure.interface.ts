@@ -10,7 +10,7 @@ import {
 } from '@solid-nestjs/common';
 
 export interface OperationStructure {
-  name: string;
+  name?: string;
   title?: string;
   description?: string;
   decorators?: (() => MethodDecorator)[];
