@@ -54,21 +54,75 @@ The controller automatically creates these endpoints:
 
 #### `GET /products` - Find All with Filtering
 
+The framework supports complex filtering with multiple operators:
+
+### Basic Filtering
+
 ```bash
-# Basic usage
-GET /products
+# Filter by name
+GET /products?where={"name":{"_contains":"laptop"}}}
 
-# With filtering
-GET /products?name_contains=laptop&price_gte=100&price_lte=1000
+# Filter by price range
+GET /products?where={"price":{"_gte":100, "_lte":1000}}
 
-# With pagination
-GET /products?page=1&limit=10
+# Filter with multiple conditions
+GET /products?where={"name":{"_contains":"laptop"}},"price":{"_gte":100, "_lte":1000}}
+```
 
-# With sorting
-GET /products?orderBy=price&orderDirection=DESC
+### Logical Operators
 
-# Combined
-GET /products?name_contains=laptop&price_gte=100&page=1&limit=5&orderBy=createdAt&orderDirection=DESC
+```bash
+# OR conditions
+GET /products?where={"name":{"_contains":"laptop"}},"_or":[{"name":{"_eq":"iphone"}}]}
+
+# AND conditions (default)
+GET /products?where={"price":{"_lt":1000}},"_and":[{"name":{"_eq":"iphone"}}]}
+
+# Complex nested conditions
+GET /products?where={"price":{"_lt":1000}},"_and":[{"name":{"_eq":"iphone"},"_and":[{ "_stock":{"_gt":10} }]}]}
+```
+
+### Available Filter Operators
+
+**String Filters:**
+
+- `_eq` - Equals
+- `_ne` - Not equals
+- `_contains` - Contains substring
+- `_startsWith` - Starts with
+- `_endsWith` - Ends with
+- `_in` - In array
+- `_notIn` - Not in array
+
+**Number Filters:**
+
+- `_eq` - Equals
+- `_ne` - Not equals
+- `_gt` - Greater than
+- `_gte` - Greater than or equal
+- `_lt` - Less than
+- `_lte` - Less than or equal
+- `_in` - In array
+- `_notIn` - Not in array
+
+### Sorting
+
+```bash
+# Sort by single field
+GET /products?orderBy=[{"price":"DESC"}]
+
+# Sort by multiple fields
+GET /products?orderBy=[{"price":"DESC"},{"stock":"ASC"}]
+```
+
+### Pagination
+
+```bash
+# Basic pagination
+GET /products/pagination?pagination={"page":1,"limit":10}
+
+# With filtering and sorting
+GET /products/pagination?where={"price":{"_lt":1000}},"_and":[{"name":{"_eq":"iphone"}}]}&pagination={"page":1,"limit":10}
 ```
 
 #### `GET /products/:id` - Find One
@@ -106,71 +160,6 @@ Content-Type: application/json
 
 ```bash
 DELETE /products/123
-```
-
-## 🔍 Advanced Filtering
-
-### String Filters
-
-Available operators for string fields:
-
-- `_eq` - Equals
-- `_ne` - Not equals
-- `_contains` - Contains substring
-- `_startsWith` - Starts with
-- `_endsWith` - Ends with
-- `_in` - In array of values
-
-```bash
-GET /products?name_contains=laptop
-GET /products?name_startsWith=Gaming
-GET /products?category_in=electronics,computers
-```
-
-### Number Filters
-
-Available operators for numeric fields:
-
-- `_eq` - Equals
-- `_ne` - Not equals
-- `_gt` - Greater than
-- `_gte` - Greater than or equal
-- `_lt` - Less than
-- `_lte` - Less than or equal
-- `_in` - In array of values
-
-```bash
-GET /products?price_gte=100&price_lte=1000
-GET /products?quantity_gt=0
-GET /products?categoryId_in=1,2,3
-```
-
-### Date Filters
-
-Available operators for date fields:
-
-- `_eq` - Equals date
-- `_ne` - Not equals date
-- `_gt` - After date
-- `_gte` - After or on date
-- `_lt` - Before date
-- `_lte` - Before or on date
-
-```bash
-GET /products?createdAt_gte=2024-01-01
-GET /products?updatedAt_lt=2024-12-31
-```
-
-### Logical Operators
-
-Combine filters with logical operators:
-
-- `_and` - All conditions must be true
-- `_or` - Any condition must be true
-
-```bash
-GET /products?_or[0][name_contains]=laptop&_or[0][name_contains]=desktop
-GET /products?_and[0][price_gte]=100&_and[0][category_eq]=electronics
 ```
 
 ## 🔧 Advanced Configuration

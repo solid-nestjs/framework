@@ -359,26 +359,26 @@ The framework supports complex filtering with multiple operators:
 
 ```bash
 # Filter by name
-GET /products?where[name]=laptop
+GET /products?where={"name":{"_contains":"laptop"}}}
 
 # Filter by price range
-GET /products?where[price][_gte]=100&where[price][_lte]=500
+GET /products?where={"price":{"_gte":100, "_lte":1000}}
 
 # Filter with multiple conditions
-GET /products?where[name][_contains]=gaming&where[stock][_gt]=0
+GET /products?where={"name":{"_contains":"laptop"}},"price":{"_gte":100, "_lte":1000}}
 ```
 
 ### Logical Operators
 
 ```bash
 # OR conditions
-GET /products?where[_or][0][name]=laptop&where[_or][1][description][_contains]=gaming
+GET /products?where={"name":{"_contains":"laptop"}},"_or":[{"name":{"_eq":"iphone"}}]}
 
 # AND conditions (default)
-GET /products?where[name][_contains]=pro&where[price][_lt]=1000
+GET /products?where={"price":{"_lt":1000}},"_and":[{"name":{"_eq":"iphone"}}]}
 
 # Complex nested conditions
-GET /products?where[_or][0][_and][0][name]=laptop&where[_or][0][_and][1][price][_lt]=500
+GET /products?where={"price":{"_lt":1000}},"_and":[{"name":{"_eq":"iphone"},"_and":[{ "_stock":{"_gt":10} }]}]}
 ```
 
 ### Available Filter Operators
@@ -408,20 +408,20 @@ GET /products?where[_or][0][_and][0][name]=laptop&where[_or][0][_and][1][price][
 
 ```bash
 # Sort by single field
-GET /products?orderBy[0][name]=asc
+GET /products?orderBy=[{"price":"DESC"}]
 
 # Sort by multiple fields
-GET /products?orderBy[0][price]=desc&orderBy[1][name]=asc
+GET /products?orderBy=[{"price":"DESC"},{"stock":"ASC"}]
 ```
 
 ### Pagination
 
 ```bash
 # Basic pagination
-GET /products/pagination?pagination[limit]=10&pagination[offset]=0
+GET /products/pagination?pagination={"page":1,"limit":10}
 
 # With filtering and sorting
-GET /products/pagination?where[price][_gte]=100&orderBy[0][price]=desc&pagination[limit]=5
+GET /products/pagination?where={"price":{"_lt":1000}},"_and":[{"name":{"_eq":"iphone"}}]}&pagination={"page":1,"limit":10}
 ```
 
 ## 🔧 Advanced Configuration

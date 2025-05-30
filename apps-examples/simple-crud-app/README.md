@@ -99,19 +99,19 @@ DELETE http://localhost:3000/products/1
 
 ```bash
 # Search by name
-GET http://localhost:3000/products?name_contains=laptop
+GET http://localhost:3000/products?where={"name":{"_contains":"laptop"}}}
 
 # Price range filtering
-GET http://localhost:3000/products?price_gte=100&price_lte=1000
+GET http://localhost:3000/products?where={"price":{"_gte":100, "_lte":1000}}
 
 # Pagination
-GET http://localhost:3000/products?page=1&limit=10
+GET http://localhost:3000/products?pagination={"page":1,"limit":10}
 
 # Sorting
-GET http://localhost:3000/products?orderBy=price&orderDirection=DESC
+GET http://localhost:3000/products?orderBy=[{"price":"DESC"}]
 
 # Combined filtering
-GET http://localhost:3000/products?name_contains=gaming&price_gte=500&page=1&limit=5&orderBy=createdAt&orderDirection=DESC
+GET http://localhost:3000/products?where={"name":{"_contains":"laptop"}}}&pagination={"page":1,"limit":10}&orderBy=[{"price":"DESC"}]
 ```
 
 ## 🧪 Testing

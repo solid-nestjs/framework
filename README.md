@@ -339,14 +339,14 @@ const controllerStructure = CrudControllerStructure({
 ### Filtering
 
 ```typescript
-// GET /products?filter={"name": {"$like": "%laptop%"}, "price": {"$gte": 500}}
-// GET /products?filter={"supplier.name": "TechCorp"}
+// GET /products?filter={"name": {"_contains": "laptop"}, "price": {"_gte": 500}}
+// GET /products?filter={"supplier":{"name": "TechCorp"}}
 ```
 
 ### Pagination
 
 ```typescript
-// GET /products?pagination={"limit": 10, "offset": 20}
+// GET /products?pagination={"take": 10, "skip": 20}
 // GET /products?pagination={"page": 3, "limit": 10}
 ```
 
@@ -354,7 +354,7 @@ const controllerStructure = CrudControllerStructure({
 
 ```typescript
 // GET /products?orderBy={"name": "ASC", "price": "DESC"}
-// GET /products?orderBy={"supplier.name": "ASC"}
+// GET /products?orderBy={"supplier":{"name": "ASC"}}
 ```
 
 ### Relations
@@ -873,19 +873,22 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
 
 ### Upcoming Features (v0.3.0)
 
-- 🚧 Prisma ORM integration
+- 🚧 Recovery opteration support
+- 🚧 Batch opterations support
 - 🚧 Custom operation definitions
 - 🚧 Advanced caching strategies
 - 🚧 Real-time subscriptions (GraphQL)
+- 🚧 Microservices patterns
 - 🚧 Enhanced query builder with aggregations
 
 ### Future Vision (v1.0.0)
 
+- 🔮 Prisma ORM integration
+- 🔮 Clean code architecture support (hexagonal architecture)
 - 🔮 Multi-tenant support
 - 🔮 Advanced security features
 - 🔮 Performance analytics
 - 🔮 Auto-scaling capabilities
-- 🔮 Microservices patterns
 - 🔮 Cloud-native features
 - 🔮 Event sourcing support
 
