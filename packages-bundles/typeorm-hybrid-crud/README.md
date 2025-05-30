@@ -452,17 +452,14 @@ The bundle supports complex filtering with logical operators:
 ### REST API Query Examples
 
 ```bash
-# Basic filtering
-GET /products?where[name]=laptop
+# Filter by name
+GET /products?where={"name":{"_contains":"laptop"}}}
 
-# With logical operators
-GET /products?where[_or][0][name]=laptop&where[_or][1][description]=gaming
+# Filter by price range
+GET /products?where={"price":{"_gte":100, "_lte":1000}}
 
-# With pagination
-GET /products?pagination[limit]=10&pagination[offset]=0
-
-# Complex nested filtering
-GET /products?where[supplier][name]=TechCorp&where[price][_gte]=100
+# Filter with multiple conditions
+GET /products?where={"name":{"_contains":"laptop"}},"price":{"_gte":100, "_lte":1000}}
 ```
 
 ### GraphQL Query Examples

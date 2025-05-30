@@ -79,10 +79,10 @@ Once running, access both API interfaces:
 GET http://localhost:3000/products
 
 # Filter products by name and price
-GET http://localhost:3000/products?name_contains=laptop&price_gte=500&price_lte=2000
+GET http://localhost:3000/products?where={"name":{"_contains":"laptop"}},"price":{"_gte":100, "_lte":1000}}
 
 # Paginated and sorted
-GET http://localhost:3000/products?page=1&limit=10&orderBy=price&orderDirection=DESC
+GET http://localhost:3000/products?pagination={"page":1,"limit":10}&orderBy=[{"price":"DESC"}]
 
 # Create new product
 POST http://localhost:3000/products
