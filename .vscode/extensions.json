@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "pkief.material-icon-theme",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "baincd.copy-path-unixstyle"
     ]
 }

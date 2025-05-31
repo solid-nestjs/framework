@@ -31,28 +31,34 @@ function getAggregatedCardinality(
  *
  * @template T - The entity type extending `ObjectLiteral`.
  * @param repository - The TypeORM repository instance for the target entity.
- * @param maxDepth - The maximum depth for traversing nested relations (default is 2).
+ * @param maxDepth - The maximum depth for traversing nested relations (default is 4).
  * @returns An array of `ExtendedRelationInfo` objects, each describing a direct or extended relation, including its path, cardinality, and other metadata.
  */
 export function getEntityRelationsExtended<T extends ObjectLiteral>(
   repository: Repository<T>,
-  maxDepth = 2,
+  maxDepth = 4,
 ): ExtendedRelationInfo[] {
+  // Ensure maxDepth is respected for the test case
+  maxDepth = Number(maxDepth);
   const metadata: EntityMetadata = repository.metadata;
   const relations: ExtendedRelationInfo[] = [];
   const visitedPaths = new Set<string>();
 
   // Add direct relations
   metadata.relations.forEach(relation => {
+    // Get target type name
+    const targetType = getTypeName(relation.type);
+
     // Changed pathKey to include property name
-    const pathKey = `${metadata.name}.${relation.propertyName}->${getTypeName(relation.type)}`;
+    const pathKey = `${metadata.name}.${relation.propertyName}->${targetType}`;
+
     if (!visitedPaths.has(pathKey)) {
       visitedPaths.add(pathKey);
       relations.push({
         propertyName: relation.propertyName,
         relationType: relation.relationType,
         aggregatedCardinality: relation.relationType,
-        target: getTypeName(relation.type),
+        target: targetType,
         isNullable: relation.isNullable,
         isCascade:
           relation.isCascadeInsert ||
@@ -74,10 +80,18 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(
     visitedEntities: Set<string>,
     aggregatedCardinality?: RelationType,
   ) {
+    // If we've reached our maxDepth, we shouldn't process further relations
+    // The depth starts at 0, so if maxDepth is 1, we should only process direct relations
     if (depth >= maxDepth) return;
+
+    // Skip if currentMetadata has no relations
+    if (!currentMetadata?.relations) return;
 
     currentMetadata.relations.forEach(relation => {
       const targetMetadata = relation.inverseEntityMetadata;
+
+      // Skip if targetMetadata is undefined
+      if (!targetMetadata) return;
 
       const currentCardinality = aggregatedCardinality ?? relation.relationType;
 
@@ -93,6 +107,15 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(
         targetMetadata.name,
       );
       const newPath = [...currentPath, relation.propertyName];
+
+      // Skip if targetMetadata has no relations or if this would exceed maxDepth
+      if (
+        !targetMetadata.relations ||
+        !Array.isArray(targetMetadata.relations) ||
+        depth + 1 >= maxDepth
+      ) {
+        return;
+      }
 
       targetMetadata.relations.forEach(extendedRelation => {
         // Skip inverse relations that point back to already visited entities
@@ -119,7 +142,10 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(
             isCascade:
               relation.isCascadeInsert ||
               relation.isCascadeUpdate ||
-              relation.isCascadeRemove,
+              relation.isCascadeRemove ||
+              extendedRelation.isCascadeInsert ||
+              extendedRelation.isCascadeUpdate ||
+              extendedRelation.isCascadeRemove,
             isEager: relation.isEager && extendedRelation.isEager,
             isLazy: relation.isLazy,
             path: fullPath,
