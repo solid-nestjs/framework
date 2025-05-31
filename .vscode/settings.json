@@ -20,5 +20,6 @@
     },
     "[markdown]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
-    }
+    },
+    "js/ts.implicitProjectConfig.checkJs": true
 }
