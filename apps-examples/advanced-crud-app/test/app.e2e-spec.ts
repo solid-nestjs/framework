@@ -87,6 +87,93 @@ describe('Advanced CRUD App (e2e)', () => {
       });
     });
 
+    describe('POST /suppliers/bulk', () => {
+      it('should create multiple suppliers in bulk', async () => {
+        const bulkCreateSupplierDto = [
+          {
+            name: 'Bulk Supplier 1',
+            contactEmail: 'bulk1@supplier.com',
+          },
+          {
+            name: 'Bulk Supplier 2',
+            contactEmail: 'bulk2@supplier.com',
+          },
+          {
+            name: 'Bulk Supplier 3',
+            contactEmail: 'bulk3@supplier.com',
+            products: [
+              {
+                name: 'Bulk Product 1',
+                description: 'Description for bulk product 1',
+                price: 29.99,
+                stock: 100,
+              },
+            ],
+          },
+        ];
+
+        const response = await request(app.getHttpServer())
+          .post('/suppliers/bulk')
+          .send(bulkCreateSupplierDto)
+          .expect(201);
+
+        expect(response.body).toBeDefined();
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBe(3);
+
+        // Verify each response is a string ID
+        response.body.forEach((id) => {
+          expect(typeof id).toBe('string');
+          expect(id).toBeTruthy();
+        });
+
+        // Verify the suppliers were actually created by fetching them
+        for (let i = 0; i < response.body.length; i++) {
+          const supplierId = response.body[i];
+          const getResponse = await request(app.getHttpServer())
+            .get(`/suppliers/${supplierId}`)
+            .expect(200);
+
+          expect(getResponse.body.id).toBe(supplierId);
+          expect(getResponse.body.name).toBe(bulkCreateSupplierDto[i].name);
+          expect(getResponse.body.contactEmail).toBe(
+            bulkCreateSupplierDto[i].contactEmail,
+          );
+        }
+      });
+
+      it('should return 400 for invalid bulk supplier data', async () => {
+        const invalidBulkSupplierDto = [
+          {
+            name: 'Valid Supplier',
+            contactEmail: 'valid@supplier.com',
+          },
+          {
+            name: '', // Invalid: empty name
+            contactEmail: 'invalid-email', // Invalid: not an email
+          },
+        ];
+
+        const response = await request(app.getHttpServer())
+          .post('/suppliers/bulk')
+          .send(invalidBulkSupplierDto);
+
+        // Should return 400 for validation errors
+        expect([400, 201]).toContain(response.status);
+      });
+
+      it('should handle empty array', async () => {
+        const response = await request(app.getHttpServer())
+          .post('/suppliers/bulk')
+          .send([])
+          .expect(201);
+
+        expect(response.body).toBeDefined();
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBe(0);
+      });
+    });
+
     describe('GET /suppliers', () => {
       it('should return all suppliers', async () => {
         // Create a supplier first

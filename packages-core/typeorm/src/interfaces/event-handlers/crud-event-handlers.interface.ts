@@ -23,6 +23,26 @@ export interface CreateEventsHandler<
   ): Promise<void>;
 }
 
+export interface BulkInsertEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkInsert(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entities: EntityType[],
+    createInputs: DeepPartial<EntityType>[],
+  ): Promise<void>;
+
+  afterBulkInsert(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    ids: IdType[],
+    createInputs: DeepPartial<EntityType>[],
+  ): Promise<void>;
+}
+
 export interface UpdateEventsHandler<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,

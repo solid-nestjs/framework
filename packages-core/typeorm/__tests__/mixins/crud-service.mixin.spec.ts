@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository, EntityManager, DeepPartial } from 'typeorm';
+import { Repository, EntityManager, DeepPartial, In } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CrudServiceFrom } from '../../src/mixins/crud-service.mixin';
 import { QueryBuilderHelper, hasDeleteDateColumn } from '../../src/helpers';
@@ -13,6 +13,7 @@ import {
   Context,
   CrudServiceStructure,
   CreateOptions,
+  BulkInsertOptions,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -98,6 +99,9 @@ describe('CrudServiceFrom', () => {
       save: jest.fn(),
       softRemove: jest.fn(),
       remove: jest.fn(),
+      findBy: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      target: TestEntity,
       manager: entityManager,
     } as any;
 
@@ -179,6 +183,8 @@ describe('CrudServiceFrom', () => {
     // Set up lifecycle method spies
     service.beforeCreate = jest.fn().mockResolvedValue(undefined);
     service.afterCreate = jest.fn().mockResolvedValue(undefined);
+    service.beforeBulkInsert = jest.fn().mockResolvedValue(undefined);
+    service.afterBulkInsert = jest.fn().mockResolvedValue(undefined);
     service.beforeUpdate = jest.fn().mockResolvedValue(undefined);
     service.afterUpdate = jest.fn().mockResolvedValue(undefined);
     service.beforeRemove = jest.fn().mockResolvedValue(undefined);
@@ -271,6 +277,135 @@ describe('CrudServiceFrom', () => {
         repository,
         savedEntity,
         createInput,
+      );
+    });
+  });
+
+  describe('bulkInsert', () => {
+    it('should bulk insert and save entities successfully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const createInputs: TestCreateInput[] = [
+        {
+          name: 'Test User 1',
+          email: 'test1@example.com',
+        },
+        {
+          name: 'Test User 2',
+          email: 'test2@example.com',
+        },
+      ];
+
+      const createdEntities = [
+        { id: '1', ...createInputs[0] },
+        { id: '2', ...createInputs[1] },
+      ];
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          identifiers: [{ id: '1' }, { id: '2' }],
+        }),
+      };
+
+      repository.create
+        .mockReturnValueOnce(createdEntities[0] as any)
+        .mockReturnValueOnce(createdEntities[1] as any);
+      repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      // Add beforeBulkInsert and afterBulkInsert method spies
+      service.beforeBulkInsert = jest.fn().mockResolvedValue(undefined);
+      service.afterBulkInsert = jest.fn().mockResolvedValue(undefined);
+
+      const result = await service.bulkInsert(context, createInputs);
+
+      expect(repository.create).toHaveBeenCalledTimes(2);
+      expect(repository.create).toHaveBeenCalledWith(createInputs[0]);
+      expect(repository.create).toHaveBeenCalledWith(createInputs[1]);
+      expect(service.beforeBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        createdEntities,
+        createInputs,
+      );
+      expect(repository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.insert).toHaveBeenCalled();
+      expect(mockQueryBuilder.into).toHaveBeenCalledWith(TestEntity);
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith(createInputs);
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      // No longer fetching entities or auditing
+      expect(repository.findBy).not.toHaveBeenCalled();
+      expect(service.audit).not.toHaveBeenCalled();
+      expect(service.afterBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        ['1', '2'], // Now receives IDs instead of entities
+        createInputs,
+      );
+      expect(result).toEqual(['1', '2']);
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const createInputs: TestCreateInput[] = [
+        {
+          name: 'Test User 1',
+          email: 'test1@example.com',
+        },
+        {
+          name: 'Test User 2',
+          email: 'test2@example.com',
+        },
+      ];
+
+      const customEventHandler = {
+        beforeBulkInsert: jest.fn(),
+        afterBulkInsert: jest.fn(),
+      };
+
+      const options: BulkInsertOptions<string, TestEntity, TestContext> = {
+        eventHandler: customEventHandler,
+      };
+
+      const createdEntities = [
+        { id: '1', ...createInputs[0] },
+        { id: '2', ...createInputs[1] },
+      ];
+      const savedEntities = [
+        { id: '1', ...createInputs[0], createdAt: new Date() },
+        { id: '2', ...createInputs[1], createdAt: new Date() },
+      ];
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          identifiers: [{ id: '1' }, { id: '2' }],
+        }),
+      };
+
+      repository.create
+        .mockReturnValueOnce(createdEntities[0] as any)
+        .mockReturnValueOnce(createdEntities[1] as any);
+      repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      await service.bulkInsert(context, createInputs, options);
+
+      expect(customEventHandler.beforeBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        createdEntities,
+        createInputs,
+      );
+      expect(customEventHandler.afterBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        ['1', '2'],
+        createInputs,
       );
     });
   });

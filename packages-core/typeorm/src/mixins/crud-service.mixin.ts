@@ -1,4 +1,4 @@
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, Repository, In } from 'typeorm';
 import { Injectable, Type, mixin } from '@nestjs/common';
 import {
   applyMethodDecorators,
@@ -12,6 +12,7 @@ import {
   CrudService as CrudService,
   CrudServiceStructure,
   CreateOptions,
+  BulkInsertOptions,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -79,8 +80,17 @@ export function CrudServiceFrom<
   const removeStruct = serviceStructure.functions?.remove;
   const hardRemoveStruct = serviceStructure.functions?.hardRemove;
 
+  //bulk operations
+  const bulkInsertStruct = serviceStructure.functions?.bulkInsert;
+
   const createDecorators = createStruct?.transactional
     ? [() => Transactional({ isolationLevel: createStruct?.isolationLevel })]
+    : [];
+  const bulkInsertDecorators = bulkInsertStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkInsertStruct?.isolationLevel }),
+      ]
     : [];
   const updateDecorators = updateStruct?.transactional
     ? [() => Transactional({ isolationLevel: updateStruct?.isolationLevel })]
@@ -106,6 +116,10 @@ export function CrudServiceFrom<
 
   if (hardRemoveStruct?.decorators)
     hardRemoveDecorators.push(...hardRemoveStruct.decorators);
+
+  //bulk operations
+  if (bulkInsertStruct?.decorators)
+    bulkInsertDecorators.push(...bulkInsertStruct.decorators);
 
   @Injectable()
   class CrudServiceClass
@@ -152,6 +166,51 @@ export function CrudServiceFrom<
       );
 
       return responseEntity;
+    }
+
+    @applyMethodDecorators(bulkInsertDecorators)
+    async bulkInsert(
+      context: ContextType,
+      createInputs: DeepPartial<EntityType>[],
+      options?: BulkInsertOptions<IdType, EntityType, ContextType>,
+    ): Promise<IdType[]> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      // Create entities for validation and event handlers
+      const entities = createInputs.map(createInput =>
+        repository.create(createInput),
+      );
+
+      await eventHandler.beforeBulkInsert(
+        context,
+        repository,
+        entities,
+        createInputs,
+      );
+
+      // Perform true bulk insert using query builder - single DB operation
+      const insertResult = await repository
+        .createQueryBuilder()
+        .insert()
+        .into(repository.target)
+        .values(createInputs as any[])
+        .execute();
+
+      // Retrieve the created entities with their generated IDs
+      const createdIds = insertResult.identifiers.map(
+        identifier => identifier.id,
+      );
+
+      await eventHandler.afterBulkInsert(
+        context,
+        repository,
+        createdIds,
+        createInputs,
+      );
+
+      return createdIds;
     }
 
     @applyMethodDecorators(updateDecorators)
@@ -275,6 +334,12 @@ export function CrudServiceFrom<
       entity: EntityType,
       createInput: CreateInputType,
     ): Promise<void> {}
+    async beforeBulkInsert(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entities: EntityType[],
+      createInputs: DeepPartial<EntityType>[],
+    ): Promise<void> {}
     async beforeUpdate(
       context: ContextType,
       repository: Repository<EntityType>,
@@ -297,6 +362,12 @@ export function CrudServiceFrom<
       repository: Repository<EntityType>,
       entity: EntityType,
       createInput: CreateInputType,
+    ): Promise<void> {}
+    async afterBulkInsert(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      ids: IdType[],
+      createInputs: DeepPartial<EntityType>[],
     ): Promise<void> {}
     async afterUpdate(
       context: ContextType,

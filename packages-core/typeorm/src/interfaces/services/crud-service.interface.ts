@@ -9,6 +9,7 @@ import { TypeOrmRepository as Repository } from '../../types';
 import { Context } from '../misc';
 import {
   CreateEventsHandler,
+  BulkInsertEventsHandler,
   HardRemoveEventsHandler,
   RemoveEventsHandler,
   UpdateEventsHandler,
@@ -62,6 +63,12 @@ export interface CrudService<
     options?: CreateOptions<IdType, EntityType, CreateInputType, ContextType>,
   ): Promise<EntityType>;
 
+  bulkInsert(
+    context: ContextType,
+    createInputs: DeepPartial<EntityType>[],
+    options?: BulkInsertOptions<IdType, EntityType, ContextType>,
+  ): Promise<IdType[]>;
+
   update(
     context: ContextType,
     id: IdType,
@@ -88,6 +95,13 @@ export interface CrudService<
     createInput: CreateInputType,
   ): Promise<void>;
 
+  beforeBulkInsert(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entities: EntityType[],
+    createInputs: DeepPartial<EntityType>[],
+  ): Promise<void>;
+
   beforeUpdate(
     context: ContextType,
     repository: Repository<EntityType>,
@@ -112,6 +126,13 @@ export interface CrudService<
     repository: Repository<EntityType>,
     entity: EntityType,
     createInput: CreateInputType,
+  ): Promise<void>;
+
+  afterBulkInsert(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    ids: IdType[],
+    createInputs: DeepPartial<EntityType>[],
   ): Promise<void>;
 
   afterUpdate(
@@ -176,4 +197,12 @@ export interface HardRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: HardRemoveEventsHandler<IdType, EntityType, ContextType>;
+}
+
+export interface BulkInsertOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: BulkInsertEventsHandler<IdType, EntityType, ContextType>;
 }
