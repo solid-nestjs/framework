@@ -15,6 +15,7 @@ import {
   HardRemoveEventsHandler,
   BulkInsertEventsHandler,
   BulkUpdateEventsHandler,
+  BulkDeleteEventsHandler,
 } from '../event-handlers';
 import { DataService } from './data-service.interface';
 
@@ -39,6 +40,17 @@ export interface BulkUpdateResult {
    * Can be undefined if the database doesn't provide this information.
    */
   affected: number | undefined;
+}
+
+/**
+ * Result interface for bulk delete operations.
+ */
+export interface BulkDeleteResult {
+  /**
+   * Number of entities affected by the delete operation.
+   * Can be undefined if the database doesn't provide this information.
+   */
+  affected: number | undefined | null;
 }
 
 /**
@@ -174,6 +186,12 @@ export interface CrudService<
     options?: BulkUpdateOptions<IdType, EntityType, ContextType>,
   ): Promise<BulkUpdateResult>;
 
+  bulkDelete(
+    context: ContextType,
+    where: Where<EntityType>,
+    options?: BulkDeleteOptions<IdType, EntityType, ContextType>,
+  ): Promise<BulkDeleteResult>;
+
   beforeBulkUpdate(
     context: ContextType,
     repository: Repository<EntityType>,
@@ -186,6 +204,19 @@ export interface CrudService<
     repository: Repository<EntityType>,
     affectedCount: number | undefined,
     updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  beforeBulkDelete(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkDelete(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
     where: Where<EntityType>,
   ): Promise<void>;
 
@@ -260,4 +291,12 @@ export interface BulkUpdateOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkUpdateEventsHandler<IdType, EntityType, ContextType>;
+}
+
+export interface BulkDeleteOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: BulkDeleteEventsHandler<IdType, EntityType, ContextType>;
 }

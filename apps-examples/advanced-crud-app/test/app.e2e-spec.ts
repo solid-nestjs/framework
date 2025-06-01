@@ -452,6 +452,377 @@ describe('Advanced CRUD App (e2e)', () => {
       });
     });
 
+    describe('DELETE /suppliers/bulk/delete-by-email', () => {
+      it('should delete suppliers with matching email', async () => {
+        // Create multiple suppliers, some with the same email
+        const targetEmail = 'delete@techcorp.com';
+        const otherEmail = 'keep@othercorp.com';
+
+        const suppliers = [
+          { name: 'Tech Corp 1', contactEmail: targetEmail },
+          { name: 'Tech Corp 2', contactEmail: targetEmail },
+          { name: 'Other Corp', contactEmail: otherEmail }, // Should not be deleted
+        ];
+
+        // Create the suppliers
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform bulk delete
+        const deleteDto = {
+          contactEmail: targetEmail,
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body).toBeDefined();
+        expect(deleteResponse.body.affected).toBe(2);
+
+        // Verify the suppliers with matching email were deleted
+        for (let i = 0; i < 2; i++) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${createdSuppliers[i].id}`)
+            .expect(404);
+        }
+
+        // Verify the supplier with different email was not deleted
+        const unchangedResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${createdSuppliers[2].id}`)
+          .expect(200);
+
+        expect(unchangedResponse.body.name).toBe('Other Corp');
+        expect(unchangedResponse.body.contactEmail).toBe(otherEmail);
+      });
+
+      it('should return 0 affected when no suppliers match the email', async () => {
+        // Create a supplier with a different email
+        const supplier = {
+          name: 'Existing Corp',
+          contactEmail: 'existing@corp.com',
+        };
+
+        await request(app.getHttpServer())
+          .post('/suppliers')
+          .send(supplier)
+          .expect(201);
+
+        // Try to delete suppliers with a non-existent email
+        const deleteDto = {
+          contactEmail: 'nonexistent@email.com',
+        };
+
+        const response = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(response.body).toBeDefined();
+        expect(response.body.affected).toBe(0);
+      });
+
+      it('should handle single supplier deletion', async () => {
+        // Create a single supplier
+        const supplierName = 'Unique Corp';
+        const targetEmail = 'unique@corp.com';
+
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({ name: supplierName, contactEmail: targetEmail })
+          .expect(201);
+
+        const supplierId = createResponse.body.id;
+
+        // Perform bulk delete
+        const deleteDto = {
+          contactEmail: targetEmail,
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(1);
+
+        // Verify the supplier was deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+      });
+
+      it('should return 400 for invalid email format', async () => {
+        const deleteDto = {
+          contactEmail: 'invalid-email-format',
+        };
+
+        const response = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto);
+
+        expect(response.status).toBe(400);
+      });
+
+      it('should return 400 for empty email', async () => {
+        const deleteDto = {
+          contactEmail: '',
+        };
+
+        const response = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto);
+
+        expect(response.status).toBe(400);
+      });
+
+      it('should return 400 for missing required fields', async () => {
+        // Test missing contactEmail
+        const response1 = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send({});
+
+        expect(response1.status).toBe(400);
+
+        // Test null contactEmail
+        const response2 = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send({ contactEmail: null });
+
+        expect(response2.status).toBe(400);
+
+        // Test undefined contactEmail
+        const response3 = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send({ contactEmail: undefined });
+
+        expect(response3.status).toBe(400);
+      });
+
+      it('should handle special characters in email', async () => {
+        const supplierName = 'Special Corp';
+        const targetEmail = 'test+special@corp-associates.co.uk';
+
+        // Create supplier with special characters in email
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({ name: supplierName, contactEmail: targetEmail })
+          .expect(201);
+
+        const supplierId = createResponse.body.id;
+
+        // Perform bulk delete
+        const deleteDto = {
+          contactEmail: targetEmail,
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(1);
+
+        // Verify the supplier was deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+      });
+
+      it('should be case-sensitive for email addresses', async () => {
+        const supplierName = 'Case Test Corp';
+        const targetEmail = 'CaseTest@Corp.com';
+
+        // Create supplier with specific case
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({ name: supplierName, contactEmail: targetEmail })
+          .expect(201);
+
+        const supplierId = createResponse.body.id;
+
+        // Try to delete with different case
+        const deleteDto = {
+          contactEmail: 'casetest@corp.com', // lowercase
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        // Should not match due to case sensitivity
+        expect(deleteResponse.body.affected).toBe(0);
+
+        // Verify the supplier still exists
+        const getResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(200);
+
+        expect(getResponse.body.contactEmail).toBe(targetEmail);
+      });
+
+      it('should handle multiple suppliers with same email from different names', async () => {
+        const targetEmail = 'shared@email.com';
+
+        // Create multiple suppliers with different names but same email
+        const suppliers = [
+          { name: 'Corp Alpha', contactEmail: targetEmail },
+          { name: 'Corp Beta', contactEmail: targetEmail },
+          { name: 'Corp Gamma', contactEmail: targetEmail },
+          { name: 'Corp Delta', contactEmail: 'other@email.com' }, // Different email
+        ];
+
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform bulk delete
+        const deleteDto = {
+          contactEmail: targetEmail,
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(3);
+
+        // Verify the first three suppliers were deleted
+        for (let i = 0; i < 3; i++) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${createdSuppliers[i].id}`)
+            .expect(404);
+        }
+
+        // Verify the fourth supplier with different email still exists
+        const remainingResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${createdSuppliers[3].id}`)
+          .expect(200);
+
+        expect(remainingResponse.body.contactEmail).toBe('other@email.com');
+      });
+
+      it('should handle cascade deletion of related products', async () => {
+        // Create a supplier
+        const supplierResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Cascade Delete Supplier',
+            contactEmail: 'cascade@delete.com',
+          })
+          .expect(201);
+
+        const supplierId = supplierResponse.body.id;
+
+        // Create a product for this supplier
+        const productResponse = await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: 'Cascade Delete Product',
+            description: 'Product that should be deleted with supplier',
+            price: 99.99,
+            stock: 10,
+            supplier: { id: supplierId },
+          })
+          .expect(201);
+
+        const productId = productResponse.body.id;
+
+        // Perform bulk delete by email
+        const deleteDto = {
+          contactEmail: 'cascade@delete.com',
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(1);
+
+        // Verify supplier is deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        // Verify product is also deleted due to cascade
+        await request(app.getHttpServer())
+          .get(`/products/${productId}`)
+          .expect(404);
+      });
+
+      it('should handle multiple sequential deletions', async () => {
+        const firstEmail = 'first@sequential.com';
+        const secondEmail = 'second@sequential.com';
+
+        // Create suppliers with different emails sequentially
+        const createdSuppliers: any[] = [];
+
+        // Create first batch
+        for (let i = 0; i < 3; i++) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send({ name: `First Batch ${i}`, contactEmail: firstEmail })
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Create second batch
+        for (let i = 0; i < 2; i++) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send({ name: `Second Batch ${i}`, contactEmail: secondEmail })
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Delete first batch
+        const firstDeleteDto = {
+          contactEmail: firstEmail,
+        };
+
+        const firstResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(firstDeleteDto)
+          .expect(200);
+
+        expect(firstResponse.body.affected).toBe(3);
+
+        // Delete second batch
+        const secondDeleteDto = {
+          contactEmail: secondEmail,
+        };
+
+        const secondResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(secondDeleteDto)
+          .expect(200);
+
+        expect(secondResponse.body.affected).toBe(2);
+
+        // Verify all suppliers are deleted
+        for (const supplier of createdSuppliers) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${supplier.id}`)
+            .expect(404);
+        }
+      });
+    });
+
     describe('GET /suppliers', () => {
       it('should return all suppliers', async () => {
         // Create a supplier first

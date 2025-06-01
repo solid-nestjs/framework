@@ -2,7 +2,14 @@ import {
   CrudControllerFrom,
   CrudControllerStructure,
 } from '@solid-nestjs/typeorm-crud';
-import { Post, Body, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import {
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import {
   ApiOperation,
   ApiBody,
@@ -23,6 +30,13 @@ export class BatchUpdateInput {
   @IsNotEmpty()
   name: string;
 
+  @ApiProperty()
+  @IsString()
+  @IsEmail()
+  contactEmail: string;
+}
+
+export class BatchDeleteInput {
   @ApiProperty()
   @IsString()
   @IsEmail()
@@ -107,6 +121,44 @@ export class SuppliersController extends CrudControllerFrom(
       { contactEmail: updateDto.contactEmail },
       { name: updateDto.name },
     );
+
+    return { affected: result.affected };
+  }
+
+  @Delete('bulk/delete-by-email')
+  @ApiOperation({
+    summary: 'Bulk delete supplier by emails',
+    description: 'Deletes supplier filtering by the contactEmail field',
+  })
+  @ApiBody({
+    description: 'Delete supplier by email',
+    type: BatchDeleteInput,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Number of suppliers dleted',
+    schema: {
+      type: 'object',
+      properties: {
+        affected: {
+          type: 'number',
+          description: 'Number of suppliers that were deleted',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data',
+  })
+  @HttpCode(HttpStatus.OK)
+  async bulkDeleteByEmail(
+    @CurrentContext() context: Context,
+    @Body() deleteDto: BatchDeleteInput,
+  ): Promise<{ affected: number | undefined }> {
+    const result = await this.service.bulkDelete(context, {
+      contactEmail: deleteDto.contactEmail,
+    });
 
     return { affected: result.affected };
   }

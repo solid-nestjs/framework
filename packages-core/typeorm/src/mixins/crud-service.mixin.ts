@@ -15,8 +15,10 @@ import {
   CreateOptions,
   BulkInsertOptions,
   BulkUpdateOptions,
+  BulkDeleteOptions,
   BulkInsertResult,
   BulkUpdateResult,
+  BulkDeleteResult,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -89,6 +91,7 @@ export function CrudServiceFrom<
   //bulk operations
   const bulkInsertStruct = serviceStructure.functions?.bulkInsert;
   const bulkUpdateStruct = serviceStructure.functions?.bulkUpdate;
+  const bulkDeleteStruct = serviceStructure.functions?.bulkDelete;
 
   const createDecorators = createStruct?.transactional
     ? [() => Transactional({ isolationLevel: createStruct?.isolationLevel })]
@@ -103,6 +106,12 @@ export function CrudServiceFrom<
     ? [
         () =>
           Transactional({ isolationLevel: bulkUpdateStruct?.isolationLevel }),
+      ]
+    : [];
+  const bulkDeleteDecorators = bulkDeleteStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkDeleteStruct?.isolationLevel }),
       ]
     : [];
   const updateDecorators = updateStruct?.transactional
@@ -136,6 +145,9 @@ export function CrudServiceFrom<
 
   if (bulkUpdateStruct?.decorators)
     bulkUpdateDecorators.push(...bulkUpdateStruct.decorators);
+
+  if (bulkDeleteStruct?.decorators)
+    bulkDeleteDecorators.push(...bulkDeleteStruct.decorators);
 
   @Injectable()
   class CrudServiceClass
@@ -309,6 +321,39 @@ export function CrudServiceFrom<
       return { affected: result.affected };
     }
 
+    @applyMethodDecorators(bulkDeleteDecorators)
+    async bulkDelete(
+      context: ContextType,
+      where: Where<EntityType>,
+      options?: BulkDeleteOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkDeleteResult> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      await eventHandler.beforeBulkDelete(context, repository, where);
+
+      const result = await this.getQueryBuilder(
+        context,
+        { where } as FindArgsType,
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      )
+        .delete()
+        .execute();
+
+      await eventHandler.afterBulkDelete(
+        context,
+        repository,
+        result.affected || 0,
+        where,
+      );
+
+      return { affected: result.affected };
+    }
+
     @applyMethodDecorators(removeDecorators)
     async remove(
       context: ContextType,
@@ -403,6 +448,11 @@ export function CrudServiceFrom<
       updateInput: DeepPartial<EntityType>,
       where: Where<EntityType>,
     ): Promise<void> {}
+    async beforeBulkDelete(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
     async beforeUpdate(
       context: ContextType,
       repository: Repository<EntityType>,
@@ -437,6 +487,12 @@ export function CrudServiceFrom<
       repository: Repository<EntityType>,
       affectedCount: number,
       updateInput: DeepPartial<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async afterBulkDelete(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      affectedCount: number | undefined,
       where: Where<EntityType>,
     ): Promise<void> {}
     async afterUpdate(
