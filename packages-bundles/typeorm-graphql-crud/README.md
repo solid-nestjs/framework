@@ -92,11 +92,7 @@ export class CreateProductDto {
 }
 
 @InputType()
-export class ProductSupplierDto {
-  @Field(() => ID)
-  @IsUUID()
-  id: string;
-}
+export class ProductSupplierDto {}
 ```
 
 ### 3. Create Service

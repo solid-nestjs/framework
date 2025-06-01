@@ -7,7 +7,6 @@ import {
   FindArgs,
   CrudService,
   CurrentContext,
-  applyMethodDecorators,
   DeepPartial,
   applyMethodDecoratorsIf,
 } from '@solid-nestjs/common';
@@ -162,9 +161,12 @@ export function CrudResolverFrom<
     ])
     async update?(
       @ContextDecorator() context: ContextType,
-      @Args({ type: () => updateInputType, name: 'updateInput' }) updateInput,
+      @Args('id', { type: () => idType }, ...pipeTransforms)
+      id: IdType,
+      @Args({ type: () => updateInputType, name: 'updateInput' })
+      updateInput: UpdateInputType,
     ): Promise<EntityType> {
-      return this.service.update(context, updateInput.id, updateInput);
+      return this.service.update(context, id, updateInput);
     }
 
     @applyMethodDecoratorsIf(!removeSettings.disabled, [

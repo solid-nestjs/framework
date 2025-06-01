@@ -4,8 +4,4 @@ import { PartialType } from '@solid-nestjs/typeorm-hybrid-crud';
 import { CreateProductDto } from './create-product.dto';
 
 @InputType()
-export class UpdateProductDto extends PartialType(CreateProductDto) {
-  @Field(() => ID)
-  @IsUUID()
-  id?: string;
-}
+export class UpdateProductDto extends PartialType(CreateProductDto) {}
