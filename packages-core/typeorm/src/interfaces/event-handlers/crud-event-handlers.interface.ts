@@ -1,5 +1,5 @@
 import { DeepPartial, Repository } from 'typeorm';
-import { IdTypeFrom, Entity } from '@solid-nestjs/common';
+import { IdTypeFrom, Entity, Where } from '@solid-nestjs/common';
 import { Context } from '../misc';
 
 export interface CreateEventsHandler<
@@ -97,5 +97,26 @@ export interface HardRemoveEventsHandler<
     context: ContextType,
     repository: Repository<EntityType>,
     entity: EntityType,
+  ): Promise<void>;
+}
+
+export interface BulkUpdateEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkUpdate(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkUpdate(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
   ): Promise<void>;
 }

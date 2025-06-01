@@ -2,14 +2,31 @@ import {
   CrudControllerFrom,
   CrudControllerStructure,
 } from '@solid-nestjs/typeorm-crud';
-import { Post, Body, HttpCode, HttpStatus, Controller } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { Post, Body, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import {
+  ApiOperation,
+  ApiBody,
+  ApiResponse,
+  ApiProperty,
+} from '@nestjs/swagger';
 import { CurrentContext } from '@solid-nestjs/common';
 import { SuppliersService, serviceStructure } from './suppliers.service';
 import { CreateSupplierDto } from './dto/inputs/create-supplier.dto';
 import { Supplier } from './entities/supplier.entity';
 import { DeepPartial } from 'typeorm';
 import { Context } from 'vm';
+import { IsEmail, IsString } from 'class-validator';
+
+export class BatchUpdateInput {
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsEmail()
+  contactEmail: string;
+}
 
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
@@ -49,5 +66,46 @@ export class SuppliersController extends CrudControllerFrom(
       context,
       createInputs as DeepPartial<Supplier>[],
     );
+  }
+
+  @Patch('bulk/update-email-by-name')
+  @ApiOperation({
+    summary: 'Bulk update supplier emails by name',
+    description:
+      'Updates the contactEmail field for all suppliers of a given name',
+  })
+  @ApiBody({
+    description: 'Update email to suppliers',
+    type: BatchUpdateInput,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Number of suppliers updated',
+    schema: {
+      type: 'object',
+      properties: {
+        affected: {
+          type: 'number',
+          description: 'Number of suppliers that were updated',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data',
+  })
+  @HttpCode(HttpStatus.OK)
+  async bulkUpdateName(
+    @CurrentContext() context: Context,
+    @Body() updateDto: BatchUpdateInput,
+  ): Promise<{ affected: number | undefined }> {
+    const affected = await this.service.bulkUpdate(
+      context,
+      { contactEmail: updateDto.contactEmail },
+      { name: updateDto.name },
+    );
+
+    return { affected };
   }
 }

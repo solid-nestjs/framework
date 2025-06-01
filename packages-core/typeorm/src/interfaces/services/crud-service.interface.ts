@@ -4,12 +4,14 @@ import {
   IdTypeFrom,
   CudService as CommonCudService,
   FindArgs,
+  Where,
 } from '@solid-nestjs/common';
 import { TypeOrmRepository as Repository } from '../../types';
 import { Context } from '../misc';
 import {
   CreateEventsHandler,
   BulkInsertEventsHandler,
+  BulkUpdateEventsHandler,
   HardRemoveEventsHandler,
   RemoveEventsHandler,
   UpdateEventsHandler,
@@ -142,6 +144,28 @@ export interface CrudService<
     updateInput: UpdateInputType,
   ): Promise<void>;
 
+  bulkUpdate(
+    context: ContextType,
+    updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
+    options?: BulkUpdateOptions<IdType, EntityType, ContextType>,
+  ): Promise<number | undefined>;
+
+  beforeBulkUpdate(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkUpdate(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
   afterRemove(
     context: ContextType,
     repository: Repository<EntityType>,
@@ -205,4 +229,12 @@ export interface BulkInsertOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkInsertEventsHandler<IdType, EntityType, ContextType>;
+}
+
+export interface BulkUpdateOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: BulkUpdateEventsHandler<IdType, EntityType, ContextType>;
 }

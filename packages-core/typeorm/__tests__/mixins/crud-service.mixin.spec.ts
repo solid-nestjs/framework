@@ -8,12 +8,14 @@ import {
   Entity,
   FindArgs,
   StandardActions,
+  Where,
 } from '@solid-nestjs/common';
 import {
   Context,
   CrudServiceStructure,
   CreateOptions,
   BulkInsertOptions,
+  BulkUpdateOptions,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -179,12 +181,16 @@ describe('CrudServiceFrom', () => {
     // Mock inherited methods from DataService
     service.findOne = jest.fn();
     service.audit = jest.fn();
+    service.getQueryBuilder = jest.fn();
+    service.getRepository = jest.fn().mockReturnValue(repository);
 
     // Set up lifecycle method spies
     service.beforeCreate = jest.fn().mockResolvedValue(undefined);
     service.afterCreate = jest.fn().mockResolvedValue(undefined);
     service.beforeBulkInsert = jest.fn().mockResolvedValue(undefined);
     service.afterBulkInsert = jest.fn().mockResolvedValue(undefined);
+    service.beforeBulkUpdate = jest.fn().mockResolvedValue(undefined);
+    service.afterBulkUpdate = jest.fn().mockResolvedValue(undefined);
     service.beforeUpdate = jest.fn().mockResolvedValue(undefined);
     service.afterUpdate = jest.fn().mockResolvedValue(undefined);
     service.beforeRemove = jest.fn().mockResolvedValue(undefined);
@@ -407,6 +413,325 @@ describe('CrudServiceFrom', () => {
         ['1', '2'],
         createInputs,
       );
+    });
+  });
+
+  describe('bulkUpdate', () => {
+    it('should bulk update entities successfully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 3,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(TestEntity);
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(updateInput);
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(service.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        3,
+        updateInput,
+        where,
+      );
+      expect(result).toBe(3);
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      const customEventHandler = {
+        beforeBulkUpdate: jest.fn(),
+        afterBulkUpdate: jest.fn(),
+      };
+
+      const options: BulkUpdateOptions<string, TestEntity, TestContext> = {
+        eventHandler: customEventHandler,
+      };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 2,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.bulkUpdate(context, updateInput, where, options);
+
+      expect(customEventHandler.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      expect(customEventHandler.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        2,
+        updateInput,
+        where,
+      );
+      // Ensure default handlers are NOT called
+      expect(service.beforeBulkUpdate).not.toHaveBeenCalled();
+      expect(service.afterBulkUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should handle zero affected rows', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'nonexistent@example.com' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 0,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      expect(service.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        updateInput,
+        where,
+      );
+      expect(result).toBe(0);
+    });
+
+    it('should handle undefined affected count', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock the query builder chain with undefined affected
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: undefined,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        updateInput,
+        where,
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('should handle database errors properly', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      const databaseError = new Error('Database connection failed');
+
+      // Mock the query builder chain to throw error
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockRejectedValue(databaseError),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await expect(
+        service.bulkUpdate(context, updateInput, where),
+      ).rejects.toThrow('Database connection failed');
+
+      expect(service.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      // afterBulkUpdate should not be called on error
+      expect(service.afterBulkUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should work with complex where conditions', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = {
+        email: 'test@example.com',
+        createdAt: { _gte: new Date('2023-01-01') },
+      };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 5,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(result).toBe(5);
+    });
+
+    it('should work with DeepPartial update input', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: DeepPartial<TestEntity> = {
+        name: 'Updated Name',
+        email: 'updated@example.com',
+        updatedAt: new Date(),
+      };
+      const where: Where<TestEntity> = { id: '1' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 1,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(updateInput);
+      expect(result).toBe(1);
+    });
+
+    it('should apply decorators correctly when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
+      const serviceStructureWithBulkUpdateDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          bulkUpdate: {
+            decorators: [customDecorator as any],
+            transactional: true,
+            isolationLevel: 'READ COMMITTED',
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithBulkUpdateDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+      expect(decoratedService.bulkUpdate).toBeDefined();
+
+      // Verify that the decorator was applied
+      expect(customDecorator).toHaveBeenCalled();
     });
   });
 
