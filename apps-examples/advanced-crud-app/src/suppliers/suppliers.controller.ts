@@ -15,11 +15,12 @@ import { CreateSupplierDto } from './dto/inputs/create-supplier.dto';
 import { Supplier } from './entities/supplier.entity';
 import { DeepPartial } from 'typeorm';
 import { Context } from 'vm';
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsString, IsNotEmpty } from 'class-validator';
 
 export class BatchUpdateInput {
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @ApiProperty()
@@ -62,10 +63,11 @@ export class SuppliersController extends CrudControllerFrom(
     @CurrentContext() context: Context,
     @Body() createInputs: CreateSupplierDto[],
   ): Promise<string[]> {
-    return this.service.bulkInsert(
+    const result = await this.service.bulkInsert(
       context,
       createInputs as DeepPartial<Supplier>[],
     );
+    return result.ids;
   }
 
   @Patch('bulk/update-email-by-name')
@@ -96,16 +98,16 @@ export class SuppliersController extends CrudControllerFrom(
     description: 'Invalid input data',
   })
   @HttpCode(HttpStatus.OK)
-  async bulkUpdateName(
+  async bulkUpdateEmailByName(
     @CurrentContext() context: Context,
     @Body() updateDto: BatchUpdateInput,
   ): Promise<{ affected: number | undefined }> {
-    const affected = await this.service.bulkUpdate(
+    const result = await this.service.bulkUpdate(
       context,
       { contactEmail: updateDto.contactEmail },
       { name: updateDto.name },
     );
 
-    return { affected };
+    return { affected: result.affected };
   }
 }

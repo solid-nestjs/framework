@@ -5,18 +5,41 @@ import {
   CudService as CommonCudService,
   FindArgs,
   Where,
+  Context,
 } from '@solid-nestjs/common';
 import { TypeOrmRepository as Repository } from '../../types';
-import { Context } from '../misc';
 import {
   CreateEventsHandler,
+  UpdateEventsHandler,
+  RemoveEventsHandler,
+  HardRemoveEventsHandler,
   BulkInsertEventsHandler,
   BulkUpdateEventsHandler,
-  HardRemoveEventsHandler,
-  RemoveEventsHandler,
-  UpdateEventsHandler,
 } from '../event-handlers';
 import { DataService } from './data-service.interface';
+
+/**
+ * Result interface for bulk insert operations.
+ *
+ * @typeParam IdType - The type of the entity's identifier.
+ */
+export interface BulkInsertResult<IdType> {
+  /**
+   * Array of IDs of the created entities.
+   */
+  ids: IdType[];
+}
+
+/**
+ * Result interface for bulk update operations.
+ */
+export interface BulkUpdateResult {
+  /**
+   * Number of entities affected by the update operation.
+   * Can be undefined if the database doesn't provide this information.
+   */
+  affected: number | undefined;
+}
 
 /**
  * Interface representing a generic CRUD (Create, Read, Update, Delete) service for entities.
@@ -69,7 +92,7 @@ export interface CrudService<
     context: ContextType,
     createInputs: DeepPartial<EntityType>[],
     options?: BulkInsertOptions<IdType, EntityType, ContextType>,
-  ): Promise<IdType[]>;
+  ): Promise<BulkInsertResult<IdType>>;
 
   update(
     context: ContextType,
@@ -149,7 +172,7 @@ export interface CrudService<
     updateInput: DeepPartial<EntityType>,
     where: Where<EntityType>,
     options?: BulkUpdateOptions<IdType, EntityType, ContextType>,
-  ): Promise<number | undefined>;
+  ): Promise<BulkUpdateResult>;
 
   beforeBulkUpdate(
     context: ContextType,

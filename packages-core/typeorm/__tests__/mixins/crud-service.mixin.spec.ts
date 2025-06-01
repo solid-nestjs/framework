@@ -350,7 +350,7 @@ describe('CrudServiceFrom', () => {
         ['1', '2'], // Now receives IDs instead of entities
         createInputs,
       );
-      expect(result).toEqual(['1', '2']);
+      expect(result).toEqual({ ids: ['1', '2'] });
     });
 
     it('should use custom event handler when provided in options', async () => {
@@ -461,7 +461,7 @@ describe('CrudServiceFrom', () => {
         updateInput,
         where,
       );
-      expect(result).toBe(3);
+      expect(result).toEqual({ affected: 3 });
     });
 
     it('should use custom event handler when provided in options', async () => {
@@ -544,7 +544,7 @@ describe('CrudServiceFrom', () => {
         updateInput,
         where,
       );
-      expect(result).toBe(0);
+      expect(result).toEqual({ affected: 0 });
     });
 
     it('should handle undefined affected count', async () => {
@@ -574,7 +574,7 @@ describe('CrudServiceFrom', () => {
         updateInput,
         where,
       );
-      expect(result).toBeUndefined();
+      expect(result).toEqual({ affected: undefined });
     });
 
     it('should handle database errors properly', async () => {
@@ -640,7 +640,7 @@ describe('CrudServiceFrom', () => {
           ignoreSelects: true,
         },
       );
-      expect(result).toBe(5);
+      expect(result).toEqual({ affected: 5 });
     });
 
     it('should work with DeepPartial update input', async () => {
@@ -666,7 +666,7 @@ describe('CrudServiceFrom', () => {
       const result = await service.bulkUpdate(context, updateInput, where);
 
       expect(mockQueryBuilder.set).toHaveBeenCalledWith(updateInput);
-      expect(result).toBe(1);
+      expect(result).toEqual({ affected: 1 });
     });
 
     it('should apply decorators correctly when configured', async () => {

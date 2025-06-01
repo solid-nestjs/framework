@@ -15,6 +15,8 @@ import {
   CreateOptions,
   BulkInsertOptions,
   BulkUpdateOptions,
+  BulkInsertResult,
+  BulkUpdateResult,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -187,7 +189,7 @@ export function CrudServiceFrom<
       context: ContextType,
       createInputs: DeepPartial<EntityType>[],
       options?: BulkInsertOptions<IdType, EntityType, ContextType>,
-    ): Promise<IdType[]> {
+    ): Promise<BulkInsertResult<IdType>> {
       const eventHandler = options?.eventHandler ?? this;
 
       const repository = this.getRepository(context);
@@ -224,7 +226,7 @@ export function CrudServiceFrom<
         createInputs,
       );
 
-      return createdIds;
+      return { ids: createdIds };
     }
 
     @applyMethodDecorators(updateDecorators)
@@ -272,7 +274,7 @@ export function CrudServiceFrom<
       updateInput: DeepPartial<EntityType>,
       where: Where<EntityType>,
       options?: BulkUpdateOptions<IdType, EntityType, ContextType>,
-    ): Promise<number | undefined> {
+    ): Promise<BulkUpdateResult> {
       const eventHandler = options?.eventHandler ?? this;
 
       const repository = this.getRepository(context);
@@ -304,7 +306,7 @@ export function CrudServiceFrom<
         where,
       );
 
-      return result.affected;
+      return { affected: result.affected };
     }
 
     @applyMethodDecorators(removeDecorators)

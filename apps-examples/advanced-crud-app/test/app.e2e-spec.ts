@@ -174,6 +174,284 @@ describe('Advanced CRUD App (e2e)', () => {
       });
     });
 
+    describe('PATCH /suppliers/bulk/update-email-by-name', () => {
+      it('should update email for suppliers with matching name', async () => {
+        // Create multiple suppliers with the same name
+        const supplierName = 'Tech Corp';
+        const originalEmail1 = 'old1@techcorp.com';
+        const originalEmail2 = 'old2@techcorp.com';
+        const newEmail = 'updated@techcorp.com';
+
+        const suppliers = [
+          { name: supplierName, contactEmail: originalEmail1 },
+          { name: supplierName, contactEmail: originalEmail2 },
+          { name: 'Different Corp', contactEmail: 'different@corp.com' }, // Should not be updated
+        ];
+
+        // Create the suppliers
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform bulk update
+        const updateDto = {
+          name: supplierName,
+          contactEmail: newEmail,
+        };
+
+        const updateResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(updateDto)
+          .expect(200);
+
+        expect(updateResponse.body).toBeDefined();
+        expect(updateResponse.body.affected).toBe(2);
+
+        // Verify the updates were applied
+        for (let i = 0; i < 2; i++) {
+          const getResponse = await request(app.getHttpServer())
+            .get(`/suppliers/${createdSuppliers[i].id}`)
+            .expect(200);
+
+          expect(getResponse.body.name).toBe(supplierName);
+          expect(getResponse.body.contactEmail).toBe(newEmail);
+        }
+
+        // Verify the third supplier was not updated
+        const unchangedResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${createdSuppliers[2].id}`)
+          .expect(200);
+
+        expect(unchangedResponse.body.name).toBe('Different Corp');
+        expect(unchangedResponse.body.contactEmail).toBe('different@corp.com');
+      });
+
+      it('should return 0 affected when no suppliers match the name', async () => {
+        // Create a supplier with a different name
+        const supplier = {
+          name: 'Existing Corp',
+          contactEmail: 'existing@corp.com',
+        };
+
+        await request(app.getHttpServer())
+          .post('/suppliers')
+          .send(supplier)
+          .expect(201);
+
+        // Try to update suppliers with a non-existent name
+        const updateDto = {
+          name: 'Non Existent Corp',
+          contactEmail: 'new@email.com',
+        };
+
+        const response = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(updateDto)
+          .expect(200);
+
+        expect(response.body).toBeDefined();
+        expect(response.body.affected).toBe(0);
+      });
+
+      it('should handle single supplier update', async () => {
+        // Create a single supplier
+        const supplierName = 'Unique Corp';
+        const originalEmail = 'original@unique.com';
+        const newEmail = 'updated@unique.com';
+
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({ name: supplierName, contactEmail: originalEmail })
+          .expect(201);
+
+        const supplierId = createResponse.body.id;
+
+        // Perform bulk update
+        const updateDto = {
+          name: supplierName,
+          contactEmail: newEmail,
+        };
+
+        const updateResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(updateDto)
+          .expect(200);
+
+        expect(updateResponse.body.affected).toBe(1);
+
+        // Verify the update was applied
+        const getResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(200);
+
+        expect(getResponse.body.contactEmail).toBe(newEmail);
+      });
+
+      it('should return 400 for invalid email format', async () => {
+        const updateDto = {
+          name: 'Valid Corp',
+          contactEmail: 'invalid-email-format',
+        };
+
+        const response = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(updateDto);
+
+        expect(response.status).toBe(400);
+      });
+
+      it('should return 400 for empty name', async () => {
+        const updateDto = {
+          name: '',
+          contactEmail: 'valid@email.com',
+        };
+
+        const response = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(updateDto);
+
+        expect(response.status).toBe(400);
+      });
+
+      it('should return 400 for missing required fields', async () => {
+        // Test missing name
+        const response1 = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send({ contactEmail: 'valid@email.com' });
+
+        expect(response1.status).toBe(400);
+
+        // Test missing contactEmail
+        const response2 = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send({ name: 'Valid Corp' });
+
+        expect(response2.status).toBe(400);
+
+        // Test empty body
+        const response3 = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send({});
+
+        expect(response3.status).toBe(400);
+      });
+
+      it('should handle special characters in name and email', async () => {
+        const supplierName = 'Corp & Associates Ltd.';
+        const originalEmail = 'test+original@corp-associates.co.uk';
+        const newEmail = 'test+updated@corp-associates.co.uk';
+
+        // Create supplier with special characters
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({ name: supplierName, contactEmail: originalEmail })
+          .expect(201);
+
+        // Perform bulk update
+        const updateDto = {
+          name: supplierName,
+          contactEmail: newEmail,
+        };
+
+        const updateResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(updateDto)
+          .expect(200);
+
+        expect(updateResponse.body.affected).toBe(1);
+
+        // Verify the update
+        const getResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${createResponse.body.id}`)
+          .expect(200);
+
+        expect(getResponse.body.contactEmail).toBe(newEmail);
+      });
+
+      it('should be case-sensitive for supplier names', async () => {
+        const supplierName = 'CaseSensitive Corp';
+        const originalEmail = 'original@case.com';
+        const newEmail = 'updated@case.com';
+
+        // Create supplier
+        await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({ name: supplierName, contactEmail: originalEmail })
+          .expect(201);
+
+        // Try to update with different case
+        const updateDto = {
+          name: 'casesensitive corp', // lowercase
+          contactEmail: newEmail,
+        };
+
+        const updateResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(updateDto)
+          .expect(200);
+
+        // Should not match due to case sensitivity
+        expect(updateResponse.body.affected).toBe(0);
+      });
+
+      it('should handle multiple sequential updates', async () => {
+        const supplierName = 'Sequential Corp';
+        const originalEmail = 'original@sequential.com';
+
+        // Create multiple suppliers with the same name sequentially to avoid transaction conflicts
+        const createdSuppliers: any[] = [];
+        for (let i = 0; i < 5; i++) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send({ name: supplierName, contactEmail: originalEmail })
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform first update
+        const firstUpdateDto = {
+          name: supplierName,
+          contactEmail: 'first-update@sequential.com',
+        };
+
+        const firstResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(firstUpdateDto)
+          .expect(200);
+
+        expect(firstResponse.body.affected).toBe(5);
+
+        // Perform second update
+        const secondUpdateDto = {
+          name: supplierName,
+          contactEmail: 'second-update@sequential.com',
+        };
+
+        const secondResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/update-email-by-name')
+          .send(secondUpdateDto)
+          .expect(200);
+
+        expect(secondResponse.body.affected).toBe(5);
+
+        // Verify all suppliers have the final email
+        for (const supplier of createdSuppliers) {
+          const getResponse = await request(app.getHttpServer())
+            .get(`/suppliers/${supplier.id}`)
+            .expect(200);
+
+          expect(getResponse.body.contactEmail).toBe(
+            'second-update@sequential.com',
+          );
+        }
+      });
+    });
+
     describe('GET /suppliers', () => {
       it('should return all suppliers', async () => {
         // Create a supplier first
