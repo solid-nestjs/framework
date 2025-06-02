@@ -176,3 +176,22 @@ export interface RecoverEventsHandler<
     entity: EntityType,
   ): Promise<void>;
 }
+
+export interface BulkRecoverEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    where: Where<EntityType>,
+  ): Promise<void>;
+}

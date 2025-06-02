@@ -2252,6 +2252,417 @@ describe('CrudServiceFrom', () => {
     });
   });
 
+  describe('bulkRecover', () => {
+    beforeEach(() => {
+      service.beforeBulkRecover = jest.fn().mockResolvedValue(undefined);
+      service.afterBulkRecover = jest.fn().mockResolvedValue(undefined);
+    });
+
+    it('should bulk recover entities successfully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { name: 'inactive-entity' };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 3,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRecover(context, where);
+
+      expect(service.beforeBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(mockQueryBuilder.restore).toHaveBeenCalled();
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(service.afterBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        3,
+        where,
+      );
+      expect(result).toEqual({ affected: 3 });
+    });
+
+    it('should throw error when entity does not support soft deletes', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { name: 'inactive-entity' };
+
+      hasDeleteDateColumnMock.mockReturnValue(false);
+
+      await expect(service.bulkRecover(context, where)).rejects.toThrow(
+        'Entity TestEntity does not support soft deletes and cannot be bulk recovered',
+      );
+
+      expect(service.beforeBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.getQueryBuilder).not.toHaveBeenCalled();
+      expect(service.afterBulkRecover).not.toHaveBeenCalled();
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { name: 'test-entity' };
+
+      const customEventHandler = {
+        beforeBulkRecover: jest.fn(),
+        afterBulkRecover: jest.fn(),
+      };
+
+      const options = {
+        eventHandler: customEventHandler,
+      };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 2,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.bulkRecover(context, where, options);
+
+      expect(customEventHandler.beforeBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(customEventHandler.afterBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        2,
+        where,
+      );
+      // Ensure default handlers are NOT called
+      expect(service.beforeBulkRecover).not.toHaveBeenCalled();
+      expect(service.afterBulkRecover).not.toHaveBeenCalled();
+    });
+
+    it('should handle zero affected rows', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'nonexistent@example.com' };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 0,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRecover(context, where);
+
+      expect(service.beforeBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.afterBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        where,
+      );
+      expect(result).toEqual({ affected: 0 });
+    });
+
+    it('should handle undefined affected count', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: 'deleted-entity-id' };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: undefined,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRecover(context, where);
+
+      expect(service.afterBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        where,
+      );
+      expect(result).toEqual({ affected: undefined });
+    });
+
+    it('should handle null affected count', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: 'deleted-entity-id' };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: null,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRecover(context, where);
+
+      expect(service.afterBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        where,
+      );
+      expect(result).toEqual({ affected: null });
+    });
+
+    it('should handle complex where conditions', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = {
+        email: 'deleted@example.com',
+        createdAt: { _gte: new Date('2023-01-01') },
+        name: { _like: '%test%' },
+      };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 5,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRecover(context, where);
+
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(result).toEqual({ affected: 5 });
+    });
+
+    it('should propagate beforeBulkRecover hook errors', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: 'deleted-entity-id' };
+      const hookError = new Error('Before bulk recover validation failed');
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+      service.beforeBulkRecover.mockRejectedValue(hookError);
+
+      await expect(service.bulkRecover(context, where)).rejects.toThrow(
+        'Before bulk recover validation failed',
+      );
+
+      expect(service.beforeBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.getQueryBuilder).not.toHaveBeenCalled();
+      expect(service.afterBulkRecover).not.toHaveBeenCalled();
+    });
+
+    it('should propagate afterBulkRecover hook errors', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: 'deleted-entity-id' };
+      const hookError = new Error('After bulk recover hook failed');
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 2,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+      service.afterBulkRecover.mockRejectedValue(hookError);
+
+      await expect(service.bulkRecover(context, where)).rejects.toThrow(
+        'After bulk recover hook failed',
+      );
+
+      expect(service.beforeBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(mockQueryBuilder.restore).toHaveBeenCalled();
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(service.afterBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        2,
+        where,
+      );
+    });
+
+    it('should propagate query builder execution errors', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: 'deleted-entity-id' };
+      const queryError = new Error('Database query failed');
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockRejectedValue(queryError),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await expect(service.bulkRecover(context, where)).rejects.toThrow(
+        'Database query failed',
+      );
+
+      expect(service.beforeBulkRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(mockQueryBuilder.restore).toHaveBeenCalled();
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(service.afterBulkRecover).not.toHaveBeenCalled();
+    });
+
+    it('should work with empty where conditions', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = {};
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        restore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 10,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRecover(context, where);
+
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where: {} },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(result).toEqual({ affected: 10 });
+    });
+
+    it('should apply decorators correctly when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
+      const serviceStructureWithBulkRecoverDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          bulkRecover: {
+            decorators: [customDecorator as any],
+            transactional: true,
+            isolationLevel: 'READ COMMITTED',
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithBulkRecoverDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+      expect(decoratedService.bulkRecover).toBeDefined();
+
+      // Verify that the decorator was applied
+      expect(customDecorator).toHaveBeenCalled();
+    });
+  });
+
   describe('event handler methods', () => {
     it('should have default empty implementations for all before/after methods', async () => {
       const context: TestContext = {};

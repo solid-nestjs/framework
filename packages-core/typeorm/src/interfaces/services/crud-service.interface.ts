@@ -18,6 +18,7 @@ import {
   BulkUpdateEventsHandler,
   BulkDeleteEventsHandler,
   BulkRemoveEventsHandler,
+  BulkRecoverEventsHandler,
 } from '../event-handlers';
 import { DataService } from './data-service.interface';
 
@@ -61,6 +62,17 @@ export interface BulkDeleteResult {
 export interface BulkRemoveResult {
   /**
    * Number of entities affected by the remove operation.
+   * Can be undefined if the database doesn't provide this information.
+   */
+  affected: number | undefined | null;
+}
+
+/**
+ * Result interface for bulk recover operations.
+ */
+export interface BulkRecoverResult {
+  /**
+   * Number of entities affected by the recover operation.
    * Can be undefined if the database doesn't provide this information.
    */
   affected: number | undefined | null;
@@ -751,6 +763,38 @@ export interface CrudService<
   ): Promise<BulkRemoveResult>;
 
   /**
+   * Performs bulk recovery of multiple entities matching the specified conditions.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param where - The conditions that determine which entities to recover
+   * @param options - Optional configuration for the bulk recover operation
+   * @returns A promise that resolves to bulk recover result containing the number of affected entities
+   *
+   * @throws {Error} When the repository doesn't support soft deletes
+   *
+   * @remarks
+   * This method efficiently recovers multiple soft-deleted entities in a single database operation.
+   * It uses the QueryBuilder's restore() method to clear the deletion date/flag on all matching
+   * entities. This operation is only available for entities that support soft deletes (have a
+   * deletedAt column). The method executes beforeBulkRecover and afterBulkRecover hooks and
+   * supports custom event handlers. The affected count may be undefined if the database doesn't provide it.
+   *
+   * @example
+   * ```typescript
+   * const result = await crudService.bulkRecover(context, {
+   *   status: 'active',
+   *   deletedAt: { _gte: new Date('2023-01-01') }
+   * });
+   * console.log(`Recovered ${result.affected} entities`);
+   * ```
+   */
+  bulkRecover(
+    context: ContextType,
+    where: Where<EntityType>,
+    options?: BulkRecoverOptions<IdType, EntityType, ContextType>,
+  ): Promise<BulkRecoverResult>;
+
+  /**
    * Hook method executed before performing a bulk update operation.
    *
    * @param context - The execution context containing request-specific information
@@ -1161,6 +1205,94 @@ export interface CrudService<
     repository: Repository<EntityType>,
     entity: EntityType,
   ): Promise<void>;
+
+  /**
+   * Hook method executed before performing a bulk recover operation.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entities
+   * @param where - The conditions that determine which entities will be recovered
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform validation or side effects before bulk recovering
+   * entities. You can validate the recover criteria, check permissions, or prepare audit
+   * trails. Note that individual entities are not loaded in bulk operations, so you
+   * work with the recovery criteria rather than specific entity instances.
+   *
+   * @example
+   * ```typescript
+   * async beforeBulkRecover(context, repository, where) {
+   *   // Validate recover permissions
+   *   if (!context.user.canBulkRecover) {
+   *     throw new Error('User does not have permission for bulk recover');
+   *   }
+   *
+   *   // Validate recovery conditions
+   *   const entitiesCount = await repository.count({
+   *     where: { ...where, deletedAt: { _isNotNull: true } }
+   *   });
+   *   if (entitiesCount === 0) {
+   *     throw new Error('No soft-deleted entities found matching criteria');
+   *   }
+   *
+   *   // Log bulk operation
+   *   await this.logBulkRecover(where, context.user.id);
+   * }
+   * ```
+   */
+  beforeBulkRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  /**
+   * Hook method executed after successfully performing a bulk recover operation.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entities
+   * @param affectedCount - The number of entities that were recovered (may be undefined)
+   * @param where - The conditions that determined which entities were recovered
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform side effects after entities have been successfully
+   * bulk recovered. You can trigger notifications, update caches, create audit logs, or
+   * perform cleanup operations. The affectedCount parameter tells you how many entities
+   * were actually recovered by the operation.
+   *
+   * @example
+   * ```typescript
+   * async afterBulkRecover(context, repository, affectedCount, where) {
+   *   // Log bulk recovery
+   *   await this.auditService.logBulk('BULK_RECOVER', affectedCount, context.user.id, {
+   *     where,
+   *     recoveredAt: new Date()
+   *   });
+   *
+   *   // Clear related caches
+   *   if (affectedCount && affectedCount > 0) {
+   *     await this.cacheService.invalidatePattern('entities:*');
+   *   }
+   *
+   *   // Send notification
+   *   await this.notificationService.sendBulkRecoveryNotification(
+   *     context.user.id,
+   *     affectedCount || 0
+   *   );
+   *
+   *   // Update search index
+   *   await this.searchService.reindexByQuery(where);
+   * }
+   * ```
+   */
+  afterBulkRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    where: Where<EntityType>,
+  ): Promise<void>;
 }
 
 export interface CreateOptions<
@@ -1245,4 +1377,12 @@ export interface BulkRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkRemoveEventsHandler<IdType, EntityType, ContextType>;
+}
+
+export interface BulkRecoverOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: BulkRecoverEventsHandler<IdType, EntityType, ContextType>;
 }

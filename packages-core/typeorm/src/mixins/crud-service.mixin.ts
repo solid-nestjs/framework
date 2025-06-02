@@ -17,10 +17,12 @@ import {
   BulkUpdateOptions,
   BulkDeleteOptions,
   BulkRemoveOptions,
+  BulkRecoverOptions,
   BulkInsertResult,
   BulkUpdateResult,
   BulkDeleteResult,
   BulkRemoveResult,
+  BulkRecoverResult,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -97,6 +99,7 @@ export function CrudServiceFrom<
   const bulkUpdateStruct = serviceStructure.functions?.bulkUpdate;
   const bulkDeleteStruct = serviceStructure.functions?.bulkDelete;
   const bulkRemoveStruct = serviceStructure.functions?.bulkRemove;
+  const bulkRecoverStruct = serviceStructure.functions?.bulkRecover;
 
   const createDecorators = createStruct?.transactional
     ? [() => Transactional({ isolationLevel: createStruct?.isolationLevel })]
@@ -123,6 +126,12 @@ export function CrudServiceFrom<
     ? [
         () =>
           Transactional({ isolationLevel: bulkRemoveStruct?.isolationLevel }),
+      ]
+    : [];
+  const bulkRecoverDecorators = bulkRecoverStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkRecoverStruct?.isolationLevel }),
       ]
     : [];
   const updateDecorators = updateStruct?.transactional
@@ -168,6 +177,9 @@ export function CrudServiceFrom<
 
   if (bulkRemoveStruct?.decorators)
     bulkRemoveDecorators.push(...bulkRemoveStruct.decorators);
+
+  if (bulkRecoverStruct?.decorators)
+    bulkRecoverDecorators.push(...bulkRecoverStruct.decorators);
 
   @Injectable()
   class CrudServiceClass
@@ -524,6 +536,46 @@ export function CrudServiceFrom<
       return responseEntity;
     }
 
+    @applyMethodDecorators(bulkRecoverDecorators)
+    async bulkRecover(
+      context: ContextType,
+      where: Where<EntityType>,
+      options?: BulkRecoverOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkRecoverResult> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      await eventHandler.beforeBulkRecover(context, repository, where);
+
+      // Check if the repository has a deleteDateColumn
+      if (!hasDeleteDateColumn(repository)) {
+        throw new Error(
+          `Entity ${entityType.name} does not support soft deletes and cannot be bulk recovered`,
+        );
+      }
+
+      const result = await this.getQueryBuilder(
+        context,
+        { where } as FindArgsType,
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      )
+        .restore()
+        .execute();
+
+      await eventHandler.afterBulkRecover(
+        context,
+        repository,
+        result.affected || 0,
+        where,
+      );
+
+      return { affected: result.affected };
+    }
+
     //these methos exists to be overriden
     async beforeCreate(
       context: ContextType,
@@ -549,6 +601,11 @@ export function CrudServiceFrom<
       where: Where<EntityType>,
     ): Promise<void> {}
     async beforeBulkRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async beforeBulkRecover(
       context: ContextType,
       repository: Repository<EntityType>,
       where: Where<EntityType>,
@@ -604,6 +661,12 @@ export function CrudServiceFrom<
       context: ContextType,
       repository: Repository<EntityType>,
       affectedCount: number | undefined,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async afterBulkRecover(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      affectedCount: number,
       where: Where<EntityType>,
     ): Promise<void> {}
     async afterUpdate(
