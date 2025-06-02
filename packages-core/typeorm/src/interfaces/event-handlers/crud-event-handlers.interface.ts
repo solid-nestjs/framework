@@ -82,6 +82,24 @@ export interface RemoveEventsHandler<
   ): Promise<void>;
 }
 
+export interface SoftRemoveEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeSoftRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  afterSoftRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+}
+
 export interface HardRemoveEventsHandler<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,

@@ -25,6 +25,7 @@ import {
   BulkRecoverResult,
   UpdateOptions,
   RemoveOptions,
+  SoftRemoveOptions,
   HardRemoveOptions,
   RecoverOptions,
 } from '../interfaces';
@@ -91,6 +92,7 @@ export function CrudServiceFrom<
   const createStruct = serviceStructure.functions?.create;
   const updateStruct = serviceStructure.functions?.update;
   const removeStruct = serviceStructure.functions?.remove;
+  const softRemoveStruct = serviceStructure.functions?.softRemove;
   const hardRemoveStruct = serviceStructure.functions?.hardRemove;
   const recoverStruct = serviceStructure.functions?.recover;
 
@@ -140,6 +142,12 @@ export function CrudServiceFrom<
   const removeDecorators = removeStruct?.transactional
     ? [() => Transactional({ isolationLevel: removeStruct?.isolationLevel })]
     : [];
+  const softRemoveDecorators = softRemoveStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: softRemoveStruct?.isolationLevel }),
+      ]
+    : [];
   const hardRemoveDecorators = hardRemoveStruct?.transactional
     ? [
         () =>
@@ -158,6 +166,9 @@ export function CrudServiceFrom<
 
   if (removeStruct?.decorators)
     removeDecorators.push(...removeStruct.decorators);
+
+  if (softRemoveStruct?.decorators)
+    softRemoveDecorators.push(...softRemoveStruct.decorators);
 
   if (hardRemoveStruct?.decorators)
     hardRemoveDecorators.push(...hardRemoveStruct.decorators);
@@ -467,6 +478,40 @@ export function CrudServiceFrom<
       return responseEntity;
     }
 
+    @applyMethodDecorators(softRemoveDecorators)
+    async softRemove(
+      context: ContextType,
+      id: IdType,
+      options?: SoftRemoveOptions<IdType, EntityType, ContextType>,
+    ): Promise<EntityType> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      const entity = await this.findOne(context, id, true);
+
+      await eventHandler.beforeSoftRemove(context, repository, entity);
+
+      // Directly call repository.softRemove without checking hasDeleteDateColumn
+      const responseEntity: EntityType = await repository.softRemove(entity);
+
+      // Restore ID if repository removed it
+      if (!responseEntity.id) {
+        responseEntity.id = id;
+      }
+
+      await this.audit(
+        context,
+        StandardActions.Remove,
+        entity.id as IdType,
+        responseEntity,
+      );
+
+      await eventHandler.afterSoftRemove(context, repository, responseEntity);
+
+      return responseEntity;
+    }
+
     @applyMethodDecorators(hardRemoveDecorators)
     async hardRemove(
       context: ContextType,
@@ -631,6 +676,11 @@ export function CrudServiceFrom<
       repository: Repository<EntityType>,
       entity: EntityType,
     ): Promise<void> {}
+    async beforeSoftRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
 
     async afterCreate(
       context: ContextType,
@@ -686,6 +736,11 @@ export function CrudServiceFrom<
       entity: EntityType,
     ): Promise<void> {}
     async afterRecover(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
+    async afterSoftRemove(
       context: ContextType,
       repository: Repository<EntityType>,
       entity: EntityType,

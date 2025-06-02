@@ -12,6 +12,7 @@ import {
   CreateEventsHandler,
   UpdateEventsHandler,
   RemoveEventsHandler,
+  SoftRemoveEventsHandler,
   HardRemoveEventsHandler,
   RecoverEventsHandler,
   BulkInsertEventsHandler,
@@ -246,6 +247,36 @@ export interface CrudService<
   ): Promise<EntityType>;
 
   /**
+   * Performs a soft delete (logical deletion) of an entity by its ID without checking deleteDateColumn.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param id - The unique identifier of the entity to soft delete
+   * @param options - Optional configuration for the soft remove operation
+   * @returns A promise that resolves to the soft-deleted entity
+   *
+   * @throws {EntityNotFoundError} When the entity with the specified ID doesn't exist
+   * @throws {MissingDeleteDateColumnError} When the entity doesn't support soft deletes
+   *
+   * @remarks
+   * This method directly calls repository.softRemove() without checking if the entity has a
+   * deleteDateColumn. It's designed for cases where you know the entity supports soft deletes
+   * and want to bypass the automatic fallback logic of the regular remove() method. This method
+   * executes beforeSoftRemove and afterSoftRemove hooks and supports custom event handlers.
+   *
+   * @example
+   * ```typescript
+   * const softDeletedUser = await crudService.softRemove(context, 1);
+   * console.log(`Soft deleted user: ${softDeletedUser.name}`);
+   * // Entity is marked as deleted but still exists in database
+   * ```
+   */
+  softRemove(
+    context: ContextType,
+    id: IdType,
+    options?: SoftRemoveOptions<IdType, EntityType, ContextType>,
+  ): Promise<EntityType>;
+
+  /**
    * Performs a hard delete (physical deletion) of an entity by its ID.
    *
    * @param context - The execution context containing request-specific information
@@ -453,6 +484,42 @@ export interface CrudService<
    * ```
    */
   beforeRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  /**
+   * Hook method executed before soft-deleting an entity (direct soft delete).
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The entity instance that will be soft-deleted
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform validation or side effects before the entity
+   * is soft-deleted using the direct softRemove method. This is called when using
+   * the softRemove operation that bypasses deleteDateColumn checks. You can validate
+   * business rules, check dependencies, or prepare related data for the deletion.
+   *
+   * @example
+   * ```typescript
+   * async beforeSoftRemove(context, repository, entity) {
+   *   // Validate soft delete permissions
+   *   if (!context.user.canSoftDelete) {
+   *     throw new Error('User does not have soft delete permissions');
+   *   }
+   *
+   *   // Archive related data
+   *   await this.archiveRelatedData(entity.id);
+   *
+   *   // Log soft deletion
+   *   await this.logSoftDeletion(entity.id, context.user.id);
+   * }
+   * ```
+   */
+  beforeSoftRemove(
     context: ContextType,
     repository: Repository<EntityType>,
     entity: EntityType,
@@ -1118,6 +1185,47 @@ export interface CrudService<
   ): Promise<void>;
 
   /**
+   * Hook method executed after successfully soft-deleting an entity (direct soft delete).
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The soft-deleted entity instance (after marking as deleted)
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform side effects after the entity has been successfully
+   * soft-deleted using the direct softRemove method. This is called when using the softRemove
+   * operation that bypasses deleteDateColumn checks. You can trigger notifications, update
+   * caches, create audit logs, or perform cleanup operations specific to direct soft deletes.
+   *
+   * @example
+   * ```typescript
+   * async afterSoftRemove(context, repository, entity) {
+   *   // Create audit log for direct soft delete
+   *   await this.auditService.log('ENTITY_SOFT_REMOVED', entity.id, context.user.id, {
+   *     entityData: entity,
+   *     softDeletedAt: new Date(),
+   *     method: 'direct'
+   *   });
+   *
+   *   // Clear entity cache
+   *   await this.cacheService.invalidate(`entities:${entity.id}`);
+   *
+   *   // Send soft delete notification
+   *   await this.notificationService.sendSoftDeletionNotification(entity, context.user);
+   *
+   *   // Update search index
+   *   await this.searchService.markAsDeleted(entity.id);
+   * }
+   * ```
+   */
+  afterSoftRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  /**
    * Hook method executed after successfully hard-deleting an entity.
    *
    * @param context - The execution context containing request-specific information
@@ -1329,6 +1437,14 @@ export interface RemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: RemoveEventsHandler<IdType, EntityType, ContextType>;
+}
+
+export interface SoftRemoveOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: SoftRemoveEventsHandler<IdType, EntityType, ContextType>;
 }
 
 export interface HardRemoveOptions<

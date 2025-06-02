@@ -22,6 +22,7 @@ import {
   RemoveOptions,
   HardRemoveOptions,
   RecoverOptions,
+  SoftRemoveOptions,
 } from '../../src/interfaces';
 
 // Mock entity for testing
@@ -207,6 +208,8 @@ describe('CrudServiceFrom', () => {
     service.afterHardRemove = jest.fn().mockResolvedValue(undefined);
     service.beforeRecover = jest.fn().mockResolvedValue(undefined);
     service.afterRecover = jest.fn().mockResolvedValue(undefined);
+    service.beforeSoftRemove = jest.fn().mockResolvedValue(undefined);
+    service.afterSoftRemove = jest.fn().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -1660,6 +1663,426 @@ describe('CrudServiceFrom', () => {
     });
   });
 
+  describe('softRemove', () => {
+    it('should directly call repository.softRemove without checking deleteDateColumn', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        createdAt: new Date('2023-01-01'),
+        updatedAt: new Date('2023-01-02'),
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      const result = await service.softRemove(context, id);
+
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true);
+      expect(service.beforeSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(repository.softRemove).toHaveBeenCalledWith(entity);
+      expect(service.audit).toHaveBeenCalledWith(
+        context,
+        StandardActions.Remove,
+        '1',
+        softRemovedEntity,
+      );
+      expect(service.afterSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        softRemovedEntity,
+      );
+      expect(result).toBe(softRemovedEntity);
+      // Verify hasDeleteDateColumn was NOT called
+      expect(hasDeleteDateColumnMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle entity with existing deletedAt field', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        createdAt: new Date('2023-01-01'),
+        updatedAt: new Date('2023-01-02'),
+        deletedAt: undefined, // Entity was previously recovered
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      const result = await service.softRemove(context, id);
+
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true);
+      expect(repository.softRemove).toHaveBeenCalledWith(entity);
+      expect(result.deletedAt).toBeDefined();
+      expect(result).toBe(softRemovedEntity);
+    });
+
+    it('should restore ID when repository removes it during soft remove', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+      delete (softRemovedEntity as any).id; // Repository removes ID
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      const result = await service.softRemove(context, id);
+
+      expect(result.id).toBe(id); // ID should be restored
+      expect(result.deletedAt).toBeDefined();
+    });
+
+    it('should handle repository errors gracefully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+      const repositoryError = new Error('Soft remove operation failed');
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockRejectedValue(repositoryError);
+
+      await expect(service.softRemove(context, id)).rejects.toThrow(
+        'Soft remove operation failed',
+      );
+
+      expect(service.beforeSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(repository.softRemove).toHaveBeenCalledWith(entity);
+      // afterSoftRemove should not be called on error
+      expect(service.afterSoftRemove).not.toHaveBeenCalled();
+      // audit should not be called on error
+      expect(service.audit).not.toHaveBeenCalled();
+    });
+
+    it('should handle beforeSoftRemove hook throwing an error', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+      const hookError = new Error('Before soft remove validation failed');
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+
+      service.findOne.mockResolvedValue(entity);
+      service.beforeSoftRemove.mockRejectedValue(hookError);
+
+      await expect(service.softRemove(context, id)).rejects.toThrow(
+        'Before soft remove validation failed',
+      );
+
+      expect(service.beforeSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      // repository.softRemove should not be called if beforeSoftRemove fails
+      expect(repository.softRemove).not.toHaveBeenCalled();
+      expect(service.afterSoftRemove).not.toHaveBeenCalled();
+      expect(service.audit).not.toHaveBeenCalled();
+    });
+
+    it('should handle afterSoftRemove hook throwing an error', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+      const hookError = new Error('After soft remove hook failed');
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+      service.afterSoftRemove.mockRejectedValue(hookError);
+
+      await expect(service.softRemove(context, id)).rejects.toThrow(
+        'After soft remove hook failed',
+      );
+
+      expect(service.beforeSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(repository.softRemove).toHaveBeenCalledWith(entity);
+      expect(service.audit).toHaveBeenCalledWith(
+        context,
+        StandardActions.Remove,
+        '1',
+        softRemovedEntity,
+      );
+      expect(service.afterSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        softRemovedEntity,
+      );
+    });
+
+    it('should handle entity not found during soft remove', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = 'nonexistent';
+      const notFoundError = new Error('Entity not found');
+
+      service.findOne.mockRejectedValue(notFoundError);
+
+      await expect(service.softRemove(context, id)).rejects.toThrow(
+        'Entity not found',
+      );
+
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true);
+      // None of the soft remove hooks should be called if entity is not found
+      expect(service.beforeSoftRemove).not.toHaveBeenCalled();
+      expect(repository.softRemove).not.toHaveBeenCalled();
+      expect(service.afterSoftRemove).not.toHaveBeenCalled();
+      expect(service.audit).not.toHaveBeenCalled();
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const customEventHandler = {
+        beforeSoftRemove: jest.fn(),
+        afterSoftRemove: jest.fn(),
+      };
+
+      const options: SoftRemoveOptions<string, TestEntity, TestContext> = {
+        eventHandler: customEventHandler,
+      };
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      await service.softRemove(context, id, options);
+
+      expect(customEventHandler.beforeSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(customEventHandler.afterSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        softRemovedEntity,
+      );
+      // Ensure default handlers are NOT called
+      expect(service.beforeSoftRemove).not.toHaveBeenCalled();
+      expect(service.afterSoftRemove).not.toHaveBeenCalled();
+    });
+
+    it('should call audit with StandardActions.Remove for soft remove operation', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      await service.softRemove(context, id);
+
+      expect(service.audit).toHaveBeenCalledWith(
+        context,
+        StandardActions.Remove,
+        '1',
+        softRemovedEntity,
+      );
+    });
+
+    it('should pass repository instance correctly to hooks', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      await service.softRemove(context, id);
+
+      expect(service.beforeSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(service.afterSoftRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        softRemovedEntity,
+      );
+
+      // Verify that the same repository instance is passed to both hooks
+      const beforeSoftRemoveCall = service.beforeSoftRemove.mock.calls[0];
+      const afterSoftRemoveCall = service.afterSoftRemove.mock.calls[0];
+      expect(beforeSoftRemoveCall[1]).toBe(afterSoftRemoveCall[1]);
+      expect(beforeSoftRemoveCall[1]).toBe(repository);
+    });
+
+    it('should work regardless of entity soft delete configuration', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      // Test with different hasDeleteDateColumn values - softRemove should work either way
+      hasDeleteDateColumnMock.mockReturnValue(false);
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      const result = await service.softRemove(context, id);
+
+      expect(repository.softRemove).toHaveBeenCalledWith(entity);
+      expect(result).toBe(softRemovedEntity);
+      // Verify hasDeleteDateColumn was NOT called (softRemove bypasses this check)
+      expect(hasDeleteDateColumnMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle complex entity with additional properties', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        createdAt: new Date('2023-01-01'),
+        updatedAt: new Date('2023-01-02'),
+      } as TestEntity;
+      const softRemovedEntity = { ...entity, deletedAt: new Date() };
+
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(softRemovedEntity as any);
+
+      const result = await service.softRemove(context, id);
+
+      expect(repository.softRemove).toHaveBeenCalledWith(entity);
+      expect(result.name).toBe(entity.name);
+      expect(result.email).toBe(entity.email);
+      expect(result.createdAt).toEqual(entity.createdAt);
+      expect(result.updatedAt).toEqual(entity.updatedAt);
+      expect(result.deletedAt).toBeDefined();
+    });
+
+    it('should apply decorators correctly when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
+      const serviceStructureWithSoftRemoveDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          softRemove: {
+            decorators: [customDecorator as any],
+            transactional: true,
+            isolationLevel: 'READ COMMITTED',
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithSoftRemoveDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+      expect(decoratedService.softRemove).toBeDefined();
+
+      // Verify that the decorator was applied
+      expect(customDecorator).toHaveBeenCalled();
+    });
+  });
+
   describe('event handler methods', () => {
     it('should have default empty implementations for all before/after methods', async () => {
       const context: TestContext = {};
@@ -1691,6 +2114,18 @@ describe('CrudServiceFrom', () => {
       ).resolves.toBeUndefined();
       await expect(
         service.afterHardRemove(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.beforeRecover(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterRecover(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.beforeSoftRemove(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterSoftRemove(context, repository, entity),
       ).resolves.toBeUndefined();
     });
   });

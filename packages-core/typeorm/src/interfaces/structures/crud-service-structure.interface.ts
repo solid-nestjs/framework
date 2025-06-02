@@ -24,6 +24,7 @@ export interface CrudServiceFunctions<EntityType>
   create?: CrudServiceFunctionStructure<EntityType>;
   update?: CrudServiceFunctionStructure<EntityType>;
   remove?: CrudServiceFunctionStructure<EntityType>;
+  softRemove?: CrudServiceFunctionStructure<EntityType>;
   hardRemove?: CrudServiceFunctionStructure<EntityType>;
   recover?: CrudServiceFunctionStructure<EntityType>;
   //Bulk Operations
