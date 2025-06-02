@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Invoice } from '../../invoices/entities/invoice.entity';
@@ -50,4 +58,25 @@ export class Client {
   @Field(() => [Invoice], { description: 'Client invoices', nullable: true })
   @OneToMany(() => Invoice, invoice => invoice.client)
   invoices?: Invoice[];
+
+  @ApiProperty({ description: 'The date when the product was created' })
+  @Field({ description: 'The date when the product was created' })
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @ApiProperty({ description: 'The date when the product was last updated' })
+  @Field({ description: 'The date when the product was last updated' })
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @ApiProperty({
+    description: 'The date when the product was deleted (soft delete)',
+    required: false,
+  })
+  @Field({
+    description: 'The date when the product was deleted (soft delete)',
+    nullable: true,
+  })
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

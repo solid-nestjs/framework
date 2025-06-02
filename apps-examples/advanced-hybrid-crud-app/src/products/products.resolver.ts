@@ -9,6 +9,10 @@ import { Product } from './entities/product.entity';
 const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
   serviceType: ProductsService,
+  operations: {
+    recover: true,
+    hardRemove: true,
+  },
 });
 
 @Resolver(() => Product)

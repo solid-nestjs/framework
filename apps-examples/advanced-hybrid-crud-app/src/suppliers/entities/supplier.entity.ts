@@ -1,4 +1,12 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Product } from '../../products/entities/product.entity';
@@ -27,4 +35,25 @@ export class Supplier {
     cascade: ['insert', 'update', 'remove'],
   })
   products: Product[];
+
+  @ApiProperty({ description: 'The date when the supplier was created' })
+  @Field({ description: 'The date when the supplier was created' })
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @ApiProperty({ description: 'The date when the supplier was last updated' })
+  @Field({ description: 'The date when the supplier was last updated' })
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @ApiProperty({
+    description: 'The date when the supplier was deleted (soft delete)',
+    required: false,
+  })
+  @Field({
+    description: 'The date when the supplier was deleted (soft delete)',
+    nullable: true,
+  })
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

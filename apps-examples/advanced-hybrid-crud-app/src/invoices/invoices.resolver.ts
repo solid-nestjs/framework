@@ -9,6 +9,10 @@ import { Invoice } from './entities/invoice.entity';
 const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
   serviceType: InvoicesService,
+  operations: {
+    recover: true,
+    hardRemove: true,
+  },
 });
 
 @Resolver(() => Invoice)

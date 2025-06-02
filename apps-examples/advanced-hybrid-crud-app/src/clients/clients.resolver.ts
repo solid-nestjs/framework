@@ -9,6 +9,10 @@ import { Resolver } from '@nestjs/graphql';
 const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
   serviceType: ClientsService,
+  operations: {
+    recover: true,
+    hardRemove: true,
+  },
 });
 
 @Resolver(() => Client)

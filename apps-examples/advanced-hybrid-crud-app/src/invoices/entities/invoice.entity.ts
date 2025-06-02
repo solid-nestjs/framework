@@ -5,6 +5,8 @@ import {
   CreateDateColumn,
   OneToMany,
   ManyToOne,
+  DeleteDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
@@ -61,4 +63,20 @@ export class Invoice {
     onDelete: 'CASCADE',
   })
   client: Client;
+
+  @ApiProperty({ description: 'The date when the product was last updated' })
+  @Field({ description: 'The date when the product was last updated' })
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @ApiProperty({
+    description: 'The date when the product was deleted (soft delete)',
+    required: false,
+  })
+  @Field({
+    description: 'The date when the product was deleted (soft delete)',
+    nullable: true,
+  })
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

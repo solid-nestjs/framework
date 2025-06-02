@@ -4,6 +4,9 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  DeleteDateColumn,
+  UpdateDateColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
@@ -69,4 +72,25 @@ export class InvoiceDetail {
   )
   @JoinColumn({ name: 'invoiceId' })
   invoice: any;
+
+  @ApiProperty({ description: 'The date when the product was created' })
+  @Field({ description: 'The date when the product was created' })
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @ApiProperty({ description: 'The date when the product was last updated' })
+  @Field({ description: 'The date when the product was last updated' })
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @ApiProperty({
+    description: 'The date when the product was deleted (soft delete)',
+    required: false,
+  })
+  @Field({
+    description: 'The date when the product was deleted (soft delete)',
+    nullable: true,
+  })
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

@@ -7,6 +7,10 @@ import { ClientsService, serviceStructure } from './clients.service';
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
   serviceType: ClientsService,
+  operations: {
+    recover: true,
+    hardRemove: true,
+  },
 });
 
 export class ClientsController extends CrudControllerFrom(
