@@ -410,12 +410,12 @@ describe('CrudResolverFrom', () => {
   describe('update', () => {
     it('should update an existing entity', async () => {
       const context: TestContext = { userId: 'test-user' };
-      const input: TestUpdateInput & { id: string } = {
-        id: '1',
+      const id: string = '1';
+      const input: TestUpdateInput = {
         name: 'Updated User',
       };
 
-      const result = await resolver.update(context, input);
+      const result = await resolver.update(context, id, input);
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -429,12 +429,12 @@ describe('CrudResolverFrom', () => {
 
     it('should handle partial updates', async () => {
       const context: TestContext = { userId: 'test-user' };
-      const input: TestUpdateInput & { id: string } = {
-        id: '1',
+      const id: string = '1';
+      const input: TestUpdateInput = {
         email: 'updated@example.com',
       };
 
-      const result = await resolver.update(context, input);
+      const result = await resolver.update(context, id, input);
 
       expect(result.email).toBe('updated@example.com');
       expect(result.name).toBe('Test User 1'); // Should preserve existing values
@@ -454,11 +454,10 @@ describe('CrudResolverFrom', () => {
 
     it('should handle empty update input', async () => {
       const context: TestContext = { userId: 'test-user' };
-      const input: TestUpdateInput & { id: string } = {
-        id: '1',
-      };
+      const id: string = '1';
+      const input: TestUpdateInput = {};
 
-      const result = await resolver.update(context, input);
+      const result = await resolver.update(context, id, input);
 
       expect(result.id).toBe('1');
       expect(result.name).toBe('Test User 1'); // Should preserve all existing values

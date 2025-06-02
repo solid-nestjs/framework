@@ -4,7 +4,6 @@ import {
   Entity,
   FindArgs,
   CrudService,
-  fillEntityId,
   DeepPartial,
   Constructable,
 } from '@solid-nestjs/common';
@@ -13,6 +12,7 @@ import {
   DataResolverStructure,
   OperationStructure,
 } from './data-resolver-structure.interface';
+import { fillEntityId } from './entity-provider-structure.interface';
 
 export interface CrudResolverOperations<
   IdType extends IdTypeFrom<EntityType>,

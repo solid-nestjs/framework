@@ -1,5 +1,5 @@
 import { DeepPartial, Repository } from 'typeorm';
-import { IdTypeFrom, Entity } from '@solid-nestjs/common';
+import { IdTypeFrom, Entity, Where } from '@solid-nestjs/common';
 import { Context } from '../misc';
 
 export interface CreateEventsHandler<
@@ -20,6 +20,26 @@ export interface CreateEventsHandler<
     repository: Repository<EntityType>,
     entity: EntityType,
     createInput: CreateInputType,
+  ): Promise<void>;
+}
+
+export interface BulkInsertEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkInsert(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entities: EntityType[],
+    createInputs: DeepPartial<EntityType>[],
+  ): Promise<void>;
+
+  afterBulkInsert(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    ids: IdType[],
+    createInputs: DeepPartial<EntityType>[],
   ): Promise<void>;
 }
 
@@ -77,5 +97,64 @@ export interface HardRemoveEventsHandler<
     context: ContextType,
     repository: Repository<EntityType>,
     entity: EntityType,
+  ): Promise<void>;
+}
+
+export interface BulkUpdateEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkUpdate(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkUpdate(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    updateInput: DeepPartial<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+}
+
+export interface BulkDeleteEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkDelete(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkDelete(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    where: Where<EntityType>,
+  ): Promise<void>;
+}
+
+export interface BulkRemoveEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    where: Where<EntityType>,
   ): Promise<void>;
 }

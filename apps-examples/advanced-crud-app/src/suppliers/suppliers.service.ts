@@ -15,6 +15,7 @@ export const serviceStructure = CrudServiceStructure({
     update: { transactional: true },
     remove: { transactional: true },
     hardRemove: { transactional: true },
+    bulkInsert: { transactional: true },
     findOne: {
       relationsConfig: {
         products: true,

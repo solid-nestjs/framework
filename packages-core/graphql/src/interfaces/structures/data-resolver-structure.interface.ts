@@ -4,10 +4,10 @@ import {
   Entity,
   FindArgs,
   DataService,
-  fillEntityId,
   EntityProviderStructure,
   Constructable,
 } from '@solid-nestjs/common';
+import { fillEntityId } from './entity-provider-structure.interface';
 
 export interface OperationStructure {
   name?: string;
