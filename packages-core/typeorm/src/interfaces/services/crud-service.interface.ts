@@ -13,6 +13,7 @@ import {
   UpdateEventsHandler,
   RemoveEventsHandler,
   HardRemoveEventsHandler,
+  RecoverEventsHandler,
   BulkInsertEventsHandler,
   BulkUpdateEventsHandler,
   BulkDeleteEventsHandler,
@@ -262,6 +263,35 @@ export interface CrudService<
   ): Promise<EntityType>;
 
   /**
+   * Recovers a previously soft-deleted entity by its ID.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param id - The unique identifier of the entity to recover
+   * @param options - Optional configuration for the recover operation
+   * @returns A promise that resolves to the recovered entity
+   *
+   * @throws {EntityNotFoundError} When the entity with the specified ID doesn't exist
+   *
+   * @remarks
+   * This method is used to restore an entity that was previously soft-deleted (using the `remove` method).
+   * It will clear the deletion date/flag on the entity, making it visible in regular queries again.
+   * This operation is only available for entities that support soft deletes. The method executes
+   * beforeRecover and afterRecover hooks and supports custom event handlers.
+   *
+   * @example
+   * ```typescript
+   * const recoveredUser = await crudService.recover(context, 1);
+   * console.log(`Recovered user: ${recoveredUser.name}`);
+   * // Entity is now visible in regular queries again
+   * ```
+   */
+  recover(
+    context: ContextType,
+    id: IdType,
+    options?: RecoverOptions<IdType, EntityType, ContextType>,
+  ): Promise<EntityType>;
+
+  /**
    * Hook method executed before creating a new entity.
    *
    * @param context - The execution context containing request-specific information
@@ -450,6 +480,44 @@ export interface CrudService<
    * ```
    */
   beforeHardRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  /**
+   * Hook method executed before recovering a soft-deleted entity.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The entity instance that will be recovered
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform validation or side effects before the entity
+   * is recovered from soft deletion. You can validate business rules, check permissions,
+   * or prepare related data for the recovery. Use this for operations that need to
+   * happen before the entity deletion flag is cleared.
+   *
+   * @example
+   * ```typescript
+   * async beforeRecover(context, repository, entity) {
+   *   // Check if entity can be recovered
+   *   if (!context.user.canRecover) {
+   *     throw new Error('User does not have permission to recover entities');
+   *   }
+   *
+   *   // Validate recovery conditions
+   *   if (entity.status === 'permanently_deleted') {
+   *     throw new Error('Cannot recover permanently deleted entity');
+   *   }
+   *
+   *   // Log recovery attempt
+   *   await this.logRecovery(entity.id, context.user.id);
+   * }
+   * ```
+   */
+  beforeRecover(
     context: ContextType,
     repository: Repository<EntityType>,
     entity: EntityType,
@@ -1050,6 +1118,49 @@ export interface CrudService<
     repository: Repository<EntityType>,
     entity: EntityType,
   ): Promise<void>;
+
+  /**
+   * Hook method executed after successfully recovering an entity.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The recovered entity instance (after clearing deletion flag)
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform side effects after the entity has been successfully
+   * recovered from soft deletion. You can trigger notifications, update caches, create audit logs,
+   * or perform other post-recovery operations. The entity parameter contains the final state
+   * with the deletion flag cleared.
+   *
+   * @example
+   * ```typescript
+   * async afterRecover(context, repository, entity) {
+   *   // Create audit log
+   *   await this.auditService.log('ENTITY_RECOVERED', entity.id, context.user.id, {
+   *     entityData: entity,
+   *     recoveredAt: new Date()
+   *   });
+   *
+   *   // Clear entity cache
+   *   await this.cacheService.invalidate(`entities:${entity.id}`);
+   *
+   *   // Send notification
+   *   await this.notificationService.sendRecoveryNotification(entity, context.user);
+   *
+   *   // Update search index
+   *   await this.searchService.addToIndex(entity);
+   *
+   *   // Trigger webhooks
+   *   await this.webhookService.trigger('entity.recovered', entity);
+   * }
+   * ```
+   */
+  afterRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
 }
 
 export interface CreateOptions<
@@ -1094,6 +1205,14 @@ export interface HardRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: HardRemoveEventsHandler<IdType, EntityType, ContextType>;
+}
+
+export interface RecoverOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: RecoverEventsHandler<IdType, EntityType, ContextType>;
 }
 
 export interface BulkInsertOptions<

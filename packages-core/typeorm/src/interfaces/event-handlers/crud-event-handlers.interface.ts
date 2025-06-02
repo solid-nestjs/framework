@@ -158,3 +158,21 @@ export interface BulkRemoveEventsHandler<
     where: Where<EntityType>,
   ): Promise<void>;
 }
+
+export interface RecoverEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  afterRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+}

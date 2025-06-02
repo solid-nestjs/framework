@@ -21,6 +21,7 @@ import {
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
+  RecoverOptions,
 } from '../../src/interfaces';
 
 // Mock entity for testing
@@ -103,6 +104,7 @@ describe('CrudServiceFrom', () => {
       save: jest.fn(),
       softRemove: jest.fn(),
       remove: jest.fn(),
+      recover: jest.fn(),
       findBy: jest.fn(),
       createQueryBuilder: jest.fn(),
       target: TestEntity,
@@ -203,6 +205,8 @@ describe('CrudServiceFrom', () => {
     service.afterRemove = jest.fn().mockResolvedValue(undefined);
     service.beforeHardRemove = jest.fn().mockResolvedValue(undefined);
     service.afterHardRemove = jest.fn().mockResolvedValue(undefined);
+    service.beforeRecover = jest.fn().mockResolvedValue(undefined);
+    service.afterRecover = jest.fn().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -1743,6 +1747,566 @@ describe('CrudServiceFrom', () => {
             // Mock decorator implementation
           },
       );
+      const serviceStructureWithDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          create: {
+            decorators: [customDecorator as any],
+            transactional: false,
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+    });
+  });
+
+  describe('recover', () => {
+    it('should recover a soft-deleted entity successfully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+      const recoveredEntity = { ...entity };
+      delete (recoveredEntity as any).deletedAt;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity as any);
+
+      const result = await service.recover(context, id);
+
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true, {
+        withDeleted: true,
+      });
+      expect(service.beforeRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(repository.recover).toHaveBeenCalledWith(entity);
+      expect(service.audit).toHaveBeenCalledWith(
+        context,
+        StandardActions.Update,
+        '1',
+        entity,
+        recoveredEntity,
+      );
+      expect(service.afterRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        recoveredEntity,
+      );
+      expect(result).toBe(recoveredEntity);
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const customEventHandler = {
+        beforeRecover: jest.fn(),
+        afterRecover: jest.fn(),
+      };
+
+      const options: RecoverOptions<string, TestEntity, TestContext> = {
+        eventHandler: customEventHandler,
+      };
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+      const recoveredEntity = { ...entity };
+      delete (recoveredEntity as any).deletedAt;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity as any);
+
+      await service.recover(context, id, options);
+
+      expect(customEventHandler.beforeRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(customEventHandler.afterRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        recoveredEntity,
+      );
+      // Ensure default handlers are NOT called
+      expect(service.beforeRecover).not.toHaveBeenCalled();
+      expect(service.afterRecover).not.toHaveBeenCalled();
+    });
+
+    it('should handle recovery of entity with complex deletion state', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const deletedEntity = {
+        id: '1',
+        name: 'Deleted User',
+        email: 'deleted@example.com',
+        deletedAt: new Date('2023-01-01'),
+        updatedAt: new Date('2023-01-01'),
+      } as TestEntity;
+
+      const recoveredEntity = {
+        id: '1',
+        name: 'Deleted User',
+        email: 'deleted@example.com',
+        updatedAt: new Date(),
+      } as TestEntity;
+
+      service.findOne.mockResolvedValue(deletedEntity);
+      repository.recover.mockResolvedValue(recoveredEntity);
+
+      const result = await service.recover(context, id);
+
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true, {
+        withDeleted: true,
+      });
+      expect(repository.recover).toHaveBeenCalledWith(deletedEntity);
+      expect(result).toBe(recoveredEntity);
+      expect(result.deletedAt).toBeUndefined();
+    });
+
+    it('should handle errors during recovery gracefully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+      const recoveryError = new Error('Recovery failed');
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockRejectedValue(recoveryError);
+
+      await expect(service.recover(context, id)).rejects.toThrow(
+        'Recovery failed',
+      );
+
+      expect(service.beforeRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(repository.recover).toHaveBeenCalledWith(entity);
+      // afterRecover should not be called on error
+      expect(service.afterRecover).not.toHaveBeenCalled();
+      // audit should not be called on error
+      expect(service.audit).not.toHaveBeenCalled();
+    });
+
+    it('should handle beforeRecover hook throwing an error', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+      const hookError = new Error('Before recover validation failed');
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+
+      service.findOne.mockResolvedValue(entity);
+      service.beforeRecover.mockRejectedValue(hookError);
+
+      await expect(service.recover(context, id)).rejects.toThrow(
+        'Before recover validation failed',
+      );
+
+      expect(service.beforeRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      // repository.recover should not be called if beforeRecover fails
+      expect(repository.recover).not.toHaveBeenCalled();
+      expect(service.afterRecover).not.toHaveBeenCalled();
+      expect(service.audit).not.toHaveBeenCalled();
+    });
+
+    it('should handle entity not found during recovery', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = 'nonexistent';
+      const notFoundError = new Error('Entity not found');
+
+      service.findOne.mockRejectedValue(notFoundError);
+
+      await expect(service.recover(context, id)).rejects.toThrow(
+        'Entity not found',
+      );
+
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true, {
+        withDeleted: true,
+      });
+      // None of the recovery hooks should be called if entity is not found
+      expect(service.beforeRecover).not.toHaveBeenCalled();
+      expect(repository.recover).not.toHaveBeenCalled();
+      expect(service.afterRecover).not.toHaveBeenCalled();
+      expect(service.audit).not.toHaveBeenCalled();
+    });
+
+    it('should call audit with StandardActions.Update for recovery operation', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date('2023-01-01'),
+      } as TestEntity;
+      const recoveredEntity = { ...entity };
+      delete (recoveredEntity as any).deletedAt;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity);
+
+      await service.recover(context, id);
+
+      expect(service.audit).toHaveBeenCalledWith(
+        context,
+        StandardActions.Update,
+        '1',
+        entity,
+        recoveredEntity,
+      );
+    });
+
+    it('should work with string IDs', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = 'string-id-123';
+
+      const entity = {
+        id: 'string-id-123',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+      const recoveredEntity = { ...entity };
+      delete (recoveredEntity as any).deletedAt;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity);
+
+      const result = await service.recover(context, id);
+
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true, {
+        withDeleted: true,
+      });
+      expect(result).toBe(recoveredEntity);
+    });
+
+    it('should preserve entity data during recovery', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Original Name',
+        email: 'original@example.com',
+        deletedAt: new Date('2023-01-01'),
+        createdAt: new Date('2022-01-01'),
+        updatedAt: new Date('2023-01-01'),
+      } as TestEntity;
+
+      const recoveredEntity = {
+        id: '1',
+        name: 'Original Name',
+        email: 'original@example.com',
+        createdAt: new Date('2022-01-01'),
+        updatedAt: new Date(), // Updated during recovery
+      } as TestEntity;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity);
+
+      const result = await service.recover(context, id);
+
+      expect(result.name).toBe('Original Name');
+      expect(result.email).toBe('original@example.com');
+      expect(result.id).toBe('1');
+      expect(result.deletedAt).toBeUndefined();
+    });
+
+    it('should handle afterRecover hook throwing an error', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+      const hookError = new Error('After recover hook failed');
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+      const recoveredEntity = { ...entity };
+      delete (recoveredEntity as any).deletedAt;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity);
+      service.afterRecover.mockRejectedValue(hookError);
+
+      await expect(service.recover(context, id)).rejects.toThrow(
+        'After recover hook failed',
+      );
+
+      expect(service.beforeRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(repository.recover).toHaveBeenCalledWith(entity);
+      expect(service.audit).toHaveBeenCalledWith(
+        context,
+        StandardActions.Update,
+        '1',
+        entity,
+        recoveredEntity,
+      );
+      expect(service.afterRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        recoveredEntity,
+      );
+    });
+
+    it('should apply decorators correctly when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
+      const serviceStructureWithRecoverDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          recover: {
+            decorators: [customDecorator as any],
+            transactional: true,
+            isolationLevel: 'READ COMMITTED',
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithRecoverDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+      expect(decoratedService.recover).toBeDefined();
+
+      // Verify that the decorator was applied
+      expect(customDecorator).toHaveBeenCalled();
+    });
+
+    it('should handle empty context object', async () => {
+      const context: TestContext = {};
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+      const recoveredEntity = { ...entity };
+      delete (recoveredEntity as any).deletedAt;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity);
+
+      const result = await service.recover(context, id);
+
+      expect(result).toBe(recoveredEntity);
+      expect(service.beforeRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(service.afterRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        recoveredEntity,
+      );
+    });
+
+    it('should pass repository instance correctly to hooks', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+      } as TestEntity;
+      const recoveredEntity = { ...entity };
+      delete (recoveredEntity as any).deletedAt;
+
+      service.findOne.mockResolvedValue(entity);
+      repository.recover.mockResolvedValue(recoveredEntity);
+
+      await service.recover(context, id);
+
+      expect(service.beforeRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(service.afterRecover).toHaveBeenCalledWith(
+        context,
+        repository,
+        recoveredEntity,
+      );
+
+      // Verify that the same repository instance is passed to both hooks
+      const beforeRecoverCall = service.beforeRecover.mock.calls[0];
+      const afterRecoverCall = service.afterRecover.mock.calls[0];
+      expect(beforeRecoverCall[1]).toBe(afterRecoverCall[1]);
+      expect(beforeRecoverCall[1]).toBe(repository);
+    });
+  });
+
+  describe('event handler methods', () => {
+    it('should have default empty implementations for all before/after methods', async () => {
+      const context: TestContext = {};
+      const repository = {} as Repository<TestEntity>;
+      const entity = { id: '1', name: 'Test' } as TestEntity;
+      const input = { name: 'Test' };
+
+      // These should not throw and should resolve successfully
+      await expect(
+        service.beforeCreate(context, repository, entity, input),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterCreate(context, repository, entity, input),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.beforeUpdate(context, repository, entity, input),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterUpdate(context, repository, entity, input),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.beforeRemove(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterRemove(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.beforeHardRemove(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterHardRemove(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.beforeRecover(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterRecover(context, repository, entity),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('decorator application', () => {
+    it('should apply decorators to create method when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
       const serviceStructureWithDecorators: CrudServiceStructure<
         string,
         TestEntity,

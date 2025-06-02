@@ -24,6 +24,7 @@ import {
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
+  RecoverOptions,
 } from '../interfaces';
 import { hasDeleteDateColumn } from '../helpers';
 import { DataServiceFrom } from './data-service.mixin';
@@ -89,6 +90,7 @@ export function CrudServiceFrom<
   const updateStruct = serviceStructure.functions?.update;
   const removeStruct = serviceStructure.functions?.remove;
   const hardRemoveStruct = serviceStructure.functions?.hardRemove;
+  const recoverStruct = serviceStructure.functions?.recover;
 
   //bulk operations
   const bulkInsertStruct = serviceStructure.functions?.bulkInsert;
@@ -135,6 +137,9 @@ export function CrudServiceFrom<
           Transactional({ isolationLevel: hardRemoveStruct?.isolationLevel }),
       ]
     : [];
+  const recoverDecorators = recoverStruct?.transactional
+    ? [() => Transactional({ isolationLevel: recoverStruct?.isolationLevel })]
+    : [];
 
   if (createStruct?.decorators)
     createDecorators.push(...createStruct.decorators);
@@ -147,6 +152,9 @@ export function CrudServiceFrom<
 
   if (hardRemoveStruct?.decorators)
     hardRemoveDecorators.push(...hardRemoveStruct.decorators);
+
+  if (recoverStruct?.decorators)
+    recoverDecorators.push(...recoverStruct.decorators);
 
   //bulk operations
   if (bulkInsertStruct?.decorators)
@@ -485,6 +493,37 @@ export function CrudServiceFrom<
       return responseEntity;
     }
 
+    @applyMethodDecorators(recoverDecorators)
+    async recover(
+      context: ContextType,
+      id: IdType,
+      options?: RecoverOptions<IdType, EntityType, ContextType>,
+    ): Promise<EntityType> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      const entity = await this.findOne(context, id, true, {
+        withDeleted: true,
+      });
+
+      await eventHandler.beforeRecover(context, repository, entity);
+
+      const responseEntity = await repository.recover(entity);
+
+      this.audit(
+        context,
+        StandardActions.Update,
+        entity.id as IdType,
+        entity,
+        responseEntity,
+      );
+
+      await eventHandler.afterRecover(context, repository, responseEntity);
+
+      return responseEntity;
+    }
+
     //these methos exists to be overriden
     async beforeCreate(
       context: ContextType,
@@ -526,6 +565,11 @@ export function CrudServiceFrom<
       entity: EntityType,
     ): Promise<void> {}
     async beforeHardRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
+    async beforeRecover(
       context: ContextType,
       repository: Repository<EntityType>,
       entity: EntityType,
@@ -574,6 +618,11 @@ export function CrudServiceFrom<
       entity: EntityType,
     ): Promise<void> {}
     async afterHardRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
+    async afterRecover(
       context: ContextType,
       repository: Repository<EntityType>,
       entity: EntityType,
