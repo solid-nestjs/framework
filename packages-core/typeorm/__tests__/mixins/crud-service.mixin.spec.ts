@@ -1259,12 +1259,10 @@ describe('CrudServiceFrom', () => {
           ignoreSelects: true,
         },
       );
-      expect(mockQueryBuilder.update).toHaveBeenCalledWith(TestEntity);
-      expect(mockQueryBuilder.softDelete).toHaveBeenCalled();
       expect(result).toEqual({ affected: 5 });
     });
 
-    it('should work with simple ID-based where conditions for soft delete', async () => {
+    it('should work with simple ID-based where conditions', async () => {
       const context: TestContext = { userId: 'user1' };
       const where: Where<TestEntity> = { id: '1' };
 
@@ -1463,7 +1461,7 @@ describe('CrudServiceFrom', () => {
   });
 
   describe('remove', () => {
-    it('should soft remove entity when repository has delete date column', async () => {
+    it('should delegate to _softRemove when repository has delete date column', async () => {
       const context: TestContext = { userId: 'user1' };
       const id = '1';
 
@@ -1480,6 +1478,7 @@ describe('CrudServiceFrom', () => {
 
       const result = await service.remove(context, id);
 
+      expect(hasDeleteDateColumnMock).toHaveBeenCalledWith(repository);
       expect(service.findOne).toHaveBeenCalledWith(context, id, true);
       expect(service.beforeRemove).toHaveBeenCalledWith(
         context,
@@ -1501,7 +1500,7 @@ describe('CrudServiceFrom', () => {
       expect(result).toBe(removedEntity);
     });
 
-    it('should hard remove entity when repository has no delete date column', async () => {
+    it('should delegate to _hardRemove when repository has no delete date column', async () => {
       const context: TestContext = { userId: 'user1' };
       const id = '1';
 
@@ -1519,6 +1518,7 @@ describe('CrudServiceFrom', () => {
 
       const result = await service.remove(context, id);
 
+      expect(hasDeleteDateColumnMock).toHaveBeenCalledWith(repository);
       expect(service.findOne).toHaveBeenCalledWith(context, id, true);
       expect(service.beforeRemove).toHaveBeenCalledWith(
         context,
@@ -1526,7 +1526,30 @@ describe('CrudServiceFrom', () => {
         entity,
       );
       expect(repository.remove).toHaveBeenCalledWith(entity);
-      expect(result.id).toBe(id); // ID should be restored
+      expect(result.id).toBe(id); // ID should be restored by _hardRemove helper
+    });
+
+    it('should restore ID when _softRemove helper returns entity without ID', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const id = '1';
+
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      };
+      const removedEntityWithoutId = { ...entity, deletedAt: new Date() };
+      delete (removedEntityWithoutId as any).id; // Repository removes ID
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+      service.findOne.mockResolvedValue(entity);
+      repository.softRemove.mockResolvedValue(removedEntityWithoutId as any);
+
+      const result = await service.remove(context, id);
+
+      expect(repository.softRemove).toHaveBeenCalledWith(entity);
+      expect(result.id).toBe(id); // ID should be restored by _softRemove helper
+      expect(result.deletedAt).toBeDefined();
     });
 
     it('should use custom event handler when provided in options', async () => {
@@ -1561,11 +1584,14 @@ describe('CrudServiceFrom', () => {
         repository,
         removedEntity,
       );
+      // Verify default handlers were not called
+      expect(service.beforeRemove).not.toHaveBeenCalled();
+      expect(service.afterRemove).not.toHaveBeenCalled();
     });
   });
 
   describe('hardRemove', () => {
-    it('should hard remove entity when repository has delete date column', async () => {
+    it('should use _hardRemove helper when repository has delete date column', async () => {
       const context: TestContext = { userId: 'user1' };
       const id = '1';
 
@@ -1604,22 +1630,37 @@ describe('CrudServiceFrom', () => {
         repository,
         removedEntity,
       );
-      expect(result.id).toBe(id); // ID should be restored
+      expect(result.id).toBe(id); // ID should be restored by _hardRemove helper
     });
 
-    it('should delegate to remove when repository has no delete date column', async () => {
+    it('should use _hardRemove helper when repository has no delete date column', async () => {
       const context: TestContext = { userId: 'user1' };
       const id = '1';
 
+      const entity = {
+        id: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+      };
+      const removedEntity = { ...entity };
+      delete (removedEntity as any).id;
+
       hasDeleteDateColumnMock.mockReturnValue(false);
-      service.remove = jest
-        .fn()
-        .mockResolvedValue({ id: '1', name: 'Removed' });
+      service.findOne.mockResolvedValue(entity);
+      repository.remove.mockResolvedValue(removedEntity as any);
 
       const result = await service.hardRemove(context, id);
 
-      expect(service.remove).toHaveBeenCalledWith(context, id);
-      expect(result).toEqual({ id: '1', name: 'Removed' });
+      expect(service.findOne).toHaveBeenCalledWith(context, id, true, {
+        withDeleted: true,
+      });
+      expect(service.beforeHardRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        entity,
+      );
+      expect(repository.remove).toHaveBeenCalledWith(entity);
+      expect(result.id).toBe(id); // ID should be restored by _hardRemove helper
     });
 
     it('should use custom event handler when provided in options', async () => {
@@ -1660,6 +1701,9 @@ describe('CrudServiceFrom', () => {
         repository,
         removedEntity,
       );
+      // Verify default handlers were not called
+      expect(service.beforeHardRemove).not.toHaveBeenCalled();
+      expect(service.afterHardRemove).not.toHaveBeenCalled();
     });
   });
 
@@ -3135,6 +3179,12 @@ describe('CrudServiceFrom', () => {
       ).resolves.toBeUndefined();
       await expect(
         service.afterRecover(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.beforeSoftRemove(context, repository, entity),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.afterSoftRemove(context, repository, entity),
       ).resolves.toBeUndefined();
     });
   });

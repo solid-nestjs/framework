@@ -32,6 +32,7 @@ import {
 import { hasDeleteDateColumn } from '../helpers';
 import { DataServiceFrom } from './data-service.mixin';
 import { Transactional } from '../decorators';
+import { TypeOrmRepository } from '../types';
 
 /**
  * Generates a CRUD service class based on the provided service structure.
@@ -462,15 +463,9 @@ export function CrudServiceFrom<
       let responseEntity: EntityType;
 
       if (hasDeleteDateColumn(repository)) {
-        responseEntity = await this.softRemove(context, id, {
-          eventHandler: this,
-          noAudits: true,
-        });
+        responseEntity = await this._softRemove(repository, entity, id);
       } else {
-        responseEntity = await this.hardRemove(context, id, {
-          eventHandler: this,
-          noAudits: true,
-        });
+        responseEntity = await this._hardRemove(repository, entity, id);
       }
 
       if (!options?.noAudits) {
@@ -502,12 +497,11 @@ export function CrudServiceFrom<
       await eventHandler.beforeSoftRemove(context, repository, entity);
 
       // Directly call repository.softRemove without checking hasDeleteDateColumn
-      const responseEntity: EntityType = await repository.softRemove(entity);
-
-      // Restore ID if repository removed it
-      if (!responseEntity.id) {
-        responseEntity.id = id;
-      }
+      const responseEntity: EntityType = await this._softRemove(
+        repository,
+        entity,
+        id,
+      );
 
       if (!options?.noAudits) {
         await this.audit(
@@ -520,6 +514,20 @@ export function CrudServiceFrom<
 
       await eventHandler.afterSoftRemove(context, repository, responseEntity);
 
+      return responseEntity;
+    }
+
+    private async _softRemove(
+      repository: TypeOrmRepository<EntityType>,
+      entity: EntityType,
+      id: IdType,
+    ) {
+      const responseEntity: EntityType = await repository.softRemove(entity);
+
+      // Restore ID if repository removed it
+      if (!responseEntity.id) {
+        responseEntity.id = id;
+      }
       return responseEntity;
     }
 
@@ -539,11 +547,7 @@ export function CrudServiceFrom<
 
       await eventHandler.beforeHardRemove(context, repository, entity);
 
-      let responseEntity: EntityType;
-
-      responseEntity = await repository.remove(entity);
-
-      responseEntity.id = id;
+      const responseEntity = await this._hardRemove(repository, entity, id);
 
       if (!options?.noAudits) {
         await this.audit(
@@ -556,6 +560,17 @@ export function CrudServiceFrom<
 
       await eventHandler.afterHardRemove(context, repository, responseEntity);
 
+      return responseEntity;
+    }
+
+    private async _hardRemove(
+      repository: TypeOrmRepository<EntityType>,
+      entity: EntityType,
+      id: IdType,
+    ) {
+      const responseEntity = await repository.remove(entity);
+
+      responseEntity.id = id;
       return responseEntity;
     }
 
