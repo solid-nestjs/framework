@@ -221,13 +221,15 @@ export function CrudServiceFrom<
 
       const responseEntity = await repository.save(entity);
 
-      this.audit(
-        context,
-        StandardActions.Create,
-        entity.id as IdType,
-        undefined,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        this.audit(
+          context,
+          StandardActions.Create,
+          entity.id as IdType,
+          undefined,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterCreate(
         context,
@@ -305,13 +307,15 @@ export function CrudServiceFrom<
 
       const responseEntity = await repository.save(entity);
 
-      this.audit(
-        context,
-        StandardActions.Update,
-        entity.id as IdType,
-        entityBefore,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        this.audit(
+          context,
+          StandardActions.Update,
+          entity.id as IdType,
+          entityBefore,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterUpdate(
         context,
@@ -457,21 +461,26 @@ export function CrudServiceFrom<
 
       let responseEntity: EntityType;
 
-      // check if the repository has a deleteDateColumn, if not, call remove instead
-      // this is to avoid the error: MissingDeleteDateColumnError: Entity "EntityName" does not have a delete date column.
       if (hasDeleteDateColumn(repository)) {
-        responseEntity = await repository.softRemove(entity);
+        responseEntity = await this.softRemove(context, id, {
+          eventHandler: this,
+          noAudits: true,
+        });
       } else {
-        responseEntity = await repository.remove(entity);
-        responseEntity.id = id;
+        responseEntity = await this.hardRemove(context, id, {
+          eventHandler: this,
+          noAudits: true,
+        });
       }
 
-      await this.audit(
-        context,
-        StandardActions.Remove,
-        entity.id as IdType,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        await this.audit(
+          context,
+          StandardActions.Remove,
+          entity.id as IdType,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterRemove(context, repository, responseEntity);
 
@@ -500,12 +509,14 @@ export function CrudServiceFrom<
         responseEntity.id = id;
       }
 
-      await this.audit(
-        context,
-        StandardActions.Remove,
-        entity.id as IdType,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        await this.audit(
+          context,
+          StandardActions.Remove,
+          entity.id as IdType,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterSoftRemove(context, repository, responseEntity);
 
@@ -522,10 +533,6 @@ export function CrudServiceFrom<
 
       const repository = this.getRepository(context);
 
-      // check if the repository has a deleteDateColumn, if not, call remove instead
-      // this is to avoid the error: MissingDeleteDateColumnError: Entity "EntityName" does not have a delete date column.
-      if (!hasDeleteDateColumn(repository)) return this.remove(context, id);
-
       const entity = await this.findOne(context, id, true, {
         withDeleted: true,
       });
@@ -538,12 +545,14 @@ export function CrudServiceFrom<
 
       responseEntity.id = id;
 
-      await this.audit(
-        context,
-        StandardActions.Remove,
-        entity.id as IdType,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        await this.audit(
+          context,
+          StandardActions.Remove,
+          entity.id as IdType,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterHardRemove(context, repository, responseEntity);
 
@@ -568,13 +577,15 @@ export function CrudServiceFrom<
 
       const responseEntity = await repository.recover(entity);
 
-      this.audit(
-        context,
-        StandardActions.Update,
-        entity.id as IdType,
-        entity,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        this.audit(
+          context,
+          StandardActions.Update,
+          entity.id as IdType,
+          entity,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterRecover(context, repository, responseEntity);
 

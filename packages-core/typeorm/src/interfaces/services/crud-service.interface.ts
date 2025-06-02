@@ -1415,6 +1415,11 @@ export interface CreateOptions<
     CreateInputType,
     ContextType
   >;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface UpdateOptions<
@@ -1429,6 +1434,11 @@ export interface UpdateOptions<
     UpdateInputType,
     ContextType
   >;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface RemoveOptions<
@@ -1437,6 +1447,11 @@ export interface RemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: RemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface SoftRemoveOptions<
@@ -1445,6 +1460,11 @@ export interface SoftRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: SoftRemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface HardRemoveOptions<
@@ -1453,6 +1473,11 @@ export interface HardRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: HardRemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface RecoverOptions<
@@ -1461,6 +1486,11 @@ export interface RecoverOptions<
   ContextType extends Context,
 > {
   eventHandler?: RecoverEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkInsertOptions<
@@ -1469,6 +1499,11 @@ export interface BulkInsertOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkInsertEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkUpdateOptions<
@@ -1477,6 +1512,11 @@ export interface BulkUpdateOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkUpdateEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkDeleteOptions<
@@ -1485,6 +1525,11 @@ export interface BulkDeleteOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkDeleteEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkRemoveOptions<
@@ -1493,6 +1538,11 @@ export interface BulkRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkRemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkRecoverOptions<
@@ -1501,4 +1551,9 @@ export interface BulkRecoverOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkRecoverEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
