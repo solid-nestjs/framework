@@ -4,10 +4,12 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   OneToMany,
+  ManyToOne,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
 import type { InvoiceDetail } from './invoice-detail.entity';
+import { Client } from '../../clients/entities/client.entity';
 
 @ObjectType()
 @Entity()
@@ -52,4 +54,11 @@ export class Invoice {
     },
   )
   details: InvoiceDetail[];
+
+  @ApiProperty({ description: 'Invoice client', type: () => Client })
+  @Field(() => Client, { description: 'Invoice client' })
+  @ManyToOne(() => Client, client => client.invoices, {
+    onDelete: 'CASCADE',
+  })
+  client: Client;
 }

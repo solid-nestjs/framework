@@ -6,9 +6,14 @@ import { InvoicesResolver } from './invoices.resolver';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceDetail } from './entities/invoice-detail.entity';
 import { ProductsModule } from '../products/products.module';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Invoice, InvoiceDetail]), ProductsModule],
+  imports: [
+    TypeOrmModule.forFeature([Invoice, InvoiceDetail]),
+    ProductsModule,
+    ClientsModule,
+  ],
   controllers: [InvoicesController],
   providers: [InvoicesResolver, InvoicesService],
   exports: [InvoicesService],
