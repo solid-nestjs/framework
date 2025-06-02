@@ -32,7 +32,7 @@ export class Supplier {
   @ApiProperty({ description: 'Supplier Products', type: () => [Product] })
   @Field(() => [Product], { description: 'Supplier Products', nullable: true })
   @OneToMany(() => Product, product => product.supplier, {
-    cascade: ['insert', 'update', 'remove'],
+    cascade: ['insert', 'update', 'remove', 'soft-remove', 'recover'],
   })
   products: Product[];
 

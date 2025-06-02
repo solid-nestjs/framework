@@ -2766,6 +2766,7 @@ describe('CrudServiceFrom', () => {
         {
           ignoreMultiplyingJoins: true,
           ignoreSelects: true,
+          withDeleted: true,
         },
       );
       expect(mockQueryBuilder.restore).toHaveBeenCalled();
@@ -2955,6 +2956,7 @@ describe('CrudServiceFrom', () => {
         {
           ignoreMultiplyingJoins: true,
           ignoreSelects: true,
+          withDeleted: true,
         },
       );
       expect(result).toEqual({ affected: 5 });
@@ -3071,6 +3073,7 @@ describe('CrudServiceFrom', () => {
         {
           ignoreMultiplyingJoins: true,
           ignoreSelects: true,
+          withDeleted: true,
         },
       );
       expect(result).toEqual({ affected: 10 });

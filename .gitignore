@@ -11,6 +11,7 @@ apps-examples/**/node_modules
 apps-examples/**/build
 
 # database-data
+database-data
 packages-core/**/database-data
 packages-bundles/**/database-data
 apps-examples/**/database-data

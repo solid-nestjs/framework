@@ -38,6 +38,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
             dropSchema: true,
             entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
             synchronize: true,
+            logging: false,
           });
           await dataSource.initialize();
           return dataSource;
@@ -156,6 +157,411 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
       await request(app.getHttpServer())
         .get(`/suppliers/${createResponse.body.id}`)
         .expect(404);
+    });
+
+    describe('Soft Deletion and Recovery', () => {
+      it('DELETE /suppliers/soft/:id - should soft delete a supplier', async () => {
+        // First create a supplier
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Soft Delete Test Supplier',
+            contactEmail: 'softdelete@supplier.com',
+          });
+
+        const supplierId = createResponse.body.id;
+
+        // Soft delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is not returned in normal queries (soft deleted)
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        // Verify supplier still exists in database with deletedAt set
+        const allSuppliersResponse = await request(app.getHttpServer())
+          .get('/suppliers')
+          .expect(200);
+
+        const foundSupplier = allSuppliersResponse.body.find(
+          (s: any) => s.id === supplierId,
+        );
+        expect(foundSupplier).toBeUndefined(); // Should not be in normal query
+      });
+
+      it('PATCH /suppliers/recover/:id - should recover a soft deleted supplier', async () => {
+        // First create a supplier
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Recovery Test Supplier',
+            contactEmail: 'recovery@supplier.com',
+          });
+
+        const supplierId = createResponse.body.id;
+
+        // Soft delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify it's soft deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        // Recover the supplier
+        const recoverResponse = await request(app.getHttpServer())
+          .patch(`/suppliers/recover/${supplierId}`)
+          .expect(202);
+
+        expect(recoverResponse.body.id).toBe(supplierId);
+        expect(recoverResponse.body.name).toBe('Recovery Test Supplier');
+
+        // Verify supplier is accessible again
+        const getResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(200);
+
+        expect(getResponse.body.id).toBe(supplierId);
+        expect(getResponse.body.name).toBe('Recovery Test Supplier');
+      });
+
+      it('DELETE /suppliers/hard/:id - should hard delete a supplier', async () => {
+        // First create a supplier
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Hard Delete Test Supplier',
+            contactEmail: 'harddelete@supplier.com',
+          });
+
+        const supplierId = createResponse.body.id;
+
+        // Hard delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/hard/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is completely removed
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+      });
+    });
+
+    describe('Bulk Operations', () => {
+      it('DELETE /suppliers/bulk/remove-by-email - should bulk soft remove suppliers by email', async () => {
+        const targetEmail = 'bulk.remove@test.com';
+        const otherEmail = 'other@test.com';
+
+        // Create multiple suppliers with same email and one with different email
+        const suppliers = [
+          { name: 'Bulk Remove Supplier 1', contactEmail: targetEmail },
+          { name: 'Bulk Remove Supplier 2', contactEmail: targetEmail },
+          { name: 'Keep Supplier', contactEmail: otherEmail },
+        ];
+
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform bulk soft remove
+        const removeDto = {
+          contactEmail: targetEmail,
+        };
+
+        const removeResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(removeDto)
+          .expect(200);
+
+        expect(removeResponse.body.affected).toBe(2);
+
+        // Verify suppliers with target email are soft deleted
+        for (let i = 0; i < 2; i++) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${createdSuppliers[i].id}`)
+            .expect(404);
+        }
+
+        // Verify supplier with different email still exists
+        await request(app.getHttpServer())
+          .get(`/suppliers/${createdSuppliers[2].id}`)
+          .expect(200);
+      });
+
+      it('PATCH /suppliers/bulk/recover-by-email - should bulk recover suppliers by email', async () => {
+        const targetEmail = 'bulk.recover@test.com';
+
+        // Create multiple suppliers
+        const suppliers = [
+          { name: 'Bulk Recover Supplier 1', contactEmail: targetEmail },
+          { name: 'Bulk Recover Supplier 2', contactEmail: targetEmail },
+        ];
+
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // First, soft delete them
+        const removeDto = {
+          contactEmail: targetEmail,
+        };
+
+        await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(removeDto)
+          .expect(200);
+
+        // Verify they are soft deleted
+        for (const supplier of createdSuppliers) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${supplier.id}`)
+            .expect(404);
+        }
+
+        // Now recover them
+        const recoverDto = {
+          contactEmail: targetEmail,
+        };
+
+        const recoverResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/recover-by-email')
+          .send(recoverDto)
+          .expect(200);
+
+        expect(recoverResponse.body.affected).toBe(2);
+
+        // Verify suppliers are accessible again
+        for (const supplier of createdSuppliers) {
+          const getResponse = await request(app.getHttpServer())
+            .get(`/suppliers/${supplier.id}`)
+            .expect(200);
+
+          expect(getResponse.body.id).toBe(supplier.id);
+          expect(getResponse.body.contactEmail).toBe(targetEmail);
+        }
+      });
+
+      it('DELETE /suppliers/bulk/delete-by-email - should bulk hard delete suppliers by email', async () => {
+        const targetEmail = 'bulk.delete@test.com';
+        const otherEmail = 'keep@test.com';
+
+        // Create multiple suppliers
+        const suppliers = [
+          { name: 'Bulk Delete Supplier 1', contactEmail: targetEmail },
+          { name: 'Bulk Delete Supplier 2', contactEmail: targetEmail },
+          { name: 'Keep Supplier', contactEmail: otherEmail },
+        ];
+
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform bulk hard delete
+        const deleteDto = {
+          contactEmail: targetEmail,
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(2);
+
+        // Verify suppliers with target email are completely removed
+        for (let i = 0; i < 2; i++) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${createdSuppliers[i].id}`)
+            .expect(404);
+        }
+
+        // Verify supplier with different email still exists
+        await request(app.getHttpServer())
+          .get(`/suppliers/${createdSuppliers[2].id}`)
+          .expect(200);
+      });
+
+      it('should handle bulk operations with no matching records', async () => {
+        // Try to remove suppliers with non-existent email
+        const removeDto = {
+          contactEmail: 'nonexistent@test.com',
+        };
+
+        const removeResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(removeDto)
+          .expect(200);
+
+        expect(removeResponse.body.affected).toBe(0);
+
+        // Try to recover suppliers with non-existent email
+        const recoverDto = {
+          contactEmail: 'nonexistent@test.com',
+        };
+
+        const recoverResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/recover-by-email')
+          .send(recoverDto)
+          .expect(200);
+
+        expect(recoverResponse.body.affected).toBe(0);
+
+        // Try to delete suppliers with non-existent email
+        const deleteDto = {
+          contactEmail: 'nonexistent@test.com',
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(0);
+      });
+
+      it('should handle validation errors for bulk operations', async () => {
+        // Test with invalid email format
+        const invalidDto = {
+          contactEmail: 'invalid-email-format',
+        };
+
+        await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(invalidDto)
+          .expect(400);
+
+        await request(app.getHttpServer())
+          .patch('/suppliers/bulk/recover-by-email')
+          .send(invalidDto)
+          .expect(400);
+
+        await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(invalidDto)
+          .expect(400);
+      });
+    });
+
+    describe('Soft Deletion with Related Entities', () => {
+      it('should cascade soft delete to related products when supplier is soft deleted', async () => {
+        // Create a supplier
+        const supplierResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Cascade Soft Delete Supplier',
+            contactEmail: 'cascade.soft@supplier.com',
+          });
+
+        const supplierId = supplierResponse.body.id;
+
+        // Create a product for this supplier
+        const productResponse = await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: 'Cascade Soft Delete Product',
+            description: 'A product for cascade soft delete testing',
+            price: 99.99,
+            stock: 10,
+            supplier: { id: supplierId },
+          });
+
+        const productId = productResponse.body.id;
+
+        // Soft delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is soft deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        // Verify product is also soft deleted due to cascade
+        await request(app.getHttpServer())
+          .get(`/products/${productId}`)
+          .expect(404);
+      });
+
+      it('should cascade recover to related products when supplier is recovered', async () => {
+        // Create a supplier
+        const supplierResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Cascade Recovery Supplier',
+            contactEmail: 'cascade.recovery@supplier.com',
+          });
+
+        const supplierId = supplierResponse.body.id;
+
+        // Create a product for this supplier
+        const productResponse = await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: 'Cascade Recovery Product',
+            description: 'A product for cascade recovery testing',
+            price: 149.99,
+            stock: 5,
+            supplier: { id: supplierId },
+          });
+
+        const productId = productResponse.body.id;
+
+        // Soft delete the supplier (which should cascade to product)
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify both are soft deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        await request(app.getHttpServer())
+          .get(`/products/${productId}`)
+          .expect(404);
+
+        // Recover the supplier
+        await request(app.getHttpServer())
+          .patch(`/suppliers/recover/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is recovered
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(200);
+
+        // Verify product is also recovered due to cascade
+        const productRecoveryResponse = await request(app.getHttpServer())
+          .get(`/products/${productId}`)
+          .expect(200);
+
+        expect(productRecoveryResponse.body.id).toBe(productId);
+        expect(productRecoveryResponse.body.name).toBe(
+          'Cascade Recovery Product',
+        );
+      });
     });
   });
 

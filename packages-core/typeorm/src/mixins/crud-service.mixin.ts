@@ -632,6 +632,7 @@ export function CrudServiceFrom<
         {
           ignoreMultiplyingJoins: true,
           ignoreSelects: true,
+          withDeleted: true,
         },
       )
         .restore()

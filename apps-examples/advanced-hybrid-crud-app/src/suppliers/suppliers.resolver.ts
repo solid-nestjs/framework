@@ -10,6 +10,7 @@ const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
   serviceType: SuppliersService,
   operations: {
+    softRemove: true,
     recover: true,
     hardRemove: true,
   },
