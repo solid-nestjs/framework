@@ -155,7 +155,7 @@ export class SuppliersController extends CrudControllerFrom(
   async bulkDeleteByEmail(
     @CurrentContext() context: Context,
     @Body() deleteDto: BatchDeleteInput,
-  ): Promise<{ affected: number | undefined }> {
+  ): Promise<{ affected: number | undefined | null }> {
     const result = await this.service.bulkDelete(context, {
       contactEmail: deleteDto.contactEmail,
     });
