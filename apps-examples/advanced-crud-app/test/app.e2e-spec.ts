@@ -1206,10 +1206,13 @@ describe('Advanced CRUD App (e2e)', () => {
           .post('/invoices')
           .send(invalidInvoiceDto);
 
-        // Should return 400 Bad Request due to missing details validation
+        // Should return 400 Bad Request due to validation errors
         expect(response.status).toBe(400);
-        expect(response.body.message).toBe(
-          'Invoice must have at least one detail.',
+        expect(response.body.message).toEqual(
+          expect.arrayContaining([
+            'property totalAmount should not exist',
+            'details must be an array',
+          ]),
         );
       });
     });

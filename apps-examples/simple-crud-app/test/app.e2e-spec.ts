@@ -60,7 +60,7 @@ describe('Simple CRUD App (e2e)', () => {
         supplierId = response.body.id;
       });
 
-      it('should create supplier even with invalid data (validation not enabled)', async () => {
+      it('should return 400 for invalid supplier data', async () => {
         const invalidSupplierDto = {
           name: '',
           contactEmail: 'invalid-email',
@@ -69,9 +69,10 @@ describe('Simple CRUD App (e2e)', () => {
         const response = await request(app.getHttpServer())
           .post('/suppliers')
           .send(invalidSupplierDto)
-          .expect(201);
+          .expect(400);
 
-        expect(response.body.id).toBeDefined();
+        expect(response.body.message).toBeDefined();
+        expect(Array.isArray(response.body.message)).toBe(true);
       });
     });
 
@@ -167,20 +168,22 @@ describe('Simple CRUD App (e2e)', () => {
         productId = response.body.id;
       });
 
-      it('should create product even with invalid data (validation not enabled)', async () => {
+      it('should return 400 for invalid product data', async () => {
         const invalidProductDto = {
           name: '',
           description: '',
           price: -1,
           stock: -1,
+          // missing required supplier field
         };
 
         const response = await request(app.getHttpServer())
           .post('/products')
           .send(invalidProductDto)
-          .expect(201);
+          .expect(400);
 
-        expect(response.body.id).toBeDefined();
+        expect(response.body.message).toBeDefined();
+        expect(Array.isArray(response.body.message)).toBe(true);
       });
     });
 
@@ -346,17 +349,22 @@ describe('Simple CRUD App (e2e)', () => {
       expect(Array.isArray(productsResponse.body)).toBe(true);
     });
 
-    it('should demonstrate that validation is not enforced', async () => {
-      // This demonstrates that validation is not working as expected
+    it('should demonstrate that validation is enforced', async () => {
+      // This demonstrates that validation is working properly
       const invalidResponse = await request(app.getHttpServer())
         .post('/suppliers')
         .send({
           name: '',
           contactEmail: 'not-an-email',
         })
-        .expect(201);
+        .expect(400);
 
-      expect(invalidResponse.body.id).toBeDefined();
+      expect(invalidResponse.body.message).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('name should not be empty'),
+          expect.stringContaining('contactEmail must be an email'),
+        ]),
+      );
     });
 
     it('should confirm DELETE operations return 202', async () => {

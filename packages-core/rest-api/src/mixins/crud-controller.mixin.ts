@@ -11,6 +11,7 @@ import {
   Put,
   Patch,
   Type,
+  ValidationPipe,
   mixin,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
@@ -192,7 +193,16 @@ export function CrudControllerFrom<
     })
     async create?(
       @ContextDecorator() context: ContextType,
-      @Body() createInput: CreateInputType,
+      @Body(
+        new ValidationPipe({
+          transform: true,
+          expectedType: createInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      createInput: CreateInputType,
     ): Promise<EntityType> {
       return this.service.create(context, createInput);
     }
@@ -220,7 +230,16 @@ export function CrudControllerFrom<
     async update?(
       @ContextDecorator() context: ContextType,
       @Param('id', ...pipeTransforms) id: IdType,
-      @Body() updateInput: UpdateInputType,
+      @Body(
+        new ValidationPipe({
+          transform: true,
+          expectedType: updateInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      updateInput: UpdateInputType,
     ): Promise<EntityType> {
       return this.service.update(context, id, updateInput);
     }

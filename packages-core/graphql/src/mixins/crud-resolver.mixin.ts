@@ -4,6 +4,7 @@ import {
   ParseIntPipe,
   PipeTransform,
   Type,
+  ValidationPipe,
   mixin,
 } from '@nestjs/common';
 import { Args, Mutation } from '@nestjs/graphql';
@@ -174,7 +175,19 @@ export function CrudResolverFrom<
     ])
     async create?(
       @ContextDecorator() context: ContextType,
-      @Args({ type: () => createInputType, name: 'createInput' })
+      @Args(
+        {
+          type: () => createInputType,
+          name: 'createInput',
+        },
+        new ValidationPipe({
+          transform: true,
+          expectedType: createInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
       createInput: CreateInputType,
     ): Promise<EntityType> {
       return this.service.create(context, createInput);
@@ -192,7 +205,19 @@ export function CrudResolverFrom<
       @ContextDecorator() context: ContextType,
       @Args('id', { type: () => idType }, ...pipeTransforms)
       id: IdType,
-      @Args({ type: () => updateInputType, name: 'updateInput' })
+      @Args(
+        {
+          type: () => updateInputType,
+          name: 'updateInput',
+        },
+        new ValidationPipe({
+          transform: true,
+          expectedType: updateInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
       updateInput: UpdateInputType,
     ): Promise<EntityType> {
       return this.service.update(context, id, updateInput);
