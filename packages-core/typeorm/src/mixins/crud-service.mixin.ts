@@ -1,4 +1,4 @@
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, Repository, In } from 'typeorm';
 import { Injectable, Type, mixin } from '@nestjs/common';
 import {
   applyMethodDecorators,
@@ -6,12 +6,21 @@ import {
   FindArgs,
   IdTypeFrom,
   StandardActions,
+  Where,
 } from '@solid-nestjs/common';
 import {
   Context,
   CrudService as CrudService,
   CrudServiceStructure,
   CreateOptions,
+  BulkInsertOptions,
+  BulkUpdateOptions,
+  BulkDeleteOptions,
+  BulkRemoveOptions,
+  BulkInsertResult,
+  BulkUpdateResult,
+  BulkDeleteResult,
+  BulkRemoveResult,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -74,13 +83,45 @@ export function CrudServiceFrom<
     ContextType
   >
 > {
+  const entityType = serviceStructure.entityType;
+
   const createStruct = serviceStructure.functions?.create;
   const updateStruct = serviceStructure.functions?.update;
   const removeStruct = serviceStructure.functions?.remove;
   const hardRemoveStruct = serviceStructure.functions?.hardRemove;
 
+  //bulk operations
+  const bulkInsertStruct = serviceStructure.functions?.bulkInsert;
+  const bulkUpdateStruct = serviceStructure.functions?.bulkUpdate;
+  const bulkDeleteStruct = serviceStructure.functions?.bulkDelete;
+  const bulkRemoveStruct = serviceStructure.functions?.bulkRemove;
+
   const createDecorators = createStruct?.transactional
     ? [() => Transactional({ isolationLevel: createStruct?.isolationLevel })]
+    : [];
+  const bulkInsertDecorators = bulkInsertStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkInsertStruct?.isolationLevel }),
+      ]
+    : [];
+  const bulkUpdateDecorators = bulkUpdateStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkUpdateStruct?.isolationLevel }),
+      ]
+    : [];
+  const bulkDeleteDecorators = bulkDeleteStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkDeleteStruct?.isolationLevel }),
+      ]
+    : [];
+  const bulkRemoveDecorators = bulkRemoveStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkRemoveStruct?.isolationLevel }),
+      ]
     : [];
   const updateDecorators = updateStruct?.transactional
     ? [() => Transactional({ isolationLevel: updateStruct?.isolationLevel })]
@@ -106,6 +147,19 @@ export function CrudServiceFrom<
 
   if (hardRemoveStruct?.decorators)
     hardRemoveDecorators.push(...hardRemoveStruct.decorators);
+
+  //bulk operations
+  if (bulkInsertStruct?.decorators)
+    bulkInsertDecorators.push(...bulkInsertStruct.decorators);
+
+  if (bulkUpdateStruct?.decorators)
+    bulkUpdateDecorators.push(...bulkUpdateStruct.decorators);
+
+  if (bulkDeleteStruct?.decorators)
+    bulkDeleteDecorators.push(...bulkDeleteStruct.decorators);
+
+  if (bulkRemoveStruct?.decorators)
+    bulkRemoveDecorators.push(...bulkRemoveStruct.decorators);
 
   @Injectable()
   class CrudServiceClass
@@ -154,6 +208,51 @@ export function CrudServiceFrom<
       return responseEntity;
     }
 
+    @applyMethodDecorators(bulkInsertDecorators)
+    async bulkInsert(
+      context: ContextType,
+      createInputs: DeepPartial<EntityType>[],
+      options?: BulkInsertOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkInsertResult<IdType>> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      // Create entities for validation and event handlers
+      const entities = createInputs.map(createInput =>
+        repository.create(createInput),
+      );
+
+      await eventHandler.beforeBulkInsert(
+        context,
+        repository,
+        entities,
+        createInputs,
+      );
+
+      // Perform true bulk insert using query builder - single DB operation
+      const insertResult = await repository
+        .createQueryBuilder()
+        .insert()
+        .into(repository.target)
+        .values(createInputs as any[])
+        .execute();
+
+      // Retrieve the created entities with their generated IDs
+      const createdIds = insertResult.identifiers.map(
+        identifier => identifier.id,
+      );
+
+      await eventHandler.afterBulkInsert(
+        context,
+        repository,
+        createdIds,
+        createInputs,
+      );
+
+      return { ids: createdIds };
+    }
+
     @applyMethodDecorators(updateDecorators)
     async update(
       context: ContextType,
@@ -191,6 +290,124 @@ export function CrudServiceFrom<
       );
 
       return responseEntity;
+    }
+
+    @applyMethodDecorators(bulkUpdateDecorators)
+    async bulkUpdate(
+      context: ContextType,
+      updateInput: DeepPartial<EntityType>,
+      where: Where<EntityType>,
+      options?: BulkUpdateOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkUpdateResult> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      await eventHandler.beforeBulkUpdate(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+
+      const result = await this.getQueryBuilder(
+        context,
+        { where } as FindArgsType,
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      )
+        .update(entityType)
+        .set(updateInput as any)
+        .execute();
+
+      await eventHandler.afterBulkUpdate(
+        context,
+        repository,
+        result.affected || 0,
+        updateInput,
+        where,
+      );
+
+      return { affected: result.affected };
+    }
+
+    @applyMethodDecorators(bulkDeleteDecorators)
+    async bulkDelete(
+      context: ContextType,
+      where: Where<EntityType>,
+      options?: BulkDeleteOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkDeleteResult> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      await eventHandler.beforeBulkDelete(context, repository, where);
+
+      const result = await this.getQueryBuilder(
+        context,
+        { where } as FindArgsType,
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      )
+        .delete()
+        .execute();
+
+      await eventHandler.afterBulkDelete(
+        context,
+        repository,
+        result.affected || 0,
+        where,
+      );
+
+      return { affected: result.affected };
+    }
+
+    @applyMethodDecorators(bulkRemoveDecorators)
+    async bulkRemove(
+      context: ContextType,
+      where: Where<EntityType>,
+      options?: BulkRemoveOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkRemoveResult> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      await eventHandler.beforeBulkRemove(context, repository, where);
+
+      let result: BulkRemoveResult;
+
+      // Check if the repository has a deleteDateColumn, if so use soft remove
+      if (hasDeleteDateColumn(repository)) {
+        // For soft remove, we need to perform an update operation to set the delete date
+        const qbResult = await this.getQueryBuilder(
+          context,
+          { where } as FindArgsType,
+          {
+            ignoreMultiplyingJoins: true,
+            ignoreSelects: true,
+          },
+        )
+          .update(entityType)
+          .softDelete()
+          .execute();
+
+        result = { affected: qbResult.affected };
+      } else {
+        result = await this.bulkDelete(context, where);
+      }
+
+      await eventHandler.afterBulkRemove(
+        context,
+        repository,
+        result.affected || 0,
+        where,
+      );
+
+      return result;
     }
 
     @applyMethodDecorators(removeDecorators)
@@ -275,6 +492,28 @@ export function CrudServiceFrom<
       entity: EntityType,
       createInput: CreateInputType,
     ): Promise<void> {}
+    async beforeBulkInsert(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entities: EntityType[],
+      createInputs: DeepPartial<EntityType>[],
+    ): Promise<void> {}
+    async beforeBulkUpdate(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      updateInput: DeepPartial<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async beforeBulkDelete(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async beforeBulkRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
     async beforeUpdate(
       context: ContextType,
       repository: Repository<EntityType>,
@@ -297,6 +536,31 @@ export function CrudServiceFrom<
       repository: Repository<EntityType>,
       entity: EntityType,
       createInput: CreateInputType,
+    ): Promise<void> {}
+    async afterBulkInsert(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      ids: IdType[],
+      createInputs: DeepPartial<EntityType>[],
+    ): Promise<void> {}
+    async afterBulkUpdate(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      affectedCount: number,
+      updateInput: DeepPartial<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async afterBulkDelete(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      affectedCount: number | undefined,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async afterBulkRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      affectedCount: number | undefined,
+      where: Where<EntityType>,
     ): Promise<void> {}
     async afterUpdate(
       context: ContextType,

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository, EntityManager, DeepPartial } from 'typeorm';
+import { Repository, EntityManager, DeepPartial, In } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CrudServiceFrom } from '../../src/mixins/crud-service.mixin';
 import { QueryBuilderHelper, hasDeleteDateColumn } from '../../src/helpers';
@@ -8,11 +8,16 @@ import {
   Entity,
   FindArgs,
   StandardActions,
+  Where,
 } from '@solid-nestjs/common';
 import {
   Context,
   CrudServiceStructure,
   CreateOptions,
+  BulkInsertOptions,
+  BulkUpdateOptions,
+  BulkDeleteOptions,
+  BulkRemoveOptions,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -98,6 +103,9 @@ describe('CrudServiceFrom', () => {
       save: jest.fn(),
       softRemove: jest.fn(),
       remove: jest.fn(),
+      findBy: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      target: TestEntity,
       manager: entityManager,
     } as any;
 
@@ -175,10 +183,20 @@ describe('CrudServiceFrom', () => {
     // Mock inherited methods from DataService
     service.findOne = jest.fn();
     service.audit = jest.fn();
+    service.getQueryBuilder = jest.fn();
+    service.getRepository = jest.fn().mockReturnValue(repository);
 
     // Set up lifecycle method spies
     service.beforeCreate = jest.fn().mockResolvedValue(undefined);
     service.afterCreate = jest.fn().mockResolvedValue(undefined);
+    service.beforeBulkInsert = jest.fn().mockResolvedValue(undefined);
+    service.afterBulkInsert = jest.fn().mockResolvedValue(undefined);
+    service.beforeBulkUpdate = jest.fn().mockResolvedValue(undefined);
+    service.afterBulkUpdate = jest.fn().mockResolvedValue(undefined);
+    service.beforeBulkDelete = jest.fn().mockResolvedValue(undefined);
+    service.afterBulkDelete = jest.fn().mockResolvedValue(undefined);
+    service.beforeBulkRemove = jest.fn().mockResolvedValue(undefined);
+    service.afterBulkRemove = jest.fn().mockResolvedValue(undefined);
     service.beforeUpdate = jest.fn().mockResolvedValue(undefined);
     service.afterUpdate = jest.fn().mockResolvedValue(undefined);
     service.beforeRemove = jest.fn().mockResolvedValue(undefined);
@@ -272,6 +290,1075 @@ describe('CrudServiceFrom', () => {
         savedEntity,
         createInput,
       );
+    });
+  });
+
+  describe('bulkInsert', () => {
+    it('should bulk insert and save entities successfully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const createInputs: TestCreateInput[] = [
+        {
+          name: 'Test User 1',
+          email: 'test1@example.com',
+        },
+        {
+          name: 'Test User 2',
+          email: 'test2@example.com',
+        },
+      ];
+
+      const createdEntities = [
+        { id: '1', ...createInputs[0] },
+        { id: '2', ...createInputs[1] },
+      ];
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          identifiers: [{ id: '1' }, { id: '2' }],
+        }),
+      };
+
+      repository.create
+        .mockReturnValueOnce(createdEntities[0] as any)
+        .mockReturnValueOnce(createdEntities[1] as any);
+      repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      // Add beforeBulkInsert and afterBulkInsert method spies
+      service.beforeBulkInsert = jest.fn().mockResolvedValue(undefined);
+      service.afterBulkInsert = jest.fn().mockResolvedValue(undefined);
+
+      const result = await service.bulkInsert(context, createInputs);
+
+      expect(repository.create).toHaveBeenCalledTimes(2);
+      expect(repository.create).toHaveBeenCalledWith(createInputs[0]);
+      expect(repository.create).toHaveBeenCalledWith(createInputs[1]);
+      expect(service.beforeBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        createdEntities,
+        createInputs,
+      );
+      expect(repository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.insert).toHaveBeenCalled();
+      expect(mockQueryBuilder.into).toHaveBeenCalledWith(TestEntity);
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith(createInputs);
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      // No longer fetching entities or auditing
+      expect(repository.findBy).not.toHaveBeenCalled();
+      expect(service.audit).not.toHaveBeenCalled();
+      expect(service.afterBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        ['1', '2'], // Now receives IDs instead of entities
+        createInputs,
+      );
+      expect(result).toEqual({ ids: ['1', '2'] });
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const createInputs: TestCreateInput[] = [
+        {
+          name: 'Test User 1',
+          email: 'test1@example.com',
+        },
+        {
+          name: 'Test User 2',
+          email: 'test2@example.com',
+        },
+      ];
+
+      const customEventHandler = {
+        beforeBulkInsert: jest.fn(),
+        afterBulkInsert: jest.fn(),
+      };
+
+      const options: BulkInsertOptions<string, TestEntity, TestContext> = {
+        eventHandler: customEventHandler,
+      };
+
+      const createdEntities = [
+        { id: '1', ...createInputs[0] },
+        { id: '2', ...createInputs[1] },
+      ];
+      const savedEntities = [
+        { id: '1', ...createInputs[0], createdAt: new Date() },
+        { id: '2', ...createInputs[1], createdAt: new Date() },
+      ];
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          identifiers: [{ id: '1' }, { id: '2' }],
+        }),
+      };
+
+      repository.create
+        .mockReturnValueOnce(createdEntities[0] as any)
+        .mockReturnValueOnce(createdEntities[1] as any);
+      repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      await service.bulkInsert(context, createInputs, options);
+
+      expect(customEventHandler.beforeBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        createdEntities,
+        createInputs,
+      );
+      expect(customEventHandler.afterBulkInsert).toHaveBeenCalledWith(
+        context,
+        repository,
+        ['1', '2'],
+        createInputs,
+      );
+    });
+  });
+
+  describe('bulkUpdate', () => {
+    it('should bulk update entities successfully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 3,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(TestEntity);
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(updateInput);
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(service.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        3,
+        updateInput,
+        where,
+      );
+      expect(result).toEqual({ affected: 3 });
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      const customEventHandler = {
+        beforeBulkUpdate: jest.fn(),
+        afterBulkUpdate: jest.fn(),
+      };
+
+      const options: BulkUpdateOptions<string, TestEntity, TestContext> = {
+        eventHandler: customEventHandler,
+      };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 2,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.bulkUpdate(context, updateInput, where, options);
+
+      expect(customEventHandler.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      expect(customEventHandler.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        2,
+        updateInput,
+        where,
+      );
+      // Ensure default handlers are NOT called
+      expect(service.beforeBulkUpdate).not.toHaveBeenCalled();
+      expect(service.afterBulkUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should handle zero affected rows', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'nonexistent@example.com' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 0,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      expect(service.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        updateInput,
+        where,
+      );
+      expect(result).toEqual({ affected: 0 });
+    });
+
+    it('should handle undefined affected count', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock the query builder chain with undefined affected
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: undefined,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.afterBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        updateInput,
+        where,
+      );
+      expect(result).toEqual({ affected: undefined });
+    });
+
+    it('should handle database errors properly', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      const databaseError = new Error('Database connection failed');
+
+      // Mock the query builder chain to throw error
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockRejectedValue(databaseError),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await expect(
+        service.bulkUpdate(context, updateInput, where),
+      ).rejects.toThrow('Database connection failed');
+
+      expect(service.beforeBulkUpdate).toHaveBeenCalledWith(
+        context,
+        repository,
+        updateInput,
+        where,
+      );
+      // afterBulkUpdate should not be called on error
+      expect(service.afterBulkUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should work with complex where conditions', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: Partial<TestEntity> = {
+        name: 'Updated Name',
+      };
+      const where: Where<TestEntity> = {
+        email: 'test@example.com',
+        createdAt: { _gte: new Date('2023-01-01') },
+      };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 5,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(result).toEqual({ affected: 5 });
+    });
+
+    it('should work with DeepPartial update input', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const updateInput: DeepPartial<TestEntity> = {
+        name: 'Updated Name',
+        email: 'updated@example.com',
+        updatedAt: new Date(),
+      };
+      const where: Where<TestEntity> = { id: '1' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 1,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkUpdate(context, updateInput, where);
+
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(updateInput);
+      expect(result).toEqual({ affected: 1 });
+    });
+
+    it('should apply decorators correctly when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
+      const serviceStructureWithBulkUpdateDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          bulkUpdate: {
+            decorators: [customDecorator as any],
+            transactional: true,
+            isolationLevel: 'READ COMMITTED',
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithBulkUpdateDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+      expect(decoratedService.bulkUpdate).toBeDefined();
+
+      // Verify that the decorator was applied
+      expect(customDecorator).toHaveBeenCalled();
+    });
+  });
+
+  describe('bulkDelete', () => {
+    it('should bulk delete entities successfully', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 3,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkDelete(context, where);
+
+      expect(service.beforeBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(mockQueryBuilder.delete).toHaveBeenCalled();
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(service.afterBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        3,
+        where,
+      );
+      expect(result).toEqual({ affected: 3 });
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      const customEventHandler = {
+        beforeBulkDelete: jest.fn(),
+        afterBulkDelete: jest.fn(),
+      };
+
+      const options: BulkDeleteOptions<string, TestEntity, TestContext> = {
+        eventHandler: customEventHandler,
+      };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 2,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.bulkDelete(context, where, options);
+
+      expect(customEventHandler.beforeBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(customEventHandler.afterBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        2,
+        where,
+      );
+      // Ensure default handlers are NOT called
+      expect(service.beforeBulkDelete).not.toHaveBeenCalled();
+      expect(service.afterBulkDelete).not.toHaveBeenCalled();
+    });
+
+    it('should handle zero affected rows', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'nonexistent@example.com' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 0,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkDelete(context, where);
+
+      expect(service.beforeBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.afterBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        where,
+      );
+      expect(result).toEqual({ affected: 0 });
+    });
+
+    it('should handle undefined affected count', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock the query builder chain with undefined affected
+      const mockQueryBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: undefined,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkDelete(context, where);
+
+      expect(service.afterBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        where,
+      );
+      expect(result).toEqual({ affected: undefined });
+    });
+
+    it('should handle database errors properly', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+      const dbError = new Error('Database connection failed');
+
+      // Mock the query builder chain to throw an error
+      const mockQueryBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockRejectedValue(dbError),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await expect(service.bulkDelete(context, where)).rejects.toThrow(
+        'Database connection failed',
+      );
+
+      expect(service.beforeBulkDelete).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      // afterBulkDelete should not be called on error
+      expect(service.afterBulkDelete).not.toHaveBeenCalled();
+    });
+
+    it('should work with complex where conditions', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = {
+        email: 'test@example.com',
+        createdAt: { _gte: new Date('2023-01-01') },
+      };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 5,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkDelete(context, where);
+
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(result).toEqual({ affected: 5 });
+    });
+
+    it('should work with simple ID-based where conditions', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: '1' };
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 1,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkDelete(context, where);
+
+      expect(mockQueryBuilder.delete).toHaveBeenCalled();
+      expect(result).toEqual({ affected: 1 });
+    });
+
+    it('should apply decorators correctly when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
+      const serviceStructureWithBulkDeleteDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          bulkDelete: {
+            decorators: [customDecorator as any],
+            transactional: true,
+            isolationLevel: 'READ COMMITTED',
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithBulkDeleteDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+      expect(decoratedService.bulkDelete).toBeDefined();
+
+      // Verify that the decorator was applied
+      expect(customDecorator).toHaveBeenCalled();
+    });
+  });
+
+  describe('bulkRemove', () => {
+    it('should perform soft remove when repository has delete date column', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock hasDeleteDateColumn to return true (soft delete enabled)
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain for UPDATE operation with softDelete
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        softDelete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 3,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRemove(context, where);
+
+      expect(hasDeleteDateColumnMock).toHaveBeenCalledWith(repository);
+      expect(service.beforeBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(TestEntity);
+      expect(mockQueryBuilder.softDelete).toHaveBeenCalled();
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(service.afterBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        3,
+        where,
+      );
+      expect(result).toEqual({ affected: 3 });
+    });
+
+    it('should delegate to bulkDelete when repository has no delete date column', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      // Mock hasDeleteDateColumn to return false (hard delete)
+      hasDeleteDateColumnMock.mockReturnValue(false);
+
+      // Mock the bulkDelete method
+      service.bulkDelete = jest.fn().mockResolvedValue({ affected: 2 });
+
+      const result = await service.bulkRemove(context, where);
+
+      expect(hasDeleteDateColumnMock).toHaveBeenCalledWith(repository);
+      expect(service.beforeBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.bulkDelete).toHaveBeenCalledWith(context, where);
+      expect(service.afterBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        2,
+        where,
+      );
+      expect(result).toEqual({ affected: 2 });
+    });
+
+    it('should use custom event handler when provided in options', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      const customEventHandler = {
+        beforeBulkRemove: jest.fn(),
+        afterBulkRemove: jest.fn(),
+      };
+
+      const options = {
+        eventHandler: customEventHandler,
+      };
+
+      // Mock hasDeleteDateColumn to return true
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        softDelete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 1,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.bulkRemove(context, where, options);
+
+      expect(customEventHandler.beforeBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(customEventHandler.afterBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        1,
+        where,
+      );
+      // Ensure default handlers are NOT called
+      expect(service.beforeBulkRemove).not.toHaveBeenCalled();
+      expect(service.afterBulkRemove).not.toHaveBeenCalled();
+    });
+
+    it('should handle zero affected rows', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'nonexistent@example.com' };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        softDelete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 0,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRemove(context, where);
+
+      expect(service.beforeBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      expect(service.afterBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        where,
+      );
+      expect(result).toEqual({ affected: 0 });
+    });
+
+    it('should handle undefined affected count', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+
+      hasDeleteDateColumnMock.mockReturnValue(false);
+
+      // Mock the bulkDelete method
+      service.bulkDelete = jest.fn().mockResolvedValue({ affected: undefined });
+
+      const result = await service.bulkRemove(context, where);
+
+      expect(service.afterBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        0,
+        where,
+      );
+      expect(result).toEqual({ affected: undefined });
+    });
+
+    it('should handle database errors properly', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { email: 'test@example.com' };
+      const dbError = new Error('Database connection failed');
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain to throw an error
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        softDelete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockRejectedValue(dbError),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await expect(service.bulkRemove(context, where)).rejects.toThrow(
+        'Database connection failed',
+      );
+
+      expect(service.beforeBulkRemove).toHaveBeenCalledWith(
+        context,
+        repository,
+        where,
+      );
+      // afterBulkRemove should not be called on error
+      expect(service.afterBulkRemove).not.toHaveBeenCalled();
+    });
+
+    it('should work with complex where conditions', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = {
+        email: 'test@example.com',
+        createdAt: { _gte: new Date('2023-01-01') },
+      };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        softDelete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 5,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRemove(context, where);
+
+      expect(service.getQueryBuilder).toHaveBeenCalledWith(
+        context,
+        { where },
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+        },
+      );
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(TestEntity);
+      expect(mockQueryBuilder.softDelete).toHaveBeenCalled();
+      expect(result).toEqual({ affected: 5 });
+    });
+
+    it('should work with simple ID-based where conditions for soft delete', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: '1' };
+
+      hasDeleteDateColumnMock.mockReturnValue(true);
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        softDelete: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({
+          affected: 1,
+        }),
+      };
+
+      service.getQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.bulkRemove(context, where);
+
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(TestEntity);
+      expect(mockQueryBuilder.softDelete).toHaveBeenCalled();
+      expect(result).toEqual({ affected: 1 });
+    });
+
+    it('should work with simple ID-based where conditions for hard delete', async () => {
+      const context: TestContext = { userId: 'user1' };
+      const where: Where<TestEntity> = { id: '1' };
+
+      hasDeleteDateColumnMock.mockReturnValue(false);
+
+      // Mock the bulkDelete method
+      service.bulkDelete = jest.fn().mockResolvedValue({ affected: 1 });
+
+      const result = await service.bulkRemove(context, where);
+
+      expect(service.bulkDelete).toHaveBeenCalledWith(context, where);
+      expect(result).toEqual({ affected: 1 });
+    });
+
+    it('should apply decorators correctly when configured', async () => {
+      // Create a custom decorator for testing
+      const customDecorator = jest.fn(
+        () =>
+          (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor,
+          ) => {
+            // Mock decorator implementation
+          },
+      );
+
+      const serviceStructureWithBulkRemoveDecorators: CrudServiceStructure<
+        string,
+        TestEntity,
+        TestCreateInput,
+        TestUpdateInput,
+        TestFindArgs,
+        TestContext
+      > = {
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        lockMode: { lockMode: 'optimistic', lockVersion: 1 },
+        relationsConfig: {},
+        functions: {
+          bulkRemove: {
+            decorators: [customDecorator as any],
+            transactional: true,
+            isolationLevel: 'READ COMMITTED',
+          },
+        },
+      };
+
+      const DecoratedCrudServiceClass = CrudServiceFrom(
+        serviceStructureWithBulkRemoveDecorators,
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          DecoratedCrudServiceClass,
+          {
+            provide: getRepositoryToken(TestEntity),
+            useValue: repository,
+          },
+          {
+            provide: AuditService,
+            useValue: auditService,
+          },
+          {
+            provide: QueryBuilderHelper,
+            useValue: queryBuilderHelper,
+          },
+        ],
+      }).compile();
+
+      const decoratedService = module.get(DecoratedCrudServiceClass);
+      expect(decoratedService).toBeDefined();
+      expect(decoratedService.bulkRemove).toBeDefined();
+
+      // Verify that the decorator was applied
+      expect(customDecorator).toHaveBeenCalled();
     });
   });
 

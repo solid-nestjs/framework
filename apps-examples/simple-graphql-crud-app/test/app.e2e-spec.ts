@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { DataSource } from 'typeorm';
 
@@ -179,8 +179,7 @@ describe('GraphQL CRUD App (e2e)', () => {
 
       const updateSupplierMutation = `
         mutation {
-          updateSupplier(updateInput: {
-            id: "${supplierId}"
+          updateSupplier(id: "${supplierId}",updateInput: {            
             name: "Updated Supplier"
             contactEmail: "updated@supplier.com"
           }) {
@@ -435,8 +434,7 @@ describe('GraphQL CRUD App (e2e)', () => {
 
       const updateProductMutation = `
         mutation {
-          updateProduct(updateInput: {
-            id: "${productId}"
+          updateProduct(id: "${productId}",updateInput: {
             name: "Updated Product"
             description: "An updated product"
             price: 39.99
