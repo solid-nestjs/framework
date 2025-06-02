@@ -16,6 +16,7 @@ import {
   BulkInsertEventsHandler,
   BulkUpdateEventsHandler,
   BulkDeleteEventsHandler,
+  BulkRemoveEventsHandler,
 } from '../event-handlers';
 import { DataService } from './data-service.interface';
 
@@ -48,6 +49,17 @@ export interface BulkUpdateResult {
 export interface BulkDeleteResult {
   /**
    * Number of entities affected by the delete operation.
+   * Can be undefined if the database doesn't provide this information.
+   */
+  affected: number | undefined | null;
+}
+
+/**
+ * Result interface for bulk remove operations.
+ */
+export interface BulkRemoveResult {
+  /**
+   * Number of entities affected by the remove operation.
    * Can be undefined if the database doesn't provide this information.
    */
   affected: number | undefined | null;
@@ -641,6 +653,36 @@ export interface CrudService<
   ): Promise<BulkDeleteResult>;
 
   /**
+   * Performs bulk remove operation of multiple entities matching the specified conditions.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param where - The conditions that determine which entities to remove
+   * @param options - Optional configuration for the bulk remove operation
+   * @returns A promise that resolves to bulk remove result containing the number of affected entities
+   *
+   * @remarks
+   * This method efficiently removes multiple entities in a single database operation.
+   * If the entity has a delete date column (soft delete enabled), it performs a soft remove
+   * by setting the delete date instead of physically deleting the records. Otherwise, it
+   * performs a hard delete. This method executes beforeBulkRemove and afterBulkRemove hooks
+   * and supports custom event handlers.
+   *
+   * @example
+   * ```typescript
+   * const result = await crudService.bulkRemove(context, {
+   *   status: 'expired',
+   *   expiresAt: { _lt: new Date() }
+   * });
+   * console.log(`Removed ${result.affected} expired records`);
+   * ```
+   */
+  bulkRemove(
+    context: ContextType,
+    where: Where<EntityType>,
+    options?: BulkRemoveOptions<IdType, EntityType, ContextType>,
+  ): Promise<BulkRemoveResult>;
+
+  /**
    * Hook method executed before performing a bulk update operation.
    *
    * @param context - The execution context containing request-specific information
@@ -824,6 +866,103 @@ export interface CrudService<
   ): Promise<void>;
 
   /**
+   * Hook method executed before performing a bulk remove operation.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entities
+   * @param where - The conditions that determine which entities will be removed
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform validation or side effects before bulk removing
+   * entities. You can validate the remove criteria, check permissions, backup data,
+   * or prepare related systems. Note that individual entities are not loaded in bulk
+   * operations, so you work with the removal criteria rather than specific instances.
+   * The behavior depends on whether the entity supports soft delete.
+   *
+   * @example
+   * ```typescript
+   * async beforeBulkRemove(context, repository, where) {
+   *   // Validate remove permissions
+   *   if (!context.user.canBulkRemove) {
+   *     throw new Error('User does not have permission for bulk remove');
+   *   }
+   *
+   *   // Backup entities before removal
+   *   const entitiesToRemove = await repository.find({ where });
+   *   await this.backupEntities(entitiesToRemove);
+   *
+   *   // Check for protected entities
+   *   const protectedCount = await repository.count({
+   *     where: { ...where, protected: true }
+   *   });
+   *   if (protectedCount > 0) {
+   *     throw new Error('Cannot remove protected entities');
+   *   }
+   *
+   *   // Log bulk operation
+   *   await this.logBulkRemove(where, context.user.id);
+   * }
+   * ```
+   */
+  beforeBulkRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  /**
+   * Hook method executed after successfully performing a bulk remove operation.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entities
+   * @param affectedCount - The number of entities that were removed (may be undefined)
+   * @param where - The conditions that determined which entities were removed
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform side effects after entities have been successfully
+   * bulk removed. You can trigger notifications, update caches, create audit logs, or
+   * perform cleanup operations. The affectedCount parameter tells you how many entities
+   * were actually removed by the operation. The removal behavior (soft vs hard) depends
+   * on the entity configuration.
+   *
+   * @example
+   * ```typescript
+   * async afterBulkRemove(context, repository, affectedCount, where) {
+   *   // Log bulk removal
+   *   await this.auditService.logBulk('BULK_REMOVE', affectedCount, context.user.id, {
+   *     where,
+   *     removedAt: new Date()
+   *   });
+   *
+   *   // Clear related caches
+   *   if (affectedCount && affectedCount > 0) {
+   *     await this.cacheService.invalidatePattern('entities:*');
+   *   }
+   *
+   *   // Clean up related resources
+   *   await this.cleanupRelatedResources(where);
+   *
+   *   // Send notification
+   *   await this.notificationService.sendBulkRemoveNotification(
+   *     context.user.id,
+   *     affectedCount || 0
+   *   );
+   *
+   *   // Update search index
+   *   await this.searchService.removeByQuery(where);
+   * }
+   * ```
+   */
+  afterBulkRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  /**
    * Hook method executed after successfully soft-deleting an entity.
    *
    * @param context - The execution context containing request-specific information
@@ -979,4 +1118,12 @@ export interface BulkDeleteOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkDeleteEventsHandler<IdType, EntityType, ContextType>;
+}
+
+export interface BulkRemoveOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: BulkRemoveEventsHandler<IdType, EntityType, ContextType>;
 }

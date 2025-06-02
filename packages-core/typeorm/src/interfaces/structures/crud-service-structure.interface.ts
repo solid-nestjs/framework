@@ -29,6 +29,7 @@ export interface CrudServiceFunctions<EntityType>
   bulkInsert?: CrudServiceFunctionStructure<EntityType>;
   bulkUpdate?: CrudServiceFunctionStructure<EntityType>;
   bulkDelete?: CrudServiceFunctionStructure<EntityType>;
+  bulkRemove?: CrudServiceFunctionStructure<EntityType>;
 }
 
 export interface CrudServiceStructure<

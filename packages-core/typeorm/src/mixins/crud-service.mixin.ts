@@ -16,9 +16,11 @@ import {
   BulkInsertOptions,
   BulkUpdateOptions,
   BulkDeleteOptions,
+  BulkRemoveOptions,
   BulkInsertResult,
   BulkUpdateResult,
   BulkDeleteResult,
+  BulkRemoveResult,
   UpdateOptions,
   RemoveOptions,
   HardRemoveOptions,
@@ -92,6 +94,7 @@ export function CrudServiceFrom<
   const bulkInsertStruct = serviceStructure.functions?.bulkInsert;
   const bulkUpdateStruct = serviceStructure.functions?.bulkUpdate;
   const bulkDeleteStruct = serviceStructure.functions?.bulkDelete;
+  const bulkRemoveStruct = serviceStructure.functions?.bulkRemove;
 
   const createDecorators = createStruct?.transactional
     ? [() => Transactional({ isolationLevel: createStruct?.isolationLevel })]
@@ -112,6 +115,12 @@ export function CrudServiceFrom<
     ? [
         () =>
           Transactional({ isolationLevel: bulkDeleteStruct?.isolationLevel }),
+      ]
+    : [];
+  const bulkRemoveDecorators = bulkRemoveStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkRemoveStruct?.isolationLevel }),
       ]
     : [];
   const updateDecorators = updateStruct?.transactional
@@ -148,6 +157,9 @@ export function CrudServiceFrom<
 
   if (bulkDeleteStruct?.decorators)
     bulkDeleteDecorators.push(...bulkDeleteStruct.decorators);
+
+  if (bulkRemoveStruct?.decorators)
+    bulkRemoveDecorators.push(...bulkRemoveStruct.decorators);
 
   @Injectable()
   class CrudServiceClass
@@ -354,6 +366,50 @@ export function CrudServiceFrom<
       return { affected: result.affected };
     }
 
+    @applyMethodDecorators(bulkRemoveDecorators)
+    async bulkRemove(
+      context: ContextType,
+      where: Where<EntityType>,
+      options?: BulkRemoveOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkRemoveResult> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      await eventHandler.beforeBulkRemove(context, repository, where);
+
+      let result: BulkRemoveResult;
+
+      // Check if the repository has a deleteDateColumn, if so use soft remove
+      if (hasDeleteDateColumn(repository)) {
+        // For soft remove, we need to perform an update operation to set the delete date
+        const qbResult = await this.getQueryBuilder(
+          context,
+          { where } as FindArgsType,
+          {
+            ignoreMultiplyingJoins: true,
+            ignoreSelects: true,
+          },
+        )
+          .update(entityType)
+          .softDelete()
+          .execute();
+
+        result = { affected: qbResult.affected };
+      } else {
+        result = await this.bulkDelete(context, where);
+      }
+
+      await eventHandler.afterBulkRemove(
+        context,
+        repository,
+        result.affected || 0,
+        where,
+      );
+
+      return result;
+    }
+
     @applyMethodDecorators(removeDecorators)
     async remove(
       context: ContextType,
@@ -453,6 +509,11 @@ export function CrudServiceFrom<
       repository: Repository<EntityType>,
       where: Where<EntityType>,
     ): Promise<void> {}
+    async beforeBulkRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
     async beforeUpdate(
       context: ContextType,
       repository: Repository<EntityType>,
@@ -490,6 +551,12 @@ export function CrudServiceFrom<
       where: Where<EntityType>,
     ): Promise<void> {}
     async afterBulkDelete(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      affectedCount: number | undefined,
+      where: Where<EntityType>,
+    ): Promise<void> {}
+    async afterBulkRemove(
       context: ContextType,
       repository: Repository<EntityType>,
       affectedCount: number | undefined,
