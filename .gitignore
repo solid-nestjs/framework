@@ -32,7 +32,17 @@ lerna-debug.log*
 
 # Tests
 /coverage
+/coverage-e2e
 /.nyc_output
+
+# Tests
+packages-core/**/coverage
+packages-bundles/**/coverage
+apps-examples/**/coverage
+# Tests e2e
+packages-core/**/coverage-e2e
+packages-bundles/**/coverage-e2e
+apps-examples/**/coverage-e2e
 
 # IDEs and editors
 /.idea
