@@ -3,6 +3,7 @@ import { HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBody } from '@nestjs/swagger';
 import {
   CrudService,
+  SoftDeletableCrudService,
   Entity,
   FindArgs,
   CurrentContext,
@@ -59,7 +60,7 @@ class TestContextClass implements TestContext {
   userId?: string;
 }
 
-// Mock crud service
+// Mock crud service - basic version without soft deletion support
 class MockCrudService
   implements
     CrudService<
@@ -231,6 +232,41 @@ class MockCrudService
   }
 }
 
+// Mock soft deletable crud service - extends SoftDeletableCrudService for testing soft deletion operations
+class MockSoftDeletableCrudService
+  extends MockCrudService
+  implements
+    SoftDeletableCrudService<
+      string,
+      TestEntity,
+      TestCreateInput,
+      TestUpdateInput,
+      TestContext
+    >
+{
+  async softRemove(context: TestContext, id: string): Promise<TestEntity> {
+    const existing = await this.findOne(context, id, false);
+    if (!existing) {
+      throw new Error('Entity not found');
+    }
+    return {
+      ...existing,
+      deletedAt: new Date(),
+    };
+  }
+
+  async recover(context: TestContext, id: string): Promise<TestEntity> {
+    const existing = await this.findOne(context, id, false);
+    if (!existing) {
+      throw new Error('Entity not found');
+    }
+    return {
+      ...existing,
+      deletedAt: undefined,
+    };
+  }
+}
+
 describe('CrudControllerFrom', () => {
   let controller: any;
   let service: MockCrudService;
@@ -258,7 +294,7 @@ describe('CrudControllerFrom', () => {
         create: true,
         update: true,
         remove: true,
-        hardRemove: false,
+        // hardRemove omitted - not available for basic CrudService
       },
       idPipeTransform: undefined,
       idParamDecorators: [],
@@ -391,10 +427,13 @@ describe('CrudControllerFrom', () => {
 
   describe('controller with hardRemove enabled', () => {
     let controllerWithHardRemove: any;
+    let softDeletableService: MockSoftDeletableCrudService;
     beforeEach(async () => {
+      softDeletableService = new MockSoftDeletableCrudService();
+
       const controllerStructure = {
         entityType: TestEntity,
-        serviceType: MockCrudService,
+        serviceType: MockSoftDeletableCrudService,
         findArgsType: TestFindArgsClass,
         contextType: TestContextClass,
         createInputType: TestCreateInput,
@@ -425,8 +464,8 @@ describe('CrudControllerFrom', () => {
         controllers: [ControllerClass],
         providers: [
           {
-            provide: MockCrudService,
-            useValue: service,
+            provide: MockSoftDeletableCrudService,
+            useValue: softDeletableService,
           },
         ],
       }).compile();
@@ -447,6 +486,179 @@ describe('CrudControllerFrom', () => {
         }),
       );
       expect(result.deletedAt).toBeUndefined();
+    });
+  });
+
+  describe('controller with soft deletion operations', () => {
+    let controllerWithSoftDeletion: any;
+    let softDeletableService: MockSoftDeletableCrudService;
+
+    beforeEach(async () => {
+      softDeletableService = new MockSoftDeletableCrudService();
+
+      const controllerStructure = {
+        entityType: TestEntity,
+        serviceType: MockSoftDeletableCrudService,
+        findArgsType: TestFindArgsClass,
+        contextType: TestContextClass,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        controllerName: 'TestSoftDeletableCrudController',
+        route: 'test-soft-crud',
+        decorators: {
+          class: [ApiTags('test-soft-crud')],
+          methods: {},
+        },
+        operations: {
+          findAll: true,
+          findOne: true,
+          pagination: true,
+          findAllPaginated: true,
+          create: true,
+          update: true,
+          remove: true,
+          hardRemove: true,
+          softRemove: true,
+          recover: true,
+        },
+        idPipeTransform: undefined,
+        idParamDecorators: [],
+      };
+
+      const ControllerClass = CrudControllerFrom(controllerStructure);
+
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [ControllerClass],
+        providers: [
+          {
+            provide: MockSoftDeletableCrudService,
+            useValue: softDeletableService,
+          },
+        ],
+      }).compile();
+
+      controllerWithSoftDeletion = module.get<any>(ControllerClass);
+    });
+
+    describe('softRemove', () => {
+      it('should soft remove an entity', async () => {
+        const context: TestContext = { userId: 'test-user' };
+
+        const result = await controllerWithSoftDeletion.softRemove(
+          context,
+          '1',
+        );
+
+        expect(result).toEqual(
+          expect.objectContaining({
+            id: '1',
+            name: 'Test User 1',
+            email: 'test1@example.com',
+          }),
+        );
+        expect(result.deletedAt).toBeDefined();
+      });
+
+      it('should throw error for non-existent entity', async () => {
+        const context: TestContext = { userId: 'test-user' };
+
+        await expect(
+          controllerWithSoftDeletion.softRemove(context, '999'),
+        ).rejects.toThrow('Entity not found');
+      });
+    });
+
+    describe('recover', () => {
+      it('should recover a soft deleted entity', async () => {
+        const context: TestContext = { userId: 'test-user' };
+
+        const result = await controllerWithSoftDeletion.recover(context, '1');
+
+        expect(result).toEqual(
+          expect.objectContaining({
+            id: '1',
+            name: 'Test User 1',
+            email: 'test1@example.com',
+          }),
+        );
+        expect(result.deletedAt).toBeUndefined();
+      });
+
+      it('should throw error for non-existent entity', async () => {
+        const context: TestContext = { userId: 'test-user' };
+
+        await expect(
+          controllerWithSoftDeletion.recover(context, '999'),
+        ).rejects.toThrow('Entity not found');
+      });
+    });
+
+    describe('operations availability', () => {
+      it('should have all soft deletion operations available', () => {
+        expect(controllerWithSoftDeletion.softRemove).toBeDefined();
+        expect(controllerWithSoftDeletion.recover).toBeDefined();
+        expect(controllerWithSoftDeletion.hardRemove).toBeDefined();
+      });
+    });
+  });
+
+  describe('controller without soft deletion operations', () => {
+    let controllerWithoutSoftDeletion: any;
+    let softDeletableService: MockSoftDeletableCrudService;
+
+    beforeEach(async () => {
+      softDeletableService = new MockSoftDeletableCrudService();
+
+      const controllerStructure = {
+        entityType: TestEntity,
+        serviceType: MockSoftDeletableCrudService,
+        findArgsType: TestFindArgsClass,
+        contextType: TestContextClass,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        controllerName: 'TestSoftDeletableCrudControllerDisabled',
+        route: 'test-soft-crud-disabled',
+        decorators: {
+          class: [ApiTags('test-soft-crud-disabled')],
+          methods: {},
+        },
+        operations: {
+          findAll: true,
+          findOne: true,
+          pagination: true,
+          findAllPaginated: true,
+          create: true,
+          update: true,
+          remove: true,
+          hardRemove: false,
+          softRemove: false,
+          recover: false,
+        },
+        idPipeTransform: undefined,
+        idParamDecorators: [],
+      };
+
+      const ControllerClass = CrudControllerFrom(controllerStructure);
+
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [ControllerClass],
+        providers: [
+          {
+            provide: MockSoftDeletableCrudService,
+            useValue: softDeletableService,
+          },
+        ],
+      }).compile();
+
+      controllerWithoutSoftDeletion = module.get<any>(ControllerClass);
+    });
+
+    describe('disabled operations', () => {
+      it('should not have soft deletion operations when disabled', () => {
+        expect(controllerWithoutSoftDeletion.softRemove).toBeUndefined();
+        expect(controllerWithoutSoftDeletion.recover).toBeUndefined();
+        expect(controllerWithoutSoftDeletion.hardRemove).toBeUndefined();
+      });
     });
   });
 });

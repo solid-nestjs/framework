@@ -205,7 +205,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const updateResponse = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(updateDto)
           .expect(200);
 
@@ -250,7 +250,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const response = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(updateDto)
           .expect(200);
 
@@ -278,7 +278,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const updateResponse = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(updateDto)
           .expect(200);
 
@@ -299,7 +299,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const response = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(updateDto);
 
         expect(response.status).toBe(400);
@@ -312,7 +312,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const response = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(updateDto);
 
         expect(response.status).toBe(400);
@@ -321,21 +321,21 @@ describe('Advanced CRUD App (e2e)', () => {
       it('should return 400 for missing required fields', async () => {
         // Test missing name
         const response1 = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send({ contactEmail: 'valid@email.com' });
 
         expect(response1.status).toBe(400);
 
         // Test missing contactEmail
         const response2 = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send({ name: 'Valid Corp' });
 
         expect(response2.status).toBe(400);
 
         // Test empty body
         const response3 = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send({});
 
         expect(response3.status).toBe(400);
@@ -359,7 +359,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const updateResponse = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(updateDto)
           .expect(200);
 
@@ -391,7 +391,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const updateResponse = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(updateDto)
           .expect(200);
 
@@ -420,7 +420,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const firstResponse = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(firstUpdateDto)
           .expect(200);
 
@@ -433,7 +433,7 @@ describe('Advanced CRUD App (e2e)', () => {
         };
 
         const secondResponse = await request(app.getHttpServer())
-          .patch('/suppliers/bulk/update-email-by-name')
+          .put('/suppliers/bulk/update-email-by-name')
           .send(secondUpdateDto)
           .expect(200);
 

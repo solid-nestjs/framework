@@ -2,14 +2,7 @@ import {
   CrudControllerFrom,
   CrudControllerStructure,
 } from '@solid-nestjs/typeorm-crud';
-import {
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  Delete,
-} from '@nestjs/common';
+import { Post, Body, HttpCode, HttpStatus, Delete, Put } from '@nestjs/common';
 import {
   ApiOperation,
   ApiBody,
@@ -84,7 +77,7 @@ export class SuppliersController extends CrudControllerFrom(
     return result.ids;
   }
 
-  @Patch('bulk/update-email-by-name')
+  @Put('bulk/update-email-by-name')
   @ApiOperation({
     summary: 'Bulk update supplier emails by name',
     description:
