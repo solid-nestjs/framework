@@ -1,4 +1,11 @@
-import { ParseIntPipe, PipeTransform, Type, mixin } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  ParseIntPipe,
+  PipeTransform,
+  Type,
+  mixin,
+} from '@nestjs/common';
 import { Args, Mutation } from '@nestjs/graphql';
 import {
   Context,
@@ -9,6 +16,7 @@ import {
   CurrentContext,
   DeepPartial,
   applyMethodDecoratorsIf,
+  isSoftDeletableCrudService,
 } from '@solid-nestjs/common';
 import { CrudResolverStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
@@ -196,6 +204,11 @@ export function CrudResolverFrom<
       @ContextDecorator() context: ContextType,
       @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
     ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Hard remove operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
       return this.service.hardRemove(context, id);
     }
   }

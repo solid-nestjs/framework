@@ -6,6 +6,7 @@ import {
   CrudService,
   DeepPartial,
   Constructable,
+  SoftDeletableCrudService,
 } from '@solid-nestjs/common';
 import {
   DataResolverOperations,
@@ -38,7 +39,15 @@ export interface CrudResolverOperations<
   create?: OperationStructure | boolean;
   update?: OperationStructure | boolean;
   remove?: OperationStructure | boolean;
-  hardRemove?: OperationStructure | boolean;
+  hardRemove?: ServiceType extends SoftDeletableCrudService<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    ContextType
+  >
+    ? OperationStructure | boolean
+    : never;
 }
 
 export interface CrudResolverStructure<

@@ -2,6 +2,7 @@ import {
   Body,
   Delete,
   HttpCode,
+  HttpException,
   HttpStatus,
   Param,
   ParseIntPipe,
@@ -21,6 +22,7 @@ import {
   CurrentContext,
   applyMethodDecorators,
   DeepPartial,
+  isSoftDeletableCrudService,
 } from '@solid-nestjs/common';
 import { CrudControllerStructure } from '../interfaces';
 import { ApiResponses } from '../decorators';
@@ -236,6 +238,11 @@ export function CrudControllerFrom<
       @ContextDecorator() context: ContextType,
       @Param('id', ...pipeTransforms) id: IdType,
     ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Hard remove operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
       return this.service.hardRemove(context, id);
     }
   }

@@ -7,6 +7,8 @@ import {
   fillEntityId,
   DeepPartial,
   Constructable,
+  SoftDeletableCrudService,
+  If,
 } from '@solid-nestjs/common';
 import {
   DataControllerOperations,
@@ -38,7 +40,15 @@ export interface CrudControllerOperations<
   create?: OperationStructure | boolean;
   update?: OperationStructure | boolean;
   remove?: OperationStructure | boolean;
-  hardRemove?: OperationStructure | boolean;
+  hardRemove?: ServiceType extends SoftDeletableCrudService<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    ContextType
+  >
+    ? OperationStructure | boolean
+    : never;
 }
 
 export interface CrudControllerStructure<
