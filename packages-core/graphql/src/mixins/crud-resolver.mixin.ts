@@ -142,6 +142,27 @@ export function CrudResolverFrom<
     },
   );
 
+  const softRemoveSettings = extractOperationSettings(
+    resolverStructure.operations?.softRemove,
+    {
+      disabled: !resolverStructure.operations?.softRemove,
+      name: 'softRemove' + entityType.name,
+      summary: 'Soft remove ' + entityType.name.toLowerCase() + ' record',
+      description:
+        'soft removal of ' + entityType.name.toLowerCase() + ' record',
+    },
+  );
+
+  const recoverSettings = extractOperationSettings(
+    resolverStructure.operations?.recover,
+    {
+      disabled: !resolverStructure.operations?.recover,
+      name: 'recover' + entityType.name,
+      summary: 'Recover ' + entityType.name.toLowerCase() + ' record',
+      description: 'recovery of ' + entityType.name.toLowerCase() + ' record',
+    },
+  );
+
   class CrudController extends DataResolverFrom(resolverStructure) {
     @applyMethodDecoratorsIf(!createSettings.disabled, [
       () =>
@@ -211,6 +232,46 @@ export function CrudResolverFrom<
         );
       return this.service.hardRemove(context, id);
     }
+
+    @applyMethodDecoratorsIf(!softRemoveSettings.disabled, [
+      () =>
+        Mutation(returns => entityType, {
+          name: softRemoveSettings.name,
+          description: softRemoveSettings.description,
+        }),
+      ...softRemoveSettings.decorators,
+    ])
+    async softRemove?(
+      @ContextDecorator() context: ContextType,
+      @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
+    ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Soft remove operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
+      return this.service.softRemove(context, id);
+    }
+
+    @applyMethodDecoratorsIf(!recoverSettings.disabled, [
+      () =>
+        Mutation(returns => entityType, {
+          name: recoverSettings.name,
+          description: recoverSettings.description,
+        }),
+      ...recoverSettings.decorators,
+    ])
+    async recover?(
+      @ContextDecorator() context: ContextType,
+      @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
+    ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Recover operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
+      return this.service.recover(context, id);
+    }
   }
 
   //remove controller methods if they are disabled in the structure
@@ -225,6 +286,12 @@ export function CrudResolverFrom<
   }
   if (hardRemoveSettings.disabled) {
     delete CrudController.prototype.hardRemove;
+  }
+  if (softRemoveSettings.disabled) {
+    delete CrudController.prototype.softRemove;
+  }
+  if (recoverSettings.disabled) {
+    delete CrudController.prototype.recover;
   }
 
   return mixin(CrudController);

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/graphql';
 import {
   CrudService,
+  SoftDeletableCrudService,
   Entity,
   FindArgs,
   CurrentContext,
@@ -265,6 +266,40 @@ class MockCrudService
   }
 }
 
+// Mock soft deletable crud service - extends SoftDeletableCrudService for testing soft deletion operations
+class MockSoftDeletableCrudService
+  extends MockCrudService
+  implements
+    SoftDeletableCrudService<
+      string,
+      TestEntity,
+      TestCreateInput,
+      TestUpdateInput,
+      TestContext
+    >
+{
+  async softRemove(context: TestContext, id: string): Promise<TestEntity> {
+    const existing = await this.findOne(context, id, false);
+    if (!existing) {
+      throw new Error('Entity not found');
+    }
+    return {
+      ...existing,
+      deletedAt: new Date(),
+    };
+  }
+
+  async recover(context: TestContext, id: string): Promise<TestEntity> {
+    const existing = await this.findOne(context, id, false);
+    if (!existing) {
+      throw new Error('Entity not found');
+    }
+    const recovered = { ...existing };
+    delete (recovered as any).deletedAt;
+    return recovered;
+  }
+}
+
 describe('CrudResolverFrom', () => {
   let resolver: any;
   let service: MockCrudService;
@@ -286,7 +321,6 @@ describe('CrudResolverFrom', () => {
         create: true,
         update: true,
         remove: true,
-        hardRemove: false, // disabled by default
       },
     });
 
@@ -500,13 +534,16 @@ describe('CrudResolverFrom', () => {
 
   describe('hardRemove (when enabled)', () => {
     let hardRemoveResolver: any;
+    let softDeletableService: MockSoftDeletableCrudService;
 
     beforeEach(async () => {
+      softDeletableService = new MockSoftDeletableCrudService();
+
       const CrudResolverClass = CrudResolverFrom({
         entityType: TestEntity,
         createInputType: TestCreateInput,
         updateInputType: TestUpdateInput,
-        serviceType: MockCrudService,
+        serviceType: MockSoftDeletableCrudService,
         operations: {
           hardRemove: true, // explicitly enabled
         },
@@ -516,8 +553,8 @@ describe('CrudResolverFrom', () => {
         providers: [
           CrudResolverClass,
           {
-            provide: MockCrudService,
-            useValue: service,
+            provide: MockSoftDeletableCrudService,
+            useValue: softDeletableService,
           },
         ],
       }).compile();
@@ -600,7 +637,6 @@ describe('CrudResolverFrom with disabled operations', () => {
         create: false,
         update: true,
         remove: false,
-        hardRemove: false,
       },
     });
 
@@ -678,5 +714,311 @@ describe('CrudResolverFrom with custom method decorators', () => {
       'create',
     );
     expect(isMethodDecorated).toBe(true);
+  });
+});
+
+// Test soft deletion operations
+describe('CrudResolverFrom with soft deletion operations', () => {
+  let softDeletableResolver: any;
+  let softDeletableService: MockSoftDeletableCrudService;
+  let module: TestingModule;
+
+  beforeEach(async () => {
+    softDeletableService = new MockSoftDeletableCrudService();
+
+    const CrudResolverClass = CrudResolverFrom({
+      entityType: TestEntity,
+      createInputType: TestCreateInput,
+      updateInputType: TestUpdateInput,
+      serviceType: MockSoftDeletableCrudService,
+      operations: {
+        findAll: true,
+        findOne: true,
+        create: true,
+        update: true,
+        remove: true,
+        softRemove: true,
+        recover: true,
+        hardRemove: true,
+      },
+    });
+
+    module = await Test.createTestingModule({
+      providers: [
+        CrudResolverClass,
+        {
+          provide: MockSoftDeletableCrudService,
+          useValue: softDeletableService,
+        },
+      ],
+    }).compile();
+
+    softDeletableResolver = module.get(CrudResolverClass);
+  });
+
+  afterEach(async () => {
+    await module.close();
+  });
+
+  describe('softRemove', () => {
+    it('should soft remove an entity', async () => {
+      const context: TestContext = { userId: 'test-user' };
+
+      const result = await softDeletableResolver.softRemove(context, '1');
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '1',
+          name: 'Test User 1',
+          email: 'test1@example.com',
+        }),
+      );
+      expect(result.deletedAt).toBeDefined();
+    });
+
+    it('should throw error for non-existent entity in softRemove', async () => {
+      const context: TestContext = { userId: 'test-user' };
+
+      await expect(
+        softDeletableResolver.softRemove(context, '999'),
+      ).rejects.toThrow('Entity not found');
+    });
+
+    it('should call service softRemove method', async () => {
+      const context: TestContext = { userId: 'test-user' };
+      const spy = jest.spyOn(softDeletableService, 'softRemove');
+
+      await softDeletableResolver.softRemove(context, '1');
+
+      expect(spy).toHaveBeenCalledWith(context, '1');
+    });
+  });
+
+  describe('recover', () => {
+    it('should recover a soft-deleted entity', async () => {
+      const context: TestContext = { userId: 'test-user' };
+
+      const result = await softDeletableResolver.recover(context, '1');
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '1',
+          name: 'Test User 1',
+          email: 'test1@example.com',
+        }),
+      );
+      expect(result.deletedAt).toBeUndefined();
+    });
+
+    it('should throw error for non-existent entity in recover', async () => {
+      const context: TestContext = { userId: 'test-user' };
+
+      await expect(
+        softDeletableResolver.recover(context, '999'),
+      ).rejects.toThrow('Entity not found');
+    });
+
+    it('should call service recover method', async () => {
+      const context: TestContext = { userId: 'test-user' };
+      const spy = jest.spyOn(softDeletableService, 'recover');
+
+      await softDeletableResolver.recover(context, '1');
+
+      expect(spy).toHaveBeenCalledWith(context, '1');
+    });
+  });
+
+  describe('hardRemove', () => {
+    it('should permanently remove an entity', async () => {
+      const context: TestContext = { userId: 'test-user' };
+
+      const result = await softDeletableResolver.hardRemove(context, '1');
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '1',
+          name: 'Test User 1',
+          email: 'test1@example.com',
+        }),
+      );
+      expect(result.deletedAt).toBeUndefined();
+    });
+
+    it('should throw error for non-existent entity in hardRemove', async () => {
+      const context: TestContext = { userId: 'test-user' };
+
+      await expect(
+        softDeletableResolver.hardRemove(context, '999'),
+      ).rejects.toThrow('Entity not found');
+    });
+
+    it('should call service hardRemove method', async () => {
+      const context: TestContext = { userId: 'test-user' };
+      const spy = jest.spyOn(softDeletableService, 'hardRemove');
+
+      await softDeletableResolver.hardRemove(context, '1');
+
+      expect(spy).toHaveBeenCalledWith(context, '1');
+    });
+  });
+
+  describe('operation validation', () => {
+    // Create a truly basic service without soft deletion methods for testing validation
+    class BasicCrudService extends MockCrudService {
+      // Remove hardRemove to make isSoftDeletableCrudService return false
+      hardRemove = undefined as any;
+      softRemove = undefined as any;
+      recover = undefined as any;
+    }
+
+    it('should throw error when softRemove is called on non-soft-deletable service', async () => {
+      const basicService = new BasicCrudService();
+      // Create resolver with soft-deletable service type but inject basic service
+      const CrudResolverClass = CrudResolverFrom({
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        serviceType: MockSoftDeletableCrudService,
+        operations: {
+          softRemove: true,
+        },
+      });
+
+      const basicModule = await Test.createTestingModule({
+        providers: [
+          CrudResolverClass,
+          {
+            provide: MockSoftDeletableCrudService,
+            useValue: basicService, // Inject basic service at runtime
+          },
+        ],
+      }).compile();
+
+      const basicResolver = basicModule.get(CrudResolverClass);
+      const context: TestContext = { userId: 'test-user' };
+
+      await expect(basicResolver.softRemove!(context, '1')).rejects.toThrow(
+        'Soft remove operation is not supported by this service',
+      );
+
+      await basicModule.close();
+    });
+
+    it('should throw error when recover is called on non-soft-deletable service', async () => {
+      const basicService = new BasicCrudService();
+      // Create resolver with soft-deletable service type but inject basic service
+      const CrudResolverClass = CrudResolverFrom({
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        serviceType: MockSoftDeletableCrudService,
+        operations: {
+          recover: true,
+        },
+      });
+
+      const basicModule = await Test.createTestingModule({
+        providers: [
+          CrudResolverClass,
+          {
+            provide: MockSoftDeletableCrudService,
+            useValue: basicService, // Inject basic service at runtime
+          },
+        ],
+      }).compile();
+
+      const basicResolver = basicModule.get(CrudResolverClass);
+      const context: TestContext = { userId: 'test-user' };
+
+      await expect(basicResolver.recover!(context, '1')).rejects.toThrow(
+        'Recover operation is not supported by this service',
+      );
+
+      await basicModule.close();
+    });
+
+    it('should throw error when hardRemove is called on non-soft-deletable service', async () => {
+      const basicService = new BasicCrudService();
+      // Create resolver with soft-deletable service type but inject basic service
+      const CrudResolverClass = CrudResolverFrom({
+        entityType: TestEntity,
+        createInputType: TestCreateInput,
+        updateInputType: TestUpdateInput,
+        serviceType: MockSoftDeletableCrudService,
+        operations: {
+          hardRemove: true,
+        },
+      });
+
+      const basicModule = await Test.createTestingModule({
+        providers: [
+          CrudResolverClass,
+          {
+            provide: MockSoftDeletableCrudService,
+            useValue: basicService, // Inject basic service at runtime
+          },
+        ],
+      }).compile();
+
+      const basicResolver = basicModule.get(CrudResolverClass);
+      const context: TestContext = { userId: 'test-user' };
+
+      await expect(basicResolver.hardRemove!(context, '1')).rejects.toThrow(
+        'Hard remove operation is not supported by this service',
+      );
+
+      await basicModule.close();
+    });
+  });
+});
+
+describe('CrudResolverFrom with disabled soft deletion operations', () => {
+  let resolverWithoutSoftDeletion: any;
+  let softDeletableService: MockSoftDeletableCrudService;
+  let module: TestingModule;
+
+  beforeEach(async () => {
+    softDeletableService = new MockSoftDeletableCrudService();
+
+    const CrudResolverClass = CrudResolverFrom({
+      entityType: TestEntity,
+      createInputType: TestCreateInput,
+      updateInputType: TestUpdateInput,
+      serviceType: MockSoftDeletableCrudService,
+      operations: {
+        findAll: true,
+        findOne: true,
+        create: true,
+        update: true,
+        remove: true,
+        softRemove: false,
+        recover: false,
+        hardRemove: false,
+      },
+    });
+
+    module = await Test.createTestingModule({
+      providers: [
+        CrudResolverClass,
+        {
+          provide: MockSoftDeletableCrudService,
+          useValue: softDeletableService,
+        },
+      ],
+    }).compile();
+
+    resolverWithoutSoftDeletion = module.get(CrudResolverClass);
+  });
+
+  afterEach(async () => {
+    await module.close();
+  });
+
+  describe('disabled operations', () => {
+    it('should not have soft deletion operations when disabled', () => {
+      expect(resolverWithoutSoftDeletion.softRemove).toBeUndefined();
+      expect(resolverWithoutSoftDeletion.recover).toBeUndefined();
+      expect(resolverWithoutSoftDeletion.hardRemove).toBeUndefined();
+    });
   });
 });

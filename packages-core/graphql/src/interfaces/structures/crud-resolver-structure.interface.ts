@@ -39,6 +39,24 @@ export interface CrudResolverOperations<
   create?: OperationStructure | boolean;
   update?: OperationStructure | boolean;
   remove?: OperationStructure | boolean;
+  softRemove?: ServiceType extends SoftDeletableCrudService<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    ContextType
+  >
+    ? OperationStructure | boolean
+    : never;
+  recover?: ServiceType extends SoftDeletableCrudService<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    ContextType
+  >
+    ? OperationStructure | boolean
+    : never;
   hardRemove?: ServiceType extends SoftDeletableCrudService<
     IdType,
     EntityType,
