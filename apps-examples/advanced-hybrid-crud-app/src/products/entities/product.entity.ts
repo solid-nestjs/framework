@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
 import { Supplier } from '../../suppliers/entities/supplier.entity';
@@ -37,4 +45,25 @@ export class Product {
     onDelete: 'CASCADE',
   })
   supplier: Supplier;
+
+  @ApiProperty({ description: 'The date when the product was created' })
+  @Field({ description: 'The date when the product was created' })
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @ApiProperty({ description: 'The date when the product was last updated' })
+  @Field({ description: 'The date when the product was last updated' })
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @ApiProperty({
+    description: 'The date when the product was deleted (soft delete)',
+    required: false,
+  })
+  @Field({
+    description: 'The date when the product was deleted (soft delete)',
+    nullable: true,
+  })
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

@@ -13,6 +13,15 @@ import {
 } from 'class-validator';
 
 @InputType()
+export class UpdateInvoiceClientDto {
+  @ApiProperty({ description: 'client id' })
+  @Field(() => ID)
+  @IsString()
+  @IsUUID()
+  id: string;
+}
+
+@InputType()
 export class UpdateInvoiceDetailDto {
   @ApiProperty({
     description: 'detail id for updating existing detail',
@@ -81,4 +90,18 @@ export class UpdateInvoiceDto {
   @ValidateNested({ each: true })
   @IsArray()
   details?: UpdateInvoiceDetailDto[];
+
+  @ApiProperty({
+    description: 'Invoice client',
+    type: () => UpdateInvoiceClientDto,
+    required: false,
+  })
+  @Field(() => UpdateInvoiceClientDto, {
+    description: 'Invoice client',
+    nullable: true,
+  })
+  @IsOptional()
+  @Type(() => UpdateInvoiceClientDto)
+  @ValidateNested()
+  client?: UpdateInvoiceClientDto;
 }

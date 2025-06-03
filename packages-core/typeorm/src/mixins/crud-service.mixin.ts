@@ -17,17 +17,22 @@ import {
   BulkUpdateOptions,
   BulkDeleteOptions,
   BulkRemoveOptions,
+  BulkRecoverOptions,
   BulkInsertResult,
   BulkUpdateResult,
   BulkDeleteResult,
   BulkRemoveResult,
+  BulkRecoverResult,
   UpdateOptions,
   RemoveOptions,
+  SoftRemoveOptions,
   HardRemoveOptions,
+  RecoverOptions,
 } from '../interfaces';
 import { hasDeleteDateColumn } from '../helpers';
 import { DataServiceFrom } from './data-service.mixin';
 import { Transactional } from '../decorators';
+import { TypeOrmRepository } from '../types';
 
 /**
  * Generates a CRUD service class based on the provided service structure.
@@ -88,13 +93,16 @@ export function CrudServiceFrom<
   const createStruct = serviceStructure.functions?.create;
   const updateStruct = serviceStructure.functions?.update;
   const removeStruct = serviceStructure.functions?.remove;
+  const softRemoveStruct = serviceStructure.functions?.softRemove;
   const hardRemoveStruct = serviceStructure.functions?.hardRemove;
+  const recoverStruct = serviceStructure.functions?.recover;
 
   //bulk operations
   const bulkInsertStruct = serviceStructure.functions?.bulkInsert;
   const bulkUpdateStruct = serviceStructure.functions?.bulkUpdate;
   const bulkDeleteStruct = serviceStructure.functions?.bulkDelete;
   const bulkRemoveStruct = serviceStructure.functions?.bulkRemove;
+  const bulkRecoverStruct = serviceStructure.functions?.bulkRecover;
 
   const createDecorators = createStruct?.transactional
     ? [() => Transactional({ isolationLevel: createStruct?.isolationLevel })]
@@ -123,17 +131,32 @@ export function CrudServiceFrom<
           Transactional({ isolationLevel: bulkRemoveStruct?.isolationLevel }),
       ]
     : [];
+  const bulkRecoverDecorators = bulkRecoverStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: bulkRecoverStruct?.isolationLevel }),
+      ]
+    : [];
   const updateDecorators = updateStruct?.transactional
     ? [() => Transactional({ isolationLevel: updateStruct?.isolationLevel })]
     : [];
   const removeDecorators = removeStruct?.transactional
     ? [() => Transactional({ isolationLevel: removeStruct?.isolationLevel })]
     : [];
+  const softRemoveDecorators = softRemoveStruct?.transactional
+    ? [
+        () =>
+          Transactional({ isolationLevel: softRemoveStruct?.isolationLevel }),
+      ]
+    : [];
   const hardRemoveDecorators = hardRemoveStruct?.transactional
     ? [
         () =>
           Transactional({ isolationLevel: hardRemoveStruct?.isolationLevel }),
       ]
+    : [];
+  const recoverDecorators = recoverStruct?.transactional
+    ? [() => Transactional({ isolationLevel: recoverStruct?.isolationLevel })]
     : [];
 
   if (createStruct?.decorators)
@@ -145,8 +168,14 @@ export function CrudServiceFrom<
   if (removeStruct?.decorators)
     removeDecorators.push(...removeStruct.decorators);
 
+  if (softRemoveStruct?.decorators)
+    softRemoveDecorators.push(...softRemoveStruct.decorators);
+
   if (hardRemoveStruct?.decorators)
     hardRemoveDecorators.push(...hardRemoveStruct.decorators);
+
+  if (recoverStruct?.decorators)
+    recoverDecorators.push(...recoverStruct.decorators);
 
   //bulk operations
   if (bulkInsertStruct?.decorators)
@@ -160,6 +189,9 @@ export function CrudServiceFrom<
 
   if (bulkRemoveStruct?.decorators)
     bulkRemoveDecorators.push(...bulkRemoveStruct.decorators);
+
+  if (bulkRecoverStruct?.decorators)
+    bulkRecoverDecorators.push(...bulkRecoverStruct.decorators);
 
   @Injectable()
   class CrudServiceClass
@@ -190,13 +222,15 @@ export function CrudServiceFrom<
 
       const responseEntity = await repository.save(entity);
 
-      this.audit(
-        context,
-        StandardActions.Create,
-        entity.id as IdType,
-        undefined,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        this.audit(
+          context,
+          StandardActions.Create,
+          entity.id as IdType,
+          undefined,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterCreate(
         context,
@@ -274,13 +308,15 @@ export function CrudServiceFrom<
 
       const responseEntity = await repository.save(entity);
 
-      this.audit(
-        context,
-        StandardActions.Update,
-        entity.id as IdType,
-        entityBefore,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        this.audit(
+          context,
+          StandardActions.Update,
+          entity.id as IdType,
+          entityBefore,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterUpdate(
         context,
@@ -426,24 +462,72 @@ export function CrudServiceFrom<
 
       let responseEntity: EntityType;
 
-      // check if the repository has a deleteDateColumn, if not, call remove instead
-      // this is to avoid the error: MissingDeleteDateColumnError: Entity "EntityName" does not have a delete date column.
       if (hasDeleteDateColumn(repository)) {
-        responseEntity = await repository.softRemove(entity);
+        responseEntity = await this._softRemove(repository, entity, id);
       } else {
-        responseEntity = await repository.remove(entity);
-        responseEntity.id = id;
+        responseEntity = await this._hardRemove(repository, entity, id);
       }
 
-      await this.audit(
-        context,
-        StandardActions.Remove,
-        entity.id as IdType,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        await this.audit(
+          context,
+          StandardActions.Remove,
+          entity.id as IdType,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterRemove(context, repository, responseEntity);
 
+      return responseEntity;
+    }
+
+    @applyMethodDecorators(softRemoveDecorators)
+    async softRemove(
+      context: ContextType,
+      id: IdType,
+      options?: SoftRemoveOptions<IdType, EntityType, ContextType>,
+    ): Promise<EntityType> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      const entity = await this.findOne(context, id, true);
+
+      await eventHandler.beforeSoftRemove(context, repository, entity);
+
+      // Directly call repository.softRemove without checking hasDeleteDateColumn
+      const responseEntity: EntityType = await this._softRemove(
+        repository,
+        entity,
+        id,
+      );
+
+      if (!options?.noAudits) {
+        await this.audit(
+          context,
+          StandardActions.Remove,
+          entity.id as IdType,
+          responseEntity,
+        );
+      }
+
+      await eventHandler.afterSoftRemove(context, repository, responseEntity);
+
+      return responseEntity;
+    }
+
+    private async _softRemove(
+      repository: TypeOrmRepository<EntityType>,
+      entity: EntityType,
+      id: IdType,
+    ) {
+      const responseEntity: EntityType = await repository.softRemove(entity);
+
+      // Restore ID if repository removed it
+      if (!responseEntity.id) {
+        responseEntity.id = id;
+      }
       return responseEntity;
     }
 
@@ -457,32 +541,111 @@ export function CrudServiceFrom<
 
       const repository = this.getRepository(context);
 
-      // check if the repository has a deleteDateColumn, if not, call remove instead
-      // this is to avoid the error: MissingDeleteDateColumnError: Entity "EntityName" does not have a delete date column.
-      if (!hasDeleteDateColumn(repository)) return this.remove(context, id);
-
       const entity = await this.findOne(context, id, true, {
         withDeleted: true,
       });
 
       await eventHandler.beforeHardRemove(context, repository, entity);
 
-      let responseEntity: EntityType;
+      const responseEntity = await this._hardRemove(repository, entity, id);
 
-      responseEntity = await repository.remove(entity);
-
-      responseEntity.id = id;
-
-      await this.audit(
-        context,
-        StandardActions.Remove,
-        entity.id as IdType,
-        responseEntity,
-      );
+      if (!options?.noAudits) {
+        await this.audit(
+          context,
+          StandardActions.Remove,
+          entity.id as IdType,
+          responseEntity,
+        );
+      }
 
       await eventHandler.afterHardRemove(context, repository, responseEntity);
 
       return responseEntity;
+    }
+
+    private async _hardRemove(
+      repository: TypeOrmRepository<EntityType>,
+      entity: EntityType,
+      id: IdType,
+    ) {
+      const responseEntity = await repository.remove(entity);
+
+      responseEntity.id = id;
+      return responseEntity;
+    }
+
+    @applyMethodDecorators(recoverDecorators)
+    async recover(
+      context: ContextType,
+      id: IdType,
+      options?: RecoverOptions<IdType, EntityType, ContextType>,
+    ): Promise<EntityType> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      const entity = await this.findOne(context, id, true, {
+        withDeleted: true,
+      });
+
+      await eventHandler.beforeRecover(context, repository, entity);
+
+      const responseEntity = await repository.recover(entity);
+
+      if (!options?.noAudits) {
+        this.audit(
+          context,
+          StandardActions.Update,
+          entity.id as IdType,
+          entity,
+          responseEntity,
+        );
+      }
+
+      await eventHandler.afterRecover(context, repository, responseEntity);
+
+      return responseEntity;
+    }
+
+    @applyMethodDecorators(bulkRecoverDecorators)
+    async bulkRecover(
+      context: ContextType,
+      where: Where<EntityType>,
+      options?: BulkRecoverOptions<IdType, EntityType, ContextType>,
+    ): Promise<BulkRecoverResult> {
+      const eventHandler = options?.eventHandler ?? this;
+
+      const repository = this.getRepository(context);
+
+      await eventHandler.beforeBulkRecover(context, repository, where);
+
+      // Check if the repository has a deleteDateColumn
+      if (!hasDeleteDateColumn(repository)) {
+        throw new Error(
+          `Entity ${entityType.name} does not support soft deletes and cannot be bulk recovered`,
+        );
+      }
+
+      const result = await this.getQueryBuilder(
+        context,
+        { where } as FindArgsType,
+        {
+          ignoreMultiplyingJoins: true,
+          ignoreSelects: true,
+          withDeleted: true,
+        },
+      )
+        .restore()
+        .execute();
+
+      await eventHandler.afterBulkRecover(
+        context,
+        repository,
+        result.affected || 0,
+        where,
+      );
+
+      return { affected: result.affected };
     }
 
     //these methos exists to be overriden
@@ -514,6 +677,11 @@ export function CrudServiceFrom<
       repository: Repository<EntityType>,
       where: Where<EntityType>,
     ): Promise<void> {}
+    async beforeBulkRecover(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      where: Where<EntityType>,
+    ): Promise<void> {}
     async beforeUpdate(
       context: ContextType,
       repository: Repository<EntityType>,
@@ -526,6 +694,16 @@ export function CrudServiceFrom<
       entity: EntityType,
     ): Promise<void> {}
     async beforeHardRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
+    async beforeRecover(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
+    async beforeSoftRemove(
       context: ContextType,
       repository: Repository<EntityType>,
       entity: EntityType,
@@ -562,6 +740,12 @@ export function CrudServiceFrom<
       affectedCount: number | undefined,
       where: Where<EntityType>,
     ): Promise<void> {}
+    async afterBulkRecover(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      affectedCount: number,
+      where: Where<EntityType>,
+    ): Promise<void> {}
     async afterUpdate(
       context: ContextType,
       repository: Repository<EntityType>,
@@ -574,6 +758,16 @@ export function CrudServiceFrom<
       entity: EntityType,
     ): Promise<void> {}
     async afterHardRemove(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
+    async afterRecover(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      entity: EntityType,
+    ): Promise<void> {}
+    async afterSoftRemove(
       context: ContextType,
       repository: Repository<EntityType>,
       entity: EntityType,

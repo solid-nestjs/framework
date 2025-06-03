@@ -11,13 +11,15 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { Invoice } from './invoices/entities/invoice.entity';
 import { InvoiceDetail } from './invoices/entities/invoice-detail.entity';
+import { ClientsModule } from './clients/clients.module';
+import { Client } from './clients/entities/client.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: './database-data/products.sqlite',
-      entities: [Product, Supplier, Invoice, InvoiceDetail],
+      entities: [Product, Supplier, Invoice, InvoiceDetail, Client],
       synchronize: true, // Set to false in production
       logging: true,
     }),
@@ -32,6 +34,7 @@ import { InvoiceDetail } from './invoices/entities/invoice-detail.entity';
     ProductsModule,
     SuppliersModule,
     InvoicesModule,
+    ClientsModule,
   ],
 })
 export class AppModule {}
