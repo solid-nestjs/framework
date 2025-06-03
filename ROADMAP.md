@@ -27,6 +27,14 @@ The framework currently provides:
 
 - 🔲 **Framework CLI Generator** - Scaffold controllers, services, and modules with interactive prompts
 
+#### 🎨 Custom Decorators & Boilerplate Reduction
+
+- 🔲 **Composite Field Decorators** - Create unified decorators that combine common patterns like `@ApiProperty`, `@IsString`, `@IsNotEmpty`, etc.
+- 🔲 **Smart Type Inference Decorators** - Automatically generate validation and API documentation based on TypeScript types
+- 🔲 **Entity-to-DTO Code Generation** - Generate DTOs automatically from entity definitions with configurable validation rules
+- 🔲 **Hybrid API Decorators** - Single decorators that work for both REST (`@ApiProperty`) and GraphQL (`@Field`) simultaneously
+- 🔲 **Validation Preset Decorators** - Pre-configured decorator combinations for common patterns (email, UUID, positive numbers, etc.)
+
 #### 🔐 Advanced Authentication & Authorization
 
 - 🔲 **Role-Based Access Control (RBAC)** - Built-in decorators for fine-grained permissions

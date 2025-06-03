@@ -1,7 +1,7 @@
 {
   "version": "0.2.3",
   "npmClient": "npm",
-  "packages": ["packages-core/*", "packages-bundles/*"],
+  "packages": ["packages-core/*", "packages-bundles/*", "apps-examples/*"],
   "command": {
     "publish": {
       "conventionalCommits": true,
