@@ -14,6 +14,9 @@ This example demonstrates how to build a **hybrid REST + GraphQL CRUD applicatio
 - **🛡️ Input Validation** - Automatic validation with class-validator
 - **⚡ Auto-generated Everything** - Controllers and resolvers from shared service structures
 - **🔗 Relation Handling** - Automatic loading and nested queries for related entities
+- **🗑️ Soft Deletion & Recovery** - Complete soft delete with recovery for both REST and GraphQL APIs
+- **📦 Bulk Operations** - Service-level bulk operations accessible via both REST and GraphQL
+- **⚙️ Custom Bulk Endpoints** - Controller-level bulk operations with domain-specific logic
 
 ## 🏗️ What's Included
 
@@ -41,6 +44,12 @@ This example demonstrates how to build a **hybrid REST + GraphQL CRUD applicatio
 - `POST /suppliers` - Create new supplier
 - `PUT /suppliers/:id` - Update existing supplier
 - `DELETE /suppliers/:id` - Delete supplier (soft delete)
+- `DELETE /suppliers/soft/:id` - Soft delete supplier
+- `PATCH /suppliers/recover/:id` - Recover soft-deleted supplier
+- `DELETE /suppliers/hard/:id` - Hard delete supplier
+- `DELETE /suppliers/bulk/remove-by-email` - Bulk soft remove suppliers by email
+- `PATCH /suppliers/bulk/recover-by-email` - Bulk recover suppliers by email
+- `DELETE /suppliers/bulk/delete-by-email` - Bulk hard delete suppliers by email
 
 **Invoices (Advanced Example):**
 
@@ -56,12 +65,12 @@ This example demonstrates how to build a **hybrid REST + GraphQL CRUD applicatio
 
 - `products()`, `product(id)` - Product queries with filtering and relations
 - `suppliers()`, `supplier(id)` - Supplier queries with filtering
-- `invoices()`, `invoice(id)` - Invoice queries with nested details and products
 
 **Mutations**:
 
 - `createProduct()`, `updateProduct()`, `removeProduct()` - Product mutations
 - `createSupplier()`, `updateSupplier()`, `removeSupplier()` - Supplier mutations
+- `softRemoveSupplier()`, `recoverSupplier()`, `hardRemoveSupplier()` - Soft deletion mutations
 - `createInvoice()`, `updateInvoice()`, `removeInvoice()` - Invoice mutations with validation
 
 ### Key SOLID NestJS Features Demonstrated
@@ -76,6 +85,9 @@ This example demonstrates how to build a **hybrid REST + GraphQL CRUD applicatio
 - **Business Logic Integration** - Custom validation and calculations executed for both API types
 - **Entity Relationships** - One-to-many relationships with cascade operations in hybrid environment
 - **Dual Decorators** - Entities decorated for both Swagger (REST) and GraphQL schemas
+- **Soft Deletion & Recovery** - Complete soft delete support for both REST and GraphQL APIs
+- **Bulk Operations** - Service-level bulk operations accessible through both API types
+- **Custom Bulk Endpoints** - Controller-level bulk operations with domain-specific business logic
 
 ## 📦 Installation
 
@@ -276,6 +288,163 @@ mutation {
     }
   }
 }
+```
+
+## 🚀 Advanced Features
+
+### 🗑️ Soft Deletion & Recovery Operations
+
+This hybrid example demonstrates comprehensive soft deletion capabilities for both REST and GraphQL APIs with automatic cascade handling.
+
+#### REST API Soft Deletion Examples
+
+```bash
+# Soft delete a supplier (sets deletedAt timestamp)
+DELETE http://localhost:3000/suppliers/soft/1
+
+# Recover a soft-deleted supplier (clears deletedAt)
+PATCH http://localhost:3000/suppliers/recover/1
+
+# Hard delete a supplier (permanently removes from database)
+DELETE http://localhost:3000/suppliers/hard/1
+
+# Bulk soft remove suppliers by email
+DELETE http://localhost:3000/suppliers/bulk/remove-by-email
+Content-Type: application/json
+
+{
+  "contactEmail": "remove@example.com"
+}
+
+# Bulk recover suppliers by email
+PATCH http://localhost:3000/suppliers/bulk/recover-by-email
+Content-Type: application/json
+
+{
+  "contactEmail": "recover@example.com"
+}
+
+# Bulk hard delete suppliers by email
+DELETE http://localhost:3000/suppliers/bulk/delete-by-email
+Content-Type: application/json
+
+{
+  "contactEmail": "delete@example.com"
+}
+```
+
+#### GraphQL Soft Deletion Examples
+
+```graphql
+# Soft delete a supplier
+mutation {
+  softRemoveSupplier(id: "supplier-1") {
+    id
+    name
+    contactEmail
+  }
+}
+
+# Recover a soft-deleted supplier
+mutation {
+  recoverSupplier(id: "supplier-1") {
+    id
+    name
+    contactEmail
+  }
+}
+
+# Hard delete a supplier
+mutation {
+  hardRemoveSupplier(id: "supplier-1") {
+    id
+    name
+    contactEmail
+  }
+}
+```
+
+#### Cascade Behavior (Both REST & GraphQL)
+
+- **Soft Delete Cascade**: When a supplier is soft-deleted, all related products are automatically soft-deleted
+- **Recovery Cascade**: When a supplier is recovered, all related products are also recovered
+- **Relationship Preservation**: All relationships remain intact during soft deletion and recovery
+- **API Consistency**: Same cascade behavior works identically for both REST and GraphQL operations
+
+### 📦 Bulk Operations
+
+This example showcases powerful bulk operations accessible through both REST and GraphQL APIs.
+
+#### REST API Bulk Operations
+
+```bash
+# Bulk soft remove suppliers by email
+DELETE http://localhost:3000/suppliers/bulk/remove-by-email
+Content-Type: application/json
+
+{
+  "contactEmail": "bulk.remove@test.com"
+}
+
+# Response:
+{
+  "affected": 3
+}
+
+# Bulk recover suppliers by email
+PATCH http://localhost:3000/suppliers/bulk/recover-by-email
+Content-Type: application/json
+
+{
+  "contactEmail": "bulk.recover@test.com"
+}
+
+# Response:
+{
+  "affected": 2
+}
+
+# Bulk hard delete suppliers by email
+DELETE http://localhost:3000/suppliers/bulk/delete-by-email
+Content-Type: application/json
+
+{
+  "contactEmail": "bulk.delete@test.com"
+}
+
+# Response:
+{
+  "affected": 1
+}
+```
+
+#### Service-Level Bulk Operations
+
+All bulk operations are powered by the underlying service methods:
+
+```typescript
+// Available service methods for bulk operations
+await this.service.bulkInsert(context, entities); // Returns { ids: string[] }
+await this.service.bulkUpdate(context, updates, where); // Returns { affected: number }
+await this.service.bulkRemove(context, where); // Returns { affected: number } - soft delete
+await this.service.bulkRecover(context, where); // Returns { affected: number } - restore
+await this.service.bulkDelete(context, where); // Returns { affected: number } - hard delete
+```
+
+### ⚙️ Controller Configuration for Soft Deletion
+
+The controllers are configured to enable soft deletion operations:
+
+```typescript
+const controllerStructure = CrudControllerStructure({
+  ...serviceStructure,
+  serviceType: SuppliersService,
+  operations: {
+    softRemove: true, // Enable soft delete endpoints
+    recover: true, // Enable recovery endpoints
+    hardRemove: true, // Enable hard delete endpoints
+  },
+});
 ```
 
 ## 🧪 Testing
@@ -568,6 +737,59 @@ export class ProductsResolver extends CrudResolverFrom(resolverStructure) {
 }
 ```
 
+### Custom Bulk Endpoints
+
+This example shows how to add domain-specific bulk endpoints to hybrid controllers:
+
+```typescript
+export class SuppliersController extends CrudControllerFrom(
+  controllerStructure,
+) {
+  @Delete('bulk/remove-by-email')
+  @ApiOperation({ summary: 'Bulk soft remove suppliers by email' })
+  async bulkRemoveByEmail(
+    @CurrentContext() context: Context,
+    @Body() removeDto: { contactEmail: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRemove(context, {
+      contactEmail: removeDto.contactEmail,
+    });
+    return { affected: result.affected };
+  }
+
+  @Patch('bulk/recover-by-email')
+  @ApiOperation({ summary: 'Bulk recover suppliers by email' })
+  async bulkRecoverByEmail(
+    @CurrentContext() context: Context,
+    @Body() recoverDto: { contactEmail: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRecover(context, {
+      contactEmail: recoverDto.contactEmail,
+    });
+    return { affected: result.affected };
+  }
+
+  @Delete('bulk/delete-by-email')
+  @ApiOperation({ summary: 'Bulk hard delete suppliers by email' })
+  async bulkDeleteByEmail(
+    @CurrentContext() context: Context,
+    @Body() deleteDto: { contactEmail: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkDelete(context, {
+      contactEmail: deleteDto.contactEmail,
+    });
+    return { affected: result.affected };
+  }
+}
+```
+
+#### Benefits of Hybrid Bulk Operations
+
+- **Single Implementation**: Bulk logic implemented once in the service layer
+- **Multiple Access Points**: Same operations available via REST endpoints
+- **Service Integration**: GraphQL can also access bulk operations through custom resolvers
+- **Consistent Results**: Same response format and behavior across API types
+
 ## 🛠️ Technologies Used
 
 - **[SOLID NestJS Framework](../../)** - The main framework
@@ -753,15 +975,34 @@ npm run test:e2e
 npm run test:cov
 ```
 
-## Key Learning Points
+## 🔗 Related Examples
 
-1. **GraphQL Integration**: How to set up GraphQL with NestJS using Apollo
-2. **Entity Decorators**: Using both TypeORM and GraphQL decorators on entities
-3. **Input Types**: Creating GraphQL input types with validation
-4. **Resolvers**: Implementing GraphQL resolvers for queries and mutations
-5. **Service Layer**: Separating business logic from GraphQL concerns
-6. **Database Operations**: CRUD operations with TypeORM and SQLite
-7. **Validation**: Input validation using class-validator decorators
-8. **Error Handling**: Proper error handling in GraphQL context
+- **[simple-crud-app](../simple-crud-app)** - Basic REST API example
+- **[simple-graphql-crud-app](../simple-graphql-crud-app)** - GraphQL API example
+- **[simple-hybrid-crud-app](../simple-hybrid-crud-app)** - Basic REST + GraphQL hybrid example
+- **[advanced-crud-app](../advanced-crud-app)** - Advanced REST API with same features
 
-This example serves as a foundation for building more complex GraphQL APIs with NestJS.
+## 📚 Learn More
+
+- [SOLID NestJS Framework Documentation](../../docs)
+- [NestJS Documentation](https://docs.nestjs.com)
+- [Apollo GraphQL Documentation](https://www.apollographql.com/docs/)
+- [TypeORM Documentation](https://typeorm.io/)
+
+## ✨ What Makes This "Advanced Hybrid"
+
+This example goes beyond basic hybrid CRUD operations to demonstrate:
+
+- **Dual API Support**: Complete feature parity between REST and GraphQL APIs
+- **Soft Deletion & Recovery**: Full soft delete lifecycle with cascade behavior for both API types
+- **Bulk Operations**: Efficient bulk processing accessible via both REST endpoints and service methods
+- **Custom Bulk Endpoints**: Domain-specific bulk operations with business logic (e.g., bulk operations by email)
+- **Event Hooks**: Unified business logic working seamlessly across REST and GraphQL operations
+- **Cascade Operations**: Related entity cascade for soft delete/recover operations in hybrid environment
+- **API Consistency**: Same validation rules, calculations, and behaviors across both API interfaces
+- **Unified Error Handling**: Consistent error responses regardless of API entry point
+- **Shared Service Layer**: Single business logic implementation serving both REST controllers and GraphQL resolvers
+
+## 📄 License
+
+This example is part of the SOLID NestJS Framework and is MIT licensed.

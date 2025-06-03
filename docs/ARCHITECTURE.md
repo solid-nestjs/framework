@@ -10,6 +10,8 @@ This document contains the key architectural decisions made during the developme
 - [ADR-004: TypeScript-First Approach](#adr-004-typescript-first-approach)
 - [ADR-005: Transaction Management](#adr-005-transaction-management)
 - [ADR-006: Configuration Structure](#adr-006-configuration-structure)
+- [ADR-007: Soft Deletion Strategy](#adr-007-soft-deletion-strategy)
+- [ADR-008: Bulk Operations Design](#adr-008-bulk-operations-design)
 
 ---
 
@@ -392,15 +394,335 @@ export const controllerStructure = CrudControllerStructure({
 
 ---
 
+## ADR-007: Soft Deletion Strategy
+
+**Status:** Accepted  
+**Date:** 2024-03-01  
+**Decision Maker(s):** Core Team
+
+### Context
+
+We needed to design a comprehensive soft deletion system that:
+
+- Supports both automatic and explicit soft deletion
+- Maintains data integrity with related entities
+- Provides recovery capabilities
+- Works seamlessly with existing CRUD operations
+- Supports both REST and GraphQL APIs
+
+### Decision
+
+We chose a **TypeORM-native soft deletion approach** with enhanced framework integration:
+
+```typescript
+// Entity configuration with TypeORM's DeleteDateColumn
+@Entity()
+export class Product {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  name: string;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
+}
+
+// Service operations
+const service = CrudServiceFrom(structure);
+await service.remove(context, id); // Auto-detects soft delete capability
+await service.softRemove(context, id); // Explicit soft delete
+await service.hardRemove(context, id); // Permanent deletion
+await service.recover(context, id); // Recovery operation
+```
+
+### Design Principles
+
+1. **Automatic Detection**: Framework automatically detects entities with `@DeleteDateColumn`
+2. **Explicit Control**: Developers can explicitly choose soft vs hard deletion
+3. **Recovery Support**: Built-in recovery operations for soft-deleted entities
+4. **Cascade Handling**: Proper cascade behavior for related entities
+5. **API Consistency**: Same patterns work for REST and GraphQL
+
+### Implementation Details
+
+#### Service Layer
+
+- `remove()` method auto-detects soft delete capability
+- `softRemove()` for explicit soft deletion
+- `hardRemove()` for permanent deletion
+- `recover()` for restoring soft-deleted entities
+- Comprehensive lifecycle hooks for each operation
+
+#### Controller Layer
+
+- `DELETE /entities/:id` (auto-detects soft delete)
+- `DELETE /entities/soft/:id` (explicit soft delete)
+- `DELETE /entities/hard/:id` (permanent delete)
+- `PATCH /entities/recover/:id` (recovery)
+
+#### GraphQL Layer
+
+- `removeEntity(id)` mutation (auto-detects)
+- `softRemoveEntity(id)` mutation (explicit)
+- `hardRemoveEntity(id)` mutation (permanent)
+- `recoverEntity(id)` mutation (recovery)
+
+### Alternatives Considered
+
+1. **Flag-based soft deletion**:
+
+   ```typescript
+   @Column({ default: false })
+   isDeleted: boolean;
+   ```
+
+   - Rejected: Less intuitive than timestamp-based approach, harder to implement cascade behavior
+
+2. **Separate archive tables**:
+
+   ```typescript
+   // Move deleted entities to separate tables
+   ProductArchive, SupplierArchive, etc.
+   ```
+
+   - Rejected: Complicates relationship handling, makes recovery more complex
+
+3. **Status-based deletion**:
+   ```typescript
+   @Column({ type: 'enum', enum: EntityStatus })
+   status: EntityStatus; // ACTIVE, DELETED, ARCHIVED
+   ```
+   - Rejected: Mixes business logic with deletion state, less flexible
+
+### Consequences
+
+**Positive:**
+
+- Leverages TypeORM's built-in soft deletion capabilities
+- Maintains referential integrity
+- Simple and intuitive API
+- Automatic cascade handling
+- Consistent behavior across REST and GraphQL
+- Easy to query soft-deleted entities when needed
+- Audit-friendly with deletion timestamps
+
+**Negative:**
+
+- Requires careful handling of queries to avoid accidentally including soft-deleted entities
+- Slight performance overhead for queries (need WHERE deletedAt IS NULL)
+- Database storage continues to grow with soft-deleted entities
+
+**Mitigation:**
+
+- Framework automatically filters soft-deleted entities in queries
+- Provide explicit methods for including soft-deleted entities when needed
+- Implement data archival strategies for old soft-deleted entities
+- Use database indexing strategies to optimize performance
+
+---
+
+## ADR-008: Bulk Operations Design
+
+**Status:** Accepted  
+**Date:** 2024-03-15  
+**Decision Maker(s):** Core Team
+
+### Context
+
+We needed to provide efficient bulk operation capabilities for:
+
+- High-performance data manipulation
+- Batch processing scenarios
+- Administrative operations
+- Data migration tasks
+- Mass updates and deletions
+
+The solution needed to support transactions, proper error handling, and lifecycle hooks while maintaining type safety and framework consistency.
+
+### Decision
+
+We chose a **service-level bulk operations approach** with optional controller endpoints:
+
+```typescript
+// Service-level bulk operations
+const insertResult = await service.bulkInsert(context, entities);
+const updateResult = await service.bulkUpdate(context, updates, where);
+const removeResult = await service.bulkRemove(context, where); // Respects soft delete
+const deleteResult = await service.bulkDelete(context, where); // Hard delete
+const recoverResult = await service.bulkRecover(context, where); // Recovery
+
+// Controller-level custom endpoints
+@Post('bulk')
+async bulkCreate(@Body() entities: CreateDto[]): Promise<{ ids: string[] }> {
+  return this.service.bulkInsert(context, entities);
+}
+```
+
+### Design Principles
+
+1. **Service-First**: Core bulk operations implemented at service level
+2. **Type Safety**: Full TypeScript support with proper type inference
+3. **Transaction Support**: All bulk operations run in transactions by default
+4. **Lifecycle Hooks**: Before/after hooks for each bulk operation
+5. **Flexible Endpoints**: Controllers can expose custom bulk endpoints as needed
+6. **Error Handling**: Comprehensive error handling with rollback capabilities
+7. **Performance**: Direct query builder usage for optimal performance
+
+### Implementation Details
+
+#### Available Operations
+
+```typescript
+interface BulkOperations {
+  bulkInsert(context, entities[]): Promise<{ ids: string[] }>;
+  bulkUpdate(context, updates, where): Promise<{ affected: number }>;
+  bulkRemove(context, where): Promise<{ affected: number }>; // Soft delete if supported
+  bulkDelete(context, where): Promise<{ affected: number }>; // Hard delete
+  bulkRecover(context, where): Promise<{ affected: number }>; // Recovery
+}
+```
+
+#### Lifecycle Hooks
+
+```typescript
+// Before/after hooks for each operation
+beforeBulkInsert(context, repository, entities): Promise<void>;
+afterBulkInsert(context, repository, entities): Promise<void>;
+
+beforeBulkUpdate(context, repository, updates, where): Promise<void>;
+afterBulkUpdate(context, repository, affectedCount, updates, where): Promise<void>;
+
+beforeBulkRemove(context, repository, where): Promise<void>;
+afterBulkRemove(context, repository, affectedCount, where): Promise<void>;
+
+beforeBulkDelete(context, repository, where): Promise<void>;
+afterBulkDelete(context, repository, affectedCount, where): Promise<void>;
+
+beforeBulkRecover(context, repository, where): Promise<void>;
+afterBulkRecover(context, repository, affectedCount, where): Promise<void>;
+```
+
+#### Configuration
+
+```typescript
+const serviceStructure = CrudServiceStructure({
+  entityType: Product,
+  // ...
+  functions: {
+    bulkInsert: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+    },
+    bulkUpdate: {
+      transactional: true,
+      lockMode: 'pessimistic_write',
+    },
+    bulkRemove: {
+      transactional: true,
+    },
+    bulkDelete: {
+      transactional: true,
+    },
+    bulkRecover: {
+      transactional: true,
+    },
+  },
+});
+```
+
+### Alternatives Considered
+
+1. **ORM-based bulk operations**:
+
+   ```typescript
+   await repository.save(entities); // For bulk insert
+   await repository.update(where, updates); // For bulk update
+   ```
+
+   - Rejected: Performance issues with large datasets, limited lifecycle hook support
+
+2. **Queue-based bulk operations**:
+
+   ```typescript
+   await bulkQueue.add('bulkInsert', { entities });
+   ```
+
+   - Rejected: Adds complexity, makes error handling more difficult, not suitable for all use cases
+
+3. **Streaming-based operations**:
+
+   ```typescript
+   const stream = service.bulkInsertStream();
+   entities.forEach(entity => stream.write(entity));
+   ```
+
+   - Considered for future implementation: Good for very large datasets but adds API complexity
+
+4. **Dedicated bulk operation controllers**:
+   ```typescript
+   @Controller('bulk-operations')
+   export class BulkOperationsController
+   ```
+   - Rejected: Separates bulk operations from entity controllers, less intuitive
+
+### Consequences
+
+**Positive:**
+
+- High performance through direct query builder usage
+- Consistent API patterns with regular CRUD operations
+- Proper transaction support with rollback capabilities
+- Comprehensive lifecycle hooks for custom logic
+- Type-safe operations with full IntelliSense support
+- Flexible controller integration
+- Works seamlessly with soft deletion
+
+**Negative:**
+
+- More complex than simple ORM operations
+- Requires careful error handling for partial failures
+- Memory usage considerations for very large datasets
+- Additional testing complexity
+
+**Mitigation:**
+
+- Comprehensive documentation with examples
+- Built-in error handling with detailed error messages
+- Memory optimization through streaming (future enhancement)
+- Extensive test coverage for bulk operations
+- Performance monitoring and optimization guidelines
+
+### Integration with Soft Deletion
+
+Bulk operations respect soft deletion settings:
+
+- `bulkRemove()` performs soft delete if entity supports it, hard delete otherwise
+- `bulkDelete()` always performs hard delete
+- `bulkRecover()` only available for entities with soft deletion support
+- Proper cascade handling for related entities
+
+### Performance Considerations
+
+- Operations use TypeORM QueryBuilder for optimal performance
+- Transactions ensure data consistency
+- Batch processing for very large datasets
+- Database-specific optimizations where applicable
+- Memory management for large result sets
+
+---
+
 ## Future ADRs
 
 ### Planned Decisions
 
-1. **ADR-007: GraphQL Integration** - How to integrate GraphQL resolvers
-2. **ADR-008: Caching Strategy** - Built-in caching mechanisms
-3. **ADR-009: Event System** - Domain events and event sourcing
-4. **ADR-010: Multi-tenancy Support** - Tenant isolation strategies
-5. **ADR-011: Performance Monitoring** - Built-in performance tracking
+1. **ADR-009: GraphQL Integration** - How to integrate GraphQL resolvers
+2. **ADR-010: Caching Strategy** - Built-in caching mechanisms
+3. **ADR-011: Event System** - Domain events and event sourcing
+4. **ADR-012: Multi-tenancy Support** - Tenant isolation strategies
+5. **ADR-013: Performance Monitoring** - Built-in performance tracking
+6. **ADR-014: Data Archival Strategy** - Handling old soft-deleted entities
+7. **ADR-015: Bulk Operation Streaming** - Streaming for very large datasets
 
 ### Review Process
 
