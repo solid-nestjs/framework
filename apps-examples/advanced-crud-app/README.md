@@ -12,6 +12,9 @@ This example demonstrates how to build a complete REST API CRUD application usin
 - **🛡️ Input Validation** - Automatic validation with class-validator
 - **⚡ Auto-generated Endpoints** - Controllers generated from service structures
 - **🔗 Relation Handling** - Automatic loading of related entities
+- **🗑️ Soft Deletion & Recovery** - Soft delete entities with recovery capabilities
+- **📦 Bulk Operations** - Service-level bulk insert, update, delete, and remove operations
+- **⚙️ Custom Bulk Endpoints** - Controller-level bulk operations with custom business logic
 
 ## 🏗️ What's Included
 
@@ -39,6 +42,9 @@ This example demonstrates how to build a complete REST API CRUD application usin
 - `POST /suppliers` - Create new supplier
 - `PUT /suppliers/:id` - Update existing supplier
 - `DELETE /suppliers/:id` - Delete supplier (soft delete)
+- `POST /suppliers/bulk` - Bulk create multiple suppliers
+- `PUT /suppliers/bulk/update-email-by-name` - Bulk update supplier emails by name
+- `DELETE /suppliers/bulk/delete-by-email` - Bulk hard delete suppliers by email
 
 **Invoices (Advanced Example):**
 
@@ -59,6 +65,9 @@ This example demonstrates how to build a complete REST API CRUD application usin
 - **Event Hooks** - Before/after hooks for create, update, delete operations (see InvoiceService)
 - **Business Logic Integration** - Custom validation and calculations in hooks
 - **Entity Relationships** - One-to-many relationships with cascade operations
+- **Soft Deletion** - Entities configured with soft delete capabilities
+- **Bulk Operations** - Service-level bulk insert, update, delete, and remove
+- **Custom Bulk Endpoints** - Controller-level bulk operations with custom business logic
 
 ## 📦 Installation
 
@@ -116,6 +125,95 @@ Content-Type: application/json
 
 # Delete product
 DELETE http://localhost:3000/products/1
+```
+
+## 🚀 Advanced Features
+
+### 🗑️ Soft Deletion & Recovery Operations
+
+This example demonstrates comprehensive soft deletion capabilities with automatic cascade handling for related entities.
+
+#### Soft Deletion Examples
+
+All entities in this example support soft deletion, which marks records as deleted without permanently removing them from the database.
+
+```bash
+# Soft delete automatically happens on regular DELETE
+DELETE http://localhost:3000/suppliers/1
+
+# The supplier is marked as deleted but not removed from database
+# Related products are also cascade soft-deleted
+```
+
+#### Recovery Operations
+
+Soft-deleted entities can be recovered, restoring them and their related entities:
+
+```bash
+# Recover a soft-deleted supplier (not available in basic CRUD operations)
+# This feature is shown in the advanced-hybrid-crud-app example
+```
+
+#### Cascade Behavior
+
+- **Soft Delete Cascade**: When a supplier is soft-deleted, all related products are automatically soft-deleted
+- **Recovery Cascade**: When a supplier is recovered, all related products are also recovered
+- **Relationship Preservation**: All relationships remain intact during soft deletion and recovery
+
+### 📦 Bulk Operations
+
+This example showcases powerful bulk operations for efficient data processing.
+
+#### Service-Level Bulk Operations
+
+```bash
+# Bulk create suppliers
+POST http://localhost:3000/suppliers/bulk
+Content-Type: application/json
+
+[
+  {
+    "name": "Tech Supplier 1",
+    "contactEmail": "tech1@supplier.com"
+  },
+  {
+    "name": "Tech Supplier 2",
+    "contactEmail": "tech2@supplier.com"
+  }
+]
+
+# Bulk update supplier emails by name
+PUT http://localhost:3000/suppliers/bulk/update-email-by-name
+Content-Type: application/json
+
+{
+  "name": "Tech Supplier 1",
+  "contactEmail": "newemail@supplier.com"
+}
+
+# Bulk delete suppliers by email (hard delete)
+DELETE http://localhost:3000/suppliers/bulk/delete-by-email
+Content-Type: application/json
+
+{
+  "contactEmail": "tech1@supplier.com"
+}
+```
+
+#### Bulk Operation Responses
+
+All bulk operations return the number of affected records:
+
+```json
+{
+  "affected": 3
+}
+```
+
+For bulk creation, an array of created IDs is returned:
+
+```json
+["supplier-id-1", "supplier-id-2", "supplier-id-3"]
 ```
 
 ### Invoice Operations (Advanced Example)
@@ -357,6 +455,52 @@ The `InvoicesService` shows how to:
 
 This pattern is ideal for entities requiring complex business rules, validation, or calculations.
 
+### Custom Controller Endpoints
+
+This example shows how to add custom bulk endpoints to controllers using the underlying service methods:
+
+```typescript
+export class SuppliersController extends CrudControllerFrom(
+  controllerStructure,
+) {
+  @Post('bulk')
+  @ApiOperation({ summary: 'Bulk create suppliers' })
+  async bulkInsert(
+    @CurrentContext() context: Context,
+    @Body() createInputs: CreateSupplierDto[],
+  ): Promise<string[]> {
+    const result = await this.service.bulkInsert(context, createInputs);
+    return result.ids;
+  }
+
+  @Put('bulk/update-email-by-name')
+  @ApiOperation({ summary: 'Bulk update supplier emails by name' })
+  async bulkUpdateEmailByName(
+    @CurrentContext() context: Context,
+    @Body() updateDto: { name: string; contactEmail: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkUpdate(
+      context,
+      { contactEmail: updateDto.contactEmail },
+      { name: updateDto.name },
+    );
+    return { affected: result.affected };
+  }
+
+  @Delete('bulk/delete-by-email')
+  @ApiOperation({ summary: 'Bulk delete suppliers by email' })
+  async bulkDeleteByEmail(
+    @CurrentContext() context: Context,
+    @Body() deleteDto: { contactEmail: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkDelete(context, {
+      contactEmail: deleteDto.contactEmail,
+    });
+    return { affected: result.affected };
+  }
+}
+```
+
 ### Controller Structure (products.controller.ts)
 
 ```typescript
@@ -409,6 +553,9 @@ This example goes beyond basic CRUD operations to demonstrate:
 - **Business Validation**: Cross-entity validation (product existence checks)
 - **Automatic Calculations**: Dynamic field computation (invoice totals)
 - **Service Integration**: Dependency injection between services
+- **Soft Deletion**: Comprehensive soft delete with cascade behavior
+- **Bulk Operations**: Efficient bulk processing with service-level and controller-level implementations
+- **Custom Bulk Endpoints**: Domain-specific bulk operations (e.g., delete by email, update by name)
 
 ## 📄 License
 

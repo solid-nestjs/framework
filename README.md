@@ -23,7 +23,9 @@ The SOLID NestJS Framework is a collection of utilities and mixins that accelera
 - **🛡️ Input Validation** - Integrated class-validator support
 - **📦 Modular Architecture** - Clean separation of concerns following SOLID principles
 - **🎨 Extensible Design** - Easy to extend and customize for specific needs
-- **🔄 Soft Delete Support** - Built-in soft delete functionality
+- **🔄 Soft Delete Support** - Built-in soft delete functionality with recovery operations
+- **🔄 Bulk Operations** - Efficient bulk insert, update, delete, and remove operations
+- **♻️ Recovery Operations** - Restore soft-deleted entities with cascade support
 - **📊 Audit Trail** - Optional audit logging for data changes
 - **🚀 Future-Ready** - Designed for GraphQL and Prisma integration
 
@@ -31,37 +33,39 @@ The SOLID NestJS Framework is a collection of utilities and mixins that accelera
 
 We're excited to share a preview of upcoming features in version 0.3.0:
 
-### 🛠️ Enhanced Developer Experience
+#### 🛠️ Enhanced CLI Tools
 
-- **Framework CLI Generator** - Scaffold controllers, services, and modules with interactive prompts
+- 🔲 **Framework CLI Generator** - Scaffold controllers, services, and modules with interactive prompts
 
 #### 🔐 Advanced Authentication & Authorization
 
-- **Role-Based Access Control (RBAC)** - Built-in decorators for fine-grained permissions
-- **JWT Integration** - Seamless authentication middleware
-- **Resource-Level Security** - Per-endpoint authorization with custom guards
-- **Audit Trail Enhancement** - User tracking and action logging
+- 🔲 **Role-Based Access Control (RBAC)** - Built-in decorators for fine-grained permissions
+- 🔲 **JWT Integration** - Seamless authentication middleware
+- 🔲 **Resource-Level Security** - Per-endpoint authorization with custom guards
+- 🔲 **Audit Trail Enhancement** - User tracking and action logging
 
 #### 📊 Performance & Monitoring
 
-- **Query Optimization** - Automatic query analysis and optimization suggestions
-- **Performance Metrics** - Built-in monitoring for response times and database queries
-- **Caching Layer** - Redis integration for improved performance
+- 🔲 **Caching Layer** - Redis integration for improved performance
 
 #### 🔄 Advanced Relations & Data Management
 
-- **Polymorphic Relations** - Support for complex entity relationships
-- **Bulk Operations** - Efficient batch create, update, and delete operations
-- **Data Seeding** - Framework for populating test and development data
-- **Schema Versioning** - Support for API versioning with backward compatibility
-- **Recovery Operations** - Built-in soft delete recovery and data restoration capabilities
-- **Custom Operation Definitions** - Framework for defining custom business operations beyond CRUD
+- ✅ **Soft Deletion & Recovery Operations** - Built-in soft delete functionality with recovery operations
+- ✅ **Bulk Operations** - Efficient bulk insert, update, delete, and remove operations
+- 🔲 **Custom Operation Definitions** - Framework for defining custom business operations beyond CRUD
 
 #### 🎨 Enhanced GraphQL Features
 
-- **Subscription Support** - Real-time data updates via GraphQL subscriptions
-- **DataLoader Integration** - Optimized N+1 query resolution
-- **Custom Scalar Types** - Extended type system for complex data types
+- 🔲 **Subscription Support** - Real-time data updates via GraphQL subscriptions
+- 🔲 **DataLoader Integration** - Optimized N+1 query resolution
+- 🔲 **Custom Scalar Types** - Extended type system for complex data types
+
+### 🧪 Experimental Features
+
+- 🔲 **Prisma Integration** - Alternative ORM support alongside TypeORM
+- 🔲 **Event Sourcing** - Built-in event-driven architecture patterns
+- 🔲 **Microservices Support** - Framework for distributed system development
+- 🔲 **MCP Support** - Model Context Protocol integration for AI applications
 
 _Want to influence the roadmap? Check out our [full roadmap](ROADMAP.md) and join the discussion!_
 
@@ -88,11 +92,20 @@ npm install && npm run start:dev
 # Visit http://localhost:3000/graphql for GraphQL Playground
 ```
 
-### 🔄 Hybrid REST + GraphQL Example
+### 🔄 Advanced Example with Soft Deletion & Bulk Operations
 
 ```bash
-# Run the hybrid example with both APIs
-cd framework/apps-examples/simple-hybrid-crud-app
+# Run the advanced example with soft deletion and bulk operations
+cd framework/apps-examples/advanced-crud-app
+npm install && npm run start:dev
+# Visit http://localhost:3000/api for comprehensive Swagger docs
+```
+
+### 🔄 Hybrid Example with GraphQL Soft Deletion
+
+```bash
+# Run the hybrid example with GraphQL soft deletion support
+cd framework/apps-examples/advanced-hybrid-crud-app
 npm install && npm run start:dev
 # Visit http://localhost:3000/api (REST) or http://localhost:3000/graphql
 ```
@@ -261,7 +274,337 @@ The framework automatically generates the following REST endpoints:
 - `POST /products` - Create a new product
 - `PUT /products/:id` - Update an existing product
 - `DELETE /products/:id` - Soft delete a product
+- `DELETE /products/soft/:id` - Explicit soft delete a product
 - `DELETE /products/hard/:id` - Hard delete a product (if enabled)
+- `PATCH /products/recover/:id` - Recover a soft-deleted product
+
+### 🔄 Soft Deletion & Recovery Operations
+
+The framework provides comprehensive soft deletion capabilities that allow you to mark entities as deleted without permanently removing them from the database. Soft-deleted entities can be recovered later, making this feature ideal for data protection and audit requirements.
+
+#### Key Features
+
+- **Automatic Soft Delete** - Default `DELETE` operations perform soft deletion when entity has `@DeleteDateColumn()`
+- **Explicit Operations** - Separate endpoints for soft delete (`/soft/:id`) and hard delete (`/hard/:id`)
+- **Recovery Support** - Restore soft-deleted entities with `PATCH /recover/:id`
+- **Cascade Behavior** - Soft deletion and recovery cascade to related entities
+- **Query Filtering** - Soft-deleted entities are automatically excluded from queries
+- **GraphQL Support** - Full soft deletion support in GraphQL mutations
+
+#### Configuration
+
+Enable soft deletion by adding a `@DeleteDateColumn()` to your entity:
+
+```typescript
+@Entity()
+export class Product {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  name: string;
+
+  // Enable soft deletion
+  @DeleteDateColumn()
+  deletedAt?: Date;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
+```
+
+Configure soft deletion operations in your controller structure:
+
+```typescript
+const controllerStructure = CrudControllerStructure({
+  entityType: Product,
+  serviceType: ProductsService,
+  operations: {
+    // Standard CRUD operations
+    findAll: true,
+    findOne: true,
+    create: true,
+    update: true,
+    remove: true, // Default soft delete
+
+    // Explicit soft deletion operations
+    softRemove: true, // DELETE /products/soft/:id
+    recover: true, // PATCH /products/recover/:id
+    hardRemove: true, // DELETE /products/hard/:id (permanent)
+  },
+});
+```
+
+#### REST API Examples
+
+```bash
+# Soft delete a product (default behavior)
+DELETE http://localhost:3000/products/123
+
+# Explicit soft delete
+DELETE http://localhost:3000/products/soft/123
+
+# Recover a soft-deleted product
+PATCH http://localhost:3000/products/recover/123
+
+# Permanently delete a product
+DELETE http://localhost:3000/products/hard/123
+
+# List products (excludes soft-deleted)
+GET http://localhost:3000/products
+
+# Get a specific product (returns 404 if soft-deleted)
+GET http://localhost:3000/products/123
+```
+
+#### GraphQL Examples
+
+```graphql
+# Soft delete a product
+mutation {
+  softRemoveProduct(id: "123") {
+    id
+    name
+    deletedAt
+  }
+}
+
+# Recover a soft-deleted product
+mutation {
+  recoverProduct(id: "123") {
+    id
+    name
+    deletedAt # Will be null after recovery
+  }
+}
+
+# Hard delete a product (permanent)
+mutation {
+  hardRemoveProduct(id: "123") {
+    id
+    name
+  }
+}
+
+# Query products (automatically excludes soft-deleted)
+query {
+  products {
+    id
+    name
+    deletedAt
+  }
+}
+```
+
+### 📦 Bulk Operations
+
+The framework provides efficient bulk operations for handling multiple entities in a single database transaction, significantly improving performance for batch operations.
+
+#### Available Bulk Operations
+
+- **`bulkInsert`** - Create multiple entities in one operation
+- **`bulkUpdate`** - Update multiple entities matching criteria
+- **`bulkDelete`** - Permanently delete multiple entities
+- **`bulkRemove`** - Soft delete multiple entities (when soft deletion is enabled)
+- **`bulkRecover`** - Recover multiple soft-deleted entities
+
+#### Service-Level Bulk Operations
+
+```typescript
+export class ProductsService extends CrudServiceFrom(serviceStructure) {
+  // Bulk insert multiple products
+  async createBulkProducts(
+    context: Context,
+    products: CreateProductDto[],
+  ): Promise<string[]> {
+    const result = await this.bulkInsert(context, products);
+    return result.ids;
+  }
+
+  // Bulk update products by criteria
+  async updatePricesBySupplier(
+    context: Context,
+    supplierId: string,
+    priceMultiplier: number,
+  ): Promise<number> {
+    const result = await this.bulkUpdate(
+      context,
+      { price: () => `price * ${priceMultiplier}` },
+      { supplier: { id: supplierId } },
+    );
+    return result.affected || 0;
+  }
+
+  // Bulk soft delete products
+  async removeProductsByCategory(
+    context: Context,
+    categoryId: string,
+  ): Promise<number> {
+    const result = await this.bulkRemove(context, {
+      category: { id: categoryId },
+    });
+    return result.affected || 0;
+  }
+
+  // Bulk recover products
+  async recoverProductsBySupplier(
+    context: Context,
+    supplierId: string,
+  ): Promise<number> {
+    const result = await this.bulkRecover(context, {
+      supplier: { id: supplierId },
+    });
+    return result.affected || 0;
+  }
+}
+```
+
+#### Controller-Level Bulk Endpoints
+
+Add custom bulk endpoints to your controllers:
+
+```typescript
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {
+  @Post('bulk')
+  @ApiOperation({ summary: 'Bulk create products' })
+  async bulkCreate(
+    @CurrentContext() context: Context,
+    @Body() products: CreateProductDto[],
+  ): Promise<{ ids: string[] }> {
+    const result = await this.service.bulkInsert(context, products);
+    return { ids: result.ids };
+  }
+
+  @Put('bulk/update-by-supplier')
+  @ApiOperation({ summary: 'Bulk update products by supplier' })
+  async bulkUpdateBySupplier(
+    @CurrentContext() context: Context,
+    @Body() updateDto: { supplierId: string; updates: Partial<Product> },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkUpdate(context, updateDto.updates, {
+      supplier: { id: updateDto.supplierId },
+    });
+    return { affected: result.affected || 0 };
+  }
+
+  @Delete('bulk/remove-by-category')
+  @ApiOperation({ summary: 'Bulk soft delete products by category' })
+  async bulkRemoveByCategory(
+    @CurrentContext() context: Context,
+    @Body() removeDto: { categoryId: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRemove(context, {
+      category: { id: removeDto.categoryId },
+    });
+    return { affected: result.affected || 0 };
+  }
+
+  @Patch('bulk/recover-by-supplier')
+  @ApiOperation({ summary: 'Bulk recover products by supplier' })
+  async bulkRecoverBySupplier(
+    @CurrentContext() context: Context,
+    @Body() recoverDto: { supplierId: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRecover(context, {
+      supplier: { id: recoverDto.supplierId },
+    });
+    return { affected: result.affected || 0 };
+  }
+}
+```
+
+#### Bulk Operations Examples
+
+```bash
+# Bulk create products
+POST http://localhost:3000/products/bulk
+Content-Type: application/json
+
+[
+  { "name": "Product 1", "price": 99.99, "supplierId": "supplier-1" },
+  { "name": "Product 2", "price": 149.99, "supplierId": "supplier-1" },
+  { "name": "Product 3", "price": 199.99, "supplierId": "supplier-2" }
+]
+
+# Bulk update products by supplier
+PUT http://localhost:3000/products/bulk/update-by-supplier
+Content-Type: application/json
+
+{
+  "supplierId": "supplier-1",
+  "updates": {
+    "price": 89.99,
+    "status": "discounted"
+  }
+}
+
+# Bulk soft delete products by category
+DELETE http://localhost:3000/products/bulk/remove-by-category
+Content-Type: application/json
+
+{
+  "categoryId": "category-1"
+}
+
+# Bulk recover products by supplier
+PATCH http://localhost:3000/products/bulk/recover-by-supplier
+Content-Type: application/json
+
+{
+  "supplierId": "supplier-1"
+}
+```
+
+#### Event Hooks for Bulk Operations
+
+The framework provides event hooks for bulk operations:
+
+```typescript
+export class ProductsService extends CrudServiceFrom(serviceStructure) {
+  // Before bulk update hook
+  async beforeBulkUpdate(
+    context: Context,
+    repository: Repository<Product>,
+    updateInput: Partial<Product>,
+    where: Where<Product>,
+  ): Promise<void> {
+    // Custom validation before bulk update
+    if (updateInput.price && updateInput.price < 0) {
+      throw new BadRequestException('Price cannot be negative');
+    }
+  }
+
+  // After bulk remove hook
+  async afterBulkRemove(
+    context: Context,
+    repository: Repository<Product>,
+    affectedCount: number,
+    where: Where<Product>,
+  ): Promise<void> {
+    // Log bulk operation
+    console.log(`Soft deleted ${affectedCount} products`);
+
+    // Notify external systems
+    await this.notifyInventorySystem(where, 'bulk_removed');
+  }
+
+  // After bulk recover hook
+  async afterBulkRecover(
+    context: Context,
+    repository: Repository<Product>,
+    affectedCount: number,
+    where: Where<Product>,
+  ): Promise<void> {
+    console.log(`Recovered ${affectedCount} products`);
+    await this.notifyInventorySystem(where, 'bulk_recovered');
+  }
+}
+```
 
 ## 🔧 Advanced Configuration
 
@@ -316,6 +659,42 @@ export const serviceStructure = CrudServiceStructure({
     remove: {
       transactional: true,
     },
+    // Soft deletion operations
+    softRemove: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+    },
+    recover: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+    },
+    hardRemove: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+      decorators: [() => UseGuards(AdminGuard)], // Restrict hard delete
+    },
+    // Bulk operations
+    bulkInsert: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+    },
+    bulkUpdate: {
+      transactional: true,
+      isolationLevel: 'REPEATABLE_READ',
+    },
+    bulkDelete: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+      decorators: [() => UseGuards(AdminGuard)],
+    },
+    bulkRemove: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+    },
+    bulkRecover: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+    },
   },
 });
 ```
@@ -356,9 +735,22 @@ const controllerStructure = CrudControllerStructure({
     },
     remove: {
       summary: 'Delete product',
-      description: 'Soft delete a product',
+      description: 'Soft delete a product (default behavior)',
     },
-    hardRemove: true, // Enable hard delete endpoint
+    // Soft deletion operations
+    softRemove: {
+      summary: 'Soft delete product',
+      description: 'Mark a product as deleted without removing from database',
+    },
+    recover: {
+      summary: 'Recover product',
+      description: 'Restore a soft-deleted product',
+    },
+    hardRemove: {
+      summary: 'Hard delete product',
+      description: 'Permanently remove a product from the database',
+      decorators: [() => UseGuards(AdminGuard)], // Restrict access
+    },
     pagination: true, // Enable pagination endpoint
   },
 
@@ -429,6 +821,43 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
     });
   }
 
+  // Bulk operations examples
+  async bulkUpdatePrices(
+    context: Context,
+    categoryId: string,
+    priceIncrease: number,
+  ): Promise<number> {
+    const result = await this.bulkUpdate(
+      context,
+      { price: () => `price + ${priceIncrease}` },
+      { category: { id: categoryId } },
+    );
+    return result.affected || 0;
+  }
+
+  async softDeleteExpiredProducts(
+    context: Context,
+    expirationDate: Date,
+  ): Promise<number> {
+    const result = await this.bulkRemove(context, {
+      expiresAt: { _lt: expirationDate },
+    });
+    return result.affected || 0;
+  }
+
+  async recoverRecentlyDeleted(
+    context: Context,
+    days: number = 7,
+  ): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    const result = await this.bulkRecover(context, {
+      deletedAt: { _gte: cutoffDate },
+    });
+    return result.affected || 0;
+  }
+
   // Override lifecycle hooks
   async beforeCreate(
     context: Context,
@@ -448,6 +877,46 @@ export class ProductsService extends CrudServiceFrom(serviceStructure) {
   ): Promise<void> {
     // Custom logic after updating
     await this.notifyStockChange(entity);
+  }
+
+  // Soft deletion hooks
+  async beforeSoftRemove(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+  ): Promise<void> {
+    // Custom logic before soft deletion
+    await this.notifySupplierOfDeletion(entity.supplier.id, entity.id);
+  }
+
+  async afterRecover(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+  ): Promise<void> {
+    // Custom logic after recovery
+    await this.notifySupplierOfRecovery(entity.supplier.id, entity.id);
+  }
+
+  // Bulk operation hooks
+  async beforeBulkRemove(
+    context: Context,
+    repository: Repository<Product>,
+    where: Where<Product>,
+  ): Promise<void> {
+    // Log bulk soft deletion
+    console.log(`About to soft delete products matching:`, where);
+  }
+
+  async afterBulkRecover(
+    context: Context,
+    repository: Repository<Product>,
+    affectedCount: number,
+    where: Where<Product>,
+  ): Promise<void> {
+    // Notify about bulk recovery
+    console.log(`Recovered ${affectedCount} products`);
+    await this.notifyInventorySystem('bulk_recovery', affectedCount);
   }
 }
 ```
@@ -475,6 +944,58 @@ export class ProductsController extends CrudControllerFrom(
     @Body() stockUpdate: { quantity: number },
   ): Promise<Product> {
     return this.service.updateStock(context, id, stockUpdate.quantity);
+  }
+
+  // Bulk operations endpoints
+  @Post('bulk')
+  @ApiOperation({ summary: 'Bulk create products' })
+  async bulkCreate(
+    @CurrentContext() context: Context,
+    @Body() products: CreateProductDto[],
+  ): Promise<{ ids: string[] }> {
+    const result = await this.service.bulkInsert(context, products);
+    return { ids: result.ids };
+  }
+
+  @Put('bulk/update-prices/:categoryId')
+  @ApiOperation({ summary: 'Bulk update prices by category' })
+  async bulkUpdatePrices(
+    @CurrentContext() context: Context,
+    @Param('categoryId') categoryId: string,
+    @Body() priceUpdate: { increase: number },
+  ): Promise<{ affected: number }> {
+    const affected = await this.service.bulkUpdatePrices(
+      context,
+      categoryId,
+      priceUpdate.increase,
+    );
+    return { affected };
+  }
+
+  @Delete('bulk/expired')
+  @ApiOperation({ summary: 'Soft delete expired products' })
+  async bulkRemoveExpired(
+    @CurrentContext() context: Context,
+    @Body() expirationFilter: { expirationDate: string },
+  ): Promise<{ affected: number }> {
+    const affected = await this.service.softDeleteExpiredProducts(
+      context,
+      new Date(expirationFilter.expirationDate),
+    );
+    return { affected };
+  }
+
+  @Patch('bulk/recover-recent')
+  @ApiOperation({ summary: 'Recover recently deleted products' })
+  async bulkRecoverRecent(
+    @CurrentContext() context: Context,
+    @Body() recoveryFilter: { days?: number },
+  ): Promise<{ affected: number }> {
+    const affected = await this.service.recoverRecentlyDeleted(
+      context,
+      recoveryFilter.days,
+    );
+    return { affected };
   }
 }
 ```
@@ -825,7 +1346,7 @@ export class Product {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Add soft delete support
+  // Add soft delete support (enables soft deletion operations)
   @DeleteDateColumn()
   deletedAt?: Date;
 
@@ -837,6 +1358,12 @@ export class Product {
   // Use appropriate column types
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
+
+  // Configure cascade behavior for soft deletion
+  @ManyToOne(() => Supplier, supplier => supplier.products, {
+    cascade: ['soft-remove', 'recover'], // Enable cascade operations
+  })
+  supplier: Supplier;
 }
 ```
 
@@ -940,7 +1467,58 @@ npm run start:dev -w apps-examples/simple-graphql-crud-app
 
 # Run the typeorm & rest-api + graphql example
 npm run start:dev -w apps-examples/simple-hybrid-crud-app
+
+# Run the advanced examples with soft deletion & bulk operations
+npm run start:dev -w apps-examples/advanced-crud-app
+npm run start:dev -w apps-examples/advanced-hybrid-crud-app
 ```
+
+### 🔄 Exploring Advanced Features
+
+The advanced examples (`advanced-crud-app` and `advanced-hybrid-crud-app`) demonstrate comprehensive implementations of soft deletion, recovery, and bulk operations:
+
+#### Advanced CRUD App Features:
+
+- **Soft Deletion**: Suppliers and Products with cascade soft delete
+- **Recovery Operations**: Restore soft-deleted entities
+- **Bulk Operations**: Bulk insert, update, delete, and remove
+- **Custom Bulk Endpoints**: Service-level bulk operations by criteria
+- **Event Hooks**: Complete lifecycle hooks for all operations
+- **Transaction Management**: All operations properly wrapped in transactions
+
+#### Advanced Hybrid App Features:
+
+- **GraphQL Soft Deletion**: Complete GraphQL mutation support
+- **REST + GraphQL**: Both API types with soft deletion support
+- **Cascade Operations**: Related entity cascade for soft delete/recover
+- **Bulk Recovery**: GraphQL and REST bulk recovery operations
+
+#### Example Endpoints from Advanced Apps:
+
+```bash
+# Advanced CRUD App (REST only)
+POST   /suppliers/bulk                    # Bulk create suppliers
+PUT    /suppliers/bulk/update-email-by-name  # Bulk update by criteria
+DELETE /suppliers/bulk/delete-by-email    # Bulk hard delete by criteria
+
+# Advanced Hybrid App (REST + GraphQL)
+DELETE /suppliers/bulk/remove-by-email    # Bulk soft delete by criteria
+PATCH  /suppliers/bulk/recover-by-email   # Bulk recover by criteria
+DELETE /suppliers/soft/:id               # Individual soft delete
+PATCH  /suppliers/recover/:id            # Individual recovery
+DELETE /suppliers/hard/:id               # Individual hard delete
+
+# GraphQL mutations (Hybrid App)
+mutation { softRemoveSupplier(id: "123") { id name deletedAt } }
+mutation { recoverSupplier(id: "123") { id name deletedAt } }
+mutation { hardRemoveSupplier(id: "123") { id name } }
+```
+
+For complete implementation details, see:
+
+- `apps-examples/advanced-crud-app/src/suppliers/suppliers.controller.ts`
+- `apps-examples/advanced-hybrid-crud-app/src/suppliers/suppliers.controller.ts`
+- Test files in each example's `test/` directory for comprehensive usage examples
 
 ## 📄 License
 

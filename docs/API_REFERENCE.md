@@ -7,6 +7,9 @@ This document provides detailed API documentation for the SOLID NestJS Framework
 - [Common Package](#common-package)
 - [TypeORM Package](#typeorm-package)
 - [REST API Package](#rest-api-package)
+- [GraphQL Package](#graphql-package)
+- [Soft Deletion & Recovery Operations](#soft-deletion--recovery-operations)
+- [Bulk Operations](#bulk-operations)
 - [Types and Interfaces](#types-and-interfaces)
 - [Decorators](#decorators)
 - [Utilities](#utilities)
@@ -26,6 +29,22 @@ interface ICrudService<T> {
   create(context: Context, createInput: any): Promise<T>;
   update(context: Context, id: string, updateInput: any): Promise<T>;
   remove(context: Context, id: string): Promise<T>;
+
+  // Soft deletion operations (when supported)
+  softRemove?(context: Context, id: string): Promise<T>;
+  hardRemove?(context: Context, id: string): Promise<T>;
+  recover?(context: Context, id: string): Promise<T>;
+
+  // Bulk operations
+  bulkInsert?(context: Context, entities: any[]): Promise<{ ids: string[] }>;
+  bulkUpdate?(
+    context: Context,
+    updates: any,
+    where: any,
+  ): Promise<{ affected: number }>;
+  bulkRemove?(context: Context, where: any): Promise<{ affected: number }>;
+  bulkDelete?(context: Context, where: any): Promise<{ affected: number }>;
+  bulkRecover?(context: Context, where: any): Promise<{ affected: number }>;
 }
 ```
 
@@ -39,7 +58,12 @@ interface ICrudController<T> {
   findOne(context: Context, id: string): Promise<T>;
   create(context: Context, createInput: any): Promise<T>;
   update(context: Context, id: string, updateInput: any): Promise<T>;
-  remove(context: Context, id: string): Promise<T>;
+  remove(context: Context, id: string): Promise<T>; // softDeletes if able
+
+  // Soft deletion endpoints (when supported)
+  softRemove?(context: Context, id: string): Promise<T>;
+  hardRemove?(context: Context, id: string): Promise<T>;
+  recover?(context: Context, id: string): Promise<T>;
 }
 ```
 
@@ -106,7 +130,14 @@ enum StandardActions {
   CREATE = 'create',
   UPDATE = 'update',
   REMOVE = 'remove',
+  SOFT_REMOVE = 'softRemove',
   HARD_REMOVE = 'hardRemove',
+  RECOVER = 'recover',
+  BULK_INSERT = 'bulkInsert',
+  BULK_UPDATE = 'bulkUpdate',
+  BULK_REMOVE = 'bulkRemove',
+  BULK_DELETE = 'bulkDelete',
+  BULK_RECOVER = 'bulkRecover',
 }
 ```
 
@@ -207,7 +238,16 @@ interface FunctionConfig {
   create?: OperationConfig;
   update?: OperationConfig;
   remove?: OperationConfig;
+  softRemove?: OperationConfig;
   hardRemove?: OperationConfig;
+  recover?: OperationConfig;
+
+  // Bulk operations
+  bulkInsert?: OperationConfig;
+  bulkUpdate?: OperationConfig;
+  bulkRemove?: OperationConfig;
+  bulkDelete?: OperationConfig;
+  bulkRecover?: OperationConfig;
 }
 
 interface OperationConfig {
@@ -299,7 +339,9 @@ interface OperationsConfig {
   create?: boolean | OperationDefinition;
   update?: boolean | OperationDefinition;
   remove?: boolean | OperationDefinition;
+  softRemove?: boolean | OperationDefinition;
   hardRemove?: boolean | OperationDefinition;
+  recover?: boolean | OperationDefinition;
   pagination?: boolean;
 }
 
@@ -445,22 +487,87 @@ Type for class constructors.
 type Constructor<T = {}> = new (...args: any[]) => T;
 ```
 
-### Query Builder Utilities
+#### `BulkOperationResult`
 
-#### `buildWhereClause(filter, alias)`
-
-Builds WHERE clause from filter input.
+Result types for bulk operations.
 
 ```typescript
-function buildWhereClause(filter: FilterInput, alias: string): string;
+interface BulkInsertResult {
+  ids: (string | number)[];
+}
+
+interface BulkUpdateResult {
+  affected?: number;
+}
+
+interface BulkRemoveResult {
+  affected?: number;
+}
+
+interface BulkDeleteResult {
+  affected?: number;
+}
+
+interface BulkRecoverResult {
+  affected?: number;
+}
 ```
 
-#### `buildOrderClause(orderBy, alias)`
+#### `SoftDeletionOptions`
 
-Builds ORDER BY clause from order input.
+Options for soft deletion operations.
 
 ```typescript
-function buildOrderClause(orderBy: OrderByInput, alias: string): string;
+interface RemoveOptions<IdType, EntityType, ContextType> {
+  eventHandler?: RemoveEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+
+interface SoftRemoveOptions<IdType, EntityType, ContextType> {
+  eventHandler?: SoftRemoveEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+
+interface HardRemoveOptions<IdType, EntityType, ContextType> {
+  eventHandler?: HardRemoveEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+
+interface RecoverOptions<IdType, EntityType, ContextType> {
+  eventHandler?: RecoverEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+```
+
+#### `BulkOperationOptions`
+
+Options for bulk operations.
+
+```typescript
+interface BulkInsertOptions<IdType, EntityType, ContextType> {
+  eventHandler?: BulkInsertEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+
+interface BulkUpdateOptions<IdType, EntityType, ContextType> {
+  eventHandler?: BulkUpdateEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+
+interface BulkRemoveOptions<IdType, EntityType, ContextType> {
+  eventHandler?: BulkRemoveEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+
+interface BulkDeleteOptions<IdType, EntityType, ContextType> {
+  eventHandler?: BulkDeleteEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
+
+interface BulkRecoverOptions<IdType, EntityType, ContextType> {
+  eventHandler?: BulkRecoverEventsHandler<IdType, EntityType, ContextType>;
+  noAudits?: boolean;
+}
 ```
 
 ## Error Handling
@@ -488,6 +595,30 @@ Exception thrown when an entity is not found.
 ```typescript
 class EntityNotFoundException extends CrudException {
   constructor(entityName: string, id: string);
+}
+```
+
+#### `SoftDeletionException`
+
+Exception thrown for soft deletion related errors.
+
+```typescript
+class SoftDeletionException extends CrudException {
+  constructor(message: string, entityName?: string);
+}
+```
+
+#### `BulkOperationException`
+
+Exception thrown for bulk operation errors.
+
+```typescript
+class BulkOperationException extends CrudException {
+  constructor(
+    message: string,
+    public operation: string,
+    public affectedCount?: number
+  );
 }
 ```
 
@@ -559,10 +690,8 @@ export const serviceStructure = CrudServiceStructure({
   updateInputType: UpdateProductDto,
   findArgsType: FindProductArgs,
   relationsConfig: {
-    relations: {
-      supplier: true,
-      category: true,
-    },
+    supplier: true,
+    category: true,
   },
   functions: {
     create: {
@@ -573,16 +702,135 @@ export const serviceStructure = CrudServiceStructure({
       transactional: true,
       lockMode: 'pessimistic_write',
     },
+    remove: {
+      transactional: true, // Soft delete by default if entity supports it
+    },
+    softRemove: {
+      transactional: true, // Explicit soft delete
+    },
+    hardRemove: {
+      transactional: true, // Permanent deletion
+    },
+    recover: {
+      transactional: true, // Recovery operation
+    },
+    // Bulk operations
+    bulkInsert: {
+      transactional: true,
+      isolationLevel: 'READ_COMMITTED',
+    },
+    bulkUpdate: {
+      transactional: true,
+      lockMode: 'pessimistic_write',
+    },
+    bulkRemove: {
+      transactional: true,
+    },
+    bulkDelete: {
+      transactional: true,
+    },
+    bulkRecover: {
+      transactional: true,
+    },
   },
 });
 
 export class ProductsService extends CrudServiceFrom(serviceStructure) {
+  // Custom query methods
   async findByCategory(
     context: Context,
     categoryId: string,
   ): Promise<Product[]> {
     return this.findAll(context, {
       where: { category: { id: categoryId } },
+    });
+  }
+
+  // Soft deletion hooks
+  async beforeSoftRemove(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+  ) {
+    // Archive related data before soft deletion
+    await this.archiveRelatedData(entity.id);
+
+    // Validate soft delete permissions
+    if (!context.user.canSoftDelete) {
+      throw new Error('User does not have soft delete permissions');
+    }
+  }
+
+  async afterSoftRemove(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+  ) {
+    // Notify related services
+    await this.notificationService.notifyDeletion(entity.id, 'soft');
+
+    // Update search index
+    await this.searchService.removeFromIndex(entity.id);
+  }
+
+  // Recovery hooks
+  async beforeRecover(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+  ) {
+    // Validate recovery conditions
+    if (entity.category?.isArchived) {
+      throw new Error('Cannot recover product with archived category');
+    }
+  }
+
+  async afterRecover(
+    context: Context,
+    repository: Repository<Product>,
+    entity: Product,
+  ) {
+    // Restore to search index
+    await this.searchService.addToIndex(entity);
+
+    // Notify recovery
+    await this.notificationService.notifyRecovery(entity.id);
+  }
+
+  // Bulk operation hooks
+  async beforeBulkRemove(
+    context: Context,
+    repository: Repository<Product>,
+    where: any,
+  ) {
+    // Validate bulk remove permissions
+    if (!context.user.canBulkRemove) {
+      throw new Error('User does not have bulk remove permissions');
+    }
+  }
+
+  async afterBulkRemove(
+    context: Context,
+    repository: Repository<Product>,
+    affectedCount: number,
+    where: any,
+  ) {
+    // Clear related caches
+    if (affectedCount > 0) {
+      await this.cacheService.invalidatePattern('products:*');
+    }
+
+    // Update analytics
+    await this.analyticsService.recordBulkOperation('remove', affectedCount);
+  }
+
+  async bulkArchiveExpiredProducts(
+    context: Context,
+  ): Promise<{ affected: number }> {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return this.bulkRemove(context, {
+      status: 'inactive',
+      lastUsedAt: { _lt: thirtyDaysAgo },
     });
   }
 }
@@ -595,7 +843,16 @@ import {
   CrudControllerFrom,
   CrudControllerStructure,
 } from '@solid-nestjs/rest-api';
-import { UseGuards } from '@nestjs/common';
+import {
+  UseGuards,
+  Post,
+  Delete,
+  Patch,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
+import { ApiOperation, ApiBody, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard, AdminGuard } from '../guards';
 import { ProductsService } from './products.service';
 import { serviceStructure } from './products.service';
@@ -617,6 +874,23 @@ export const controllerStructure = CrudControllerStructure({
       decorators: [() => UseGuards(AdminGuard)],
     },
     remove: {
+      summary: 'Remove product',
+      description: 'Soft delete a product (default behavior)',
+      decorators: [() => UseGuards(AdminGuard)],
+    },
+    softRemove: {
+      summary: 'Soft remove product',
+      description: 'Explicitly soft delete a product',
+      decorators: [() => UseGuards(AdminGuard)],
+    },
+    hardRemove: {
+      summary: 'Hard remove product',
+      description: 'Permanently delete a product',
+      decorators: [() => UseGuards(AdminGuard)],
+    },
+    recover: {
+      summary: 'Recover product',
+      description: 'Restore a soft-deleted product',
       decorators: [() => UseGuards(AdminGuard)],
     },
   },
@@ -626,13 +900,184 @@ export const controllerStructure = CrudControllerStructure({
 export class ProductsController extends CrudControllerFrom(
   controllerStructure,
 ) {
+  // Custom query endpoints
   @Get('category/:categoryId')
+  @ApiOperation({ summary: 'Get products by category' })
+  @ApiParam({ name: 'categoryId', description: 'Category ID' })
   async findByCategory(
     @Param('categoryId') categoryId: string,
     @CurrentUser() user: any,
   ): Promise<Product[]> {
     const context = { user };
-    return this.service.findByCategory(context, categoryId);
+    return this.service.findAll(context, { category: { id: categoryId } });
+  }
+
+  // Custom bulk operations
+  @Post('bulk')
+  @ApiOperation({ summary: 'Bulk create products' })
+  @ApiBody({ type: [CreateProductDto] })
+  @UseGuards(AdminGuard)
+  async bulkCreate(
+    @CurrentContext() context: Context,
+    @Body() createDtos: CreateProductDto[],
+  ): Promise<{ ids: string[] }> {
+    return this.service.bulkInsert(context, createDtos);
+  }
+
+  @Put('bulk/update-price-by-category')
+  @ApiOperation({ summary: 'Bulk update product prices by category' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        categoryId: { type: 'string' },
+        priceMultiplier: { type: 'number', minimum: 0 },
+      },
+    },
+  })
+  @UseGuards(AdminGuard)
+  async bulkUpdatePriceByCategory(
+    @CurrentContext() context: Context,
+    @Body() updateDto: { categoryId: string; priceMultiplier: number },
+  ): Promise<{ affected: number }> {
+    return this.service.bulkUpdate(
+      context,
+      { priceMultiplier: updateDto.priceMultiplier },
+      { category: { id: updateDto.categoryId } },
+    );
+  }
+
+  @Delete('bulk/expired')
+  @ApiOperation({ summary: 'Archive expired products' })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        affected: { type: 'number' },
+      },
+    },
+  })
+  @UseGuards(AdminGuard)
+  async bulkArchiveExpired(
+    @CurrentContext() context: Context,
+  ): Promise<{ affected: number }> {
+    return this.service.bulkArchiveExpiredProducts(context);
+  }
+
+  @Delete('bulk/remove-by-status')
+  @ApiOperation({ summary: 'Bulk remove products by status' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['inactive', 'discontinued'] },
+      },
+    },
+  })
+  @UseGuards(AdminGuard)
+  async bulkRemoveByStatus(
+    @CurrentContext() context: Context,
+    @Body() removeDto: { status: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRemove(context, {
+      status: removeDto.status,
+    });
+    return { affected: result.affected || 0 };
+  }
+
+  @Patch('bulk/recover-by-category')
+  @ApiOperation({ summary: 'Bulk recover products by category' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        categoryId: { type: 'string' },
+      },
+    },
+  })
+  @UseGuards(AdminGuard)
+  async bulkRecoverByCategory(
+    @CurrentContext() context: Context,
+    @Body() recoverDto: { categoryId: string },
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRecover(context, {
+      category: { id: recoverDto.categoryId },
+    });
+    return { affected: result.affected || 0 };
+  }
+}
+```
+
+### GraphQL Resolver Implementation
+
+```typescript
+import { CrudResolverFrom, CrudResolverStructure } from '@solid-nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard, AdminGuard } from '../guards';
+import { ProductsService } from './products.service';
+import { serviceStructure } from './products.service';
+
+export const resolverStructure = CrudResolverStructure({
+  ...serviceStructure,
+  serviceType: ProductsService,
+  operations: {
+    findAll: true,
+    findOne: true,
+    create: true,
+    update: true,
+    remove: true, // Soft delete by default
+    softRemove: true, // Explicit soft delete
+    hardRemove: true, // Hard delete
+    recover: true, // Recovery operation
+  },
+});
+
+@Resolver(() => Product)
+@UseGuards(JwtAuthGuard)
+export class ProductsResolver extends CrudResolverFrom(resolverStructure) {
+  @Query(() => [Product])
+  async productsByCategory(
+    @Args('categoryId') categoryId: string,
+    @CurrentUser() user: any,
+  ): Promise<Product[]> {
+    const context = { user };
+    return this.service.findBy(context, {
+      category: { id: recoverDto.categoryId },
+    });
+  }
+
+  @Mutation(() => BulkInsertResponse)
+  @UseGuards(AdminGuard)
+  async bulkCreateProducts(
+    @Args('input', { type: () => [CreateProductInput] })
+    input: CreateProductInput[],
+    @CurrentContext() context: Context,
+  ): Promise<{ ids: string[] }> {
+    return this.service.bulkInsert(context, input);
+  }
+
+  @Mutation(() => BulkOperationResponse)
+  @UseGuards(AdminGuard)
+  async bulkRemoveProductsByStatus(
+    @Args('status') status: string,
+    @CurrentContext() context: Context,
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRemove(context, { status });
+    return { affected: result.affected || 0 };
+  }
+
+  @Mutation(() => BulkOperationResponse)
+  @UseGuards(AdminGuard)
+  async bulkRecoverProductsByCategory(
+    @Args('categoryId') categoryId: string,
+    @CurrentContext() context: Context,
+  ): Promise<{ affected: number }> {
+    const result = await this.service.bulkRecover(context, {
+      category: { id: categoryId },
+    });
+    return { affected: result.affected || 0 };
   }
 }
 ```
@@ -647,4 +1092,30 @@ export class ProductsController extends CrudControllerFrom(
 6. **Testing**: Write comprehensive unit and integration tests
 7. **Documentation**: Keep API documentation up to date with Swagger
 
-For more examples and detailed guides, see the [examples directory](../examples/) and [main documentation](../README.md).
+### Soft Deletion Best Practices
+
+1. **Entity Design**: Always include a `deletedAt` column for entities that support soft deletion
+2. **Cascade Configuration**: Configure cascade behavior for related entities to maintain data integrity
+3. **Query Filtering**: Be explicit about including soft-deleted entities in queries when needed
+4. **Recovery Validation**: Implement validation logic before recovering entities
+5. **Audit Trails**: Log all soft deletion and recovery operations for compliance
+
+### Bulk Operations Best Practices
+
+1. **Transaction Management**: Always wrap bulk operations in transactions
+2. **Performance Optimization**: Use appropriate batch sizes for large datasets
+3. **Error Handling**: Implement proper error handling for partial failures
+4. **Progress Tracking**: Provide progress feedback for long-running bulk operations
+5. **Resource Management**: Monitor memory usage during bulk operations
+6. **Validation**: Validate data before performing bulk operations
+7. **Rollback Strategy**: Have a rollback plan for failed bulk operations
+
+### Security Considerations
+
+1. **Permission Checks**: Implement proper authorization for soft deletion and bulk operations
+2. **Rate Limiting**: Apply rate limiting to bulk operation endpoints
+3. **Input Validation**: Validate all input parameters for bulk operations
+4. **Audit Logging**: Log all bulk operations for security auditing
+5. **Data Sanitization**: Sanitize data before bulk operations
+
+For more examples and detailed guides, see the [examples directory](../apps-examples/) and [main documentation](../README.md).
