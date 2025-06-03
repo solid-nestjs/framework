@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a Question
+    url: https://github.com/solid-nestjs/framework/discussions
+    about: Please ask and answer questions here.
+  - name: Community Support
+    url: https://github.com/solid-nestjs/framework/discussions
+    about: Please discuss and seek help with the community here.
