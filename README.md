@@ -1541,10 +1541,25 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) 
 
 ## 🙏 Acknowledgments
 
-- Built with [NestJS](https://nestjs.com/)
-- Powered by [TypeORM](https://typeorm.io/)
-- Inspired by the SOLID principles
-- Community feedback and contributions
+This framework wouldn't have been possible without the inspiration and guidance from several sources:
+
+### 🎓 Educational Inspiration
+
+- **[Fernando Herrera](https://fernando-herrera.com/)** - Special thanks for his exceptional NestJS and design patterns courses that provided fundamental inspiration and architectural guidance for this framework
+- **Claude Sonnet 4.0 (agent)** - Invaluable assistance with documentation, testing strategies, and architectural guidance throughout the development process
+
+### 🛠️ Technology Stack
+
+- Built with [NestJS](https://nestjs.com/) - The progressive Node.js framework
+- Powered by [TypeORM](https://typeorm.io/) - Amazing TypeScript ORM
+- Inspired by the SOLID principles and Clean Architecture
+- GraphQL support via [Apollo Server](https://www.apollographql.com/)
+
+### 🌟 Community
+
+- Community feedback and contributions that help shape the framework
+- The open-source ecosystem that makes projects like this possible
+- All developers who test, use, and provide feedback on the framework
 
 ---
 
