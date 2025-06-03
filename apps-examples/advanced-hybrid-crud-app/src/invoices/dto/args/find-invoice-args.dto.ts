@@ -10,8 +10,12 @@ import {
   StringFilter,
   Where,
   DateFilter,
+  getWhereClass,
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { Invoice } from '../../entities/invoice.entity';
+import { FindClientArgs } from '../../../clients/dto';
+
+const ClientWhere = getWhereClass(FindClientArgs);
 
 @InputType({ isAbstract: true })
 class FindInvoiceWhere implements Where<Invoice> {
@@ -49,6 +53,13 @@ class FindInvoiceWhere implements Where<Invoice> {
   @IsOptional()
   @ValidateNested()
   invoiceDate?: DateFilter | undefined;
+
+  @Field(() => ClientWhere, { nullable: true })
+  @ApiProperty({ type: () => ClientWhere, required: false })
+  @Type(() => ClientWhere)
+  @IsOptional()
+  @ValidateNested()
+  client?: InstanceType<typeof ClientWhere> | undefined;
 }
 
 @InputType({ isAbstract: true })

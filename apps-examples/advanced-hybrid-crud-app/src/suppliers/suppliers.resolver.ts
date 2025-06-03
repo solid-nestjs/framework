@@ -9,6 +9,11 @@ import { Supplier } from './entities/supplier.entity';
 const resolverStructure = CrudResolverStructure({
   ...serviceStructure,
   serviceType: SuppliersService,
+  operations: {
+    softRemove: true,
+    recover: true,
+    hardRemove: true,
+  },
 });
 
 @Resolver(() => Supplier)

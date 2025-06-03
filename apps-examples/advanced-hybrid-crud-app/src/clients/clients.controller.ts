@@ -2,17 +2,17 @@ import {
   CrudControllerFrom,
   CrudControllerStructure,
 } from '@solid-nestjs/typeorm-hybrid-crud';
-import { InvoicesService, serviceStructure } from './invoices.service';
+import { ClientsService, serviceStructure } from './clients.service';
 
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
-  serviceType: InvoicesService,
+  serviceType: ClientsService,
   operations: {
     recover: true,
     hardRemove: true,
   },
 });
 
-export class InvoicesController extends CrudControllerFrom(
+export class ClientsController extends CrudControllerFrom(
   controllerStructure,
 ) {}

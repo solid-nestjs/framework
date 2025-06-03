@@ -82,6 +82,24 @@ export interface RemoveEventsHandler<
   ): Promise<void>;
 }
 
+export interface SoftRemoveEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeSoftRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  afterSoftRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+}
+
 export interface HardRemoveEventsHandler<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
@@ -152,6 +170,43 @@ export interface BulkRemoveEventsHandler<
   ): Promise<void>;
 
   afterBulkRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    where: Where<EntityType>,
+  ): Promise<void>;
+}
+
+export interface RecoverEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  afterRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+}
+
+export interface BulkRecoverEventsHandler<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  beforeBulkRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  afterBulkRecover(
     context: ContextType,
     repository: Repository<EntityType>,
     affectedCount: number | undefined,

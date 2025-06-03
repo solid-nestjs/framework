@@ -12,11 +12,14 @@ import {
   CreateEventsHandler,
   UpdateEventsHandler,
   RemoveEventsHandler,
+  SoftRemoveEventsHandler,
   HardRemoveEventsHandler,
+  RecoverEventsHandler,
   BulkInsertEventsHandler,
   BulkUpdateEventsHandler,
   BulkDeleteEventsHandler,
   BulkRemoveEventsHandler,
+  BulkRecoverEventsHandler,
 } from '../event-handlers';
 import { DataService } from './data-service.interface';
 
@@ -60,6 +63,17 @@ export interface BulkDeleteResult {
 export interface BulkRemoveResult {
   /**
    * Number of entities affected by the remove operation.
+   * Can be undefined if the database doesn't provide this information.
+   */
+  affected: number | undefined | null;
+}
+
+/**
+ * Result interface for bulk recover operations.
+ */
+export interface BulkRecoverResult {
+  /**
+   * Number of entities affected by the recover operation.
    * Can be undefined if the database doesn't provide this information.
    */
   affected: number | undefined | null;
@@ -233,6 +247,36 @@ export interface CrudService<
   ): Promise<EntityType>;
 
   /**
+   * Performs a soft delete (logical deletion) of an entity by its ID without checking deleteDateColumn.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param id - The unique identifier of the entity to soft delete
+   * @param options - Optional configuration for the soft remove operation
+   * @returns A promise that resolves to the soft-deleted entity
+   *
+   * @throws {EntityNotFoundError} When the entity with the specified ID doesn't exist
+   * @throws {MissingDeleteDateColumnError} When the entity doesn't support soft deletes
+   *
+   * @remarks
+   * This method directly calls repository.softRemove() without checking if the entity has a
+   * deleteDateColumn. It's designed for cases where you know the entity supports soft deletes
+   * and want to bypass the automatic fallback logic of the regular remove() method. This method
+   * executes beforeSoftRemove and afterSoftRemove hooks and supports custom event handlers.
+   *
+   * @example
+   * ```typescript
+   * const softDeletedUser = await crudService.softRemove(context, 1);
+   * console.log(`Soft deleted user: ${softDeletedUser.name}`);
+   * // Entity is marked as deleted but still exists in database
+   * ```
+   */
+  softRemove(
+    context: ContextType,
+    id: IdType,
+    options?: SoftRemoveOptions<IdType, EntityType, ContextType>,
+  ): Promise<EntityType>;
+
+  /**
    * Performs a hard delete (physical deletion) of an entity by its ID.
    *
    * @param context - The execution context containing request-specific information
@@ -259,6 +303,35 @@ export interface CrudService<
     context: ContextType,
     id: IdType,
     options?: HardRemoveOptions<IdType, EntityType, ContextType>,
+  ): Promise<EntityType>;
+
+  /**
+   * Recovers a previously soft-deleted entity by its ID.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param id - The unique identifier of the entity to recover
+   * @param options - Optional configuration for the recover operation
+   * @returns A promise that resolves to the recovered entity
+   *
+   * @throws {EntityNotFoundError} When the entity with the specified ID doesn't exist
+   *
+   * @remarks
+   * This method is used to restore an entity that was previously soft-deleted (using the `remove` method).
+   * It will clear the deletion date/flag on the entity, making it visible in regular queries again.
+   * This operation is only available for entities that support soft deletes. The method executes
+   * beforeRecover and afterRecover hooks and supports custom event handlers.
+   *
+   * @example
+   * ```typescript
+   * const recoveredUser = await crudService.recover(context, 1);
+   * console.log(`Recovered user: ${recoveredUser.name}`);
+   * // Entity is now visible in regular queries again
+   * ```
+   */
+  recover(
+    context: ContextType,
+    id: IdType,
+    options?: RecoverOptions<IdType, EntityType, ContextType>,
   ): Promise<EntityType>;
 
   /**
@@ -417,6 +490,42 @@ export interface CrudService<
   ): Promise<void>;
 
   /**
+   * Hook method executed before soft-deleting an entity (direct soft delete).
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The entity instance that will be soft-deleted
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform validation or side effects before the entity
+   * is soft-deleted using the direct softRemove method. This is called when using
+   * the softRemove operation that bypasses deleteDateColumn checks. You can validate
+   * business rules, check dependencies, or prepare related data for the deletion.
+   *
+   * @example
+   * ```typescript
+   * async beforeSoftRemove(context, repository, entity) {
+   *   // Validate soft delete permissions
+   *   if (!context.user.canSoftDelete) {
+   *     throw new Error('User does not have soft delete permissions');
+   *   }
+   *
+   *   // Archive related data
+   *   await this.archiveRelatedData(entity.id);
+   *
+   *   // Log soft deletion
+   *   await this.logSoftDeletion(entity.id, context.user.id);
+   * }
+   * ```
+   */
+  beforeSoftRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  /**
    * Hook method executed before hard-deleting an entity.
    *
    * @param context - The execution context containing request-specific information
@@ -450,6 +559,44 @@ export interface CrudService<
    * ```
    */
   beforeHardRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  /**
+   * Hook method executed before recovering a soft-deleted entity.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The entity instance that will be recovered
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform validation or side effects before the entity
+   * is recovered from soft deletion. You can validate business rules, check permissions,
+   * or prepare related data for the recovery. Use this for operations that need to
+   * happen before the entity deletion flag is cleared.
+   *
+   * @example
+   * ```typescript
+   * async beforeRecover(context, repository, entity) {
+   *   // Check if entity can be recovered
+   *   if (!context.user.canRecover) {
+   *     throw new Error('User does not have permission to recover entities');
+   *   }
+   *
+   *   // Validate recovery conditions
+   *   if (entity.status === 'permanently_deleted') {
+   *     throw new Error('Cannot recover permanently deleted entity');
+   *   }
+   *
+   *   // Log recovery attempt
+   *   await this.logRecovery(entity.id, context.user.id);
+   * }
+   * ```
+   */
+  beforeRecover(
     context: ContextType,
     repository: Repository<EntityType>,
     entity: EntityType,
@@ -681,6 +828,38 @@ export interface CrudService<
     where: Where<EntityType>,
     options?: BulkRemoveOptions<IdType, EntityType, ContextType>,
   ): Promise<BulkRemoveResult>;
+
+  /**
+   * Performs bulk recovery of multiple entities matching the specified conditions.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param where - The conditions that determine which entities to recover
+   * @param options - Optional configuration for the bulk recover operation
+   * @returns A promise that resolves to bulk recover result containing the number of affected entities
+   *
+   * @throws {Error} When the repository doesn't support soft deletes
+   *
+   * @remarks
+   * This method efficiently recovers multiple soft-deleted entities in a single database operation.
+   * It uses the QueryBuilder's restore() method to clear the deletion date/flag on all matching
+   * entities. This operation is only available for entities that support soft deletes (have a
+   * deletedAt column). The method executes beforeBulkRecover and afterBulkRecover hooks and
+   * supports custom event handlers. The affected count may be undefined if the database doesn't provide it.
+   *
+   * @example
+   * ```typescript
+   * const result = await crudService.bulkRecover(context, {
+   *   status: 'active',
+   *   deletedAt: { _gte: new Date('2023-01-01') }
+   * });
+   * console.log(`Recovered ${result.affected} entities`);
+   * ```
+   */
+  bulkRecover(
+    context: ContextType,
+    where: Where<EntityType>,
+    options?: BulkRecoverOptions<IdType, EntityType, ContextType>,
+  ): Promise<BulkRecoverResult>;
 
   /**
    * Hook method executed before performing a bulk update operation.
@@ -1006,6 +1185,47 @@ export interface CrudService<
   ): Promise<void>;
 
   /**
+   * Hook method executed after successfully soft-deleting an entity (direct soft delete).
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The soft-deleted entity instance (after marking as deleted)
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform side effects after the entity has been successfully
+   * soft-deleted using the direct softRemove method. This is called when using the softRemove
+   * operation that bypasses deleteDateColumn checks. You can trigger notifications, update
+   * caches, create audit logs, or perform cleanup operations specific to direct soft deletes.
+   *
+   * @example
+   * ```typescript
+   * async afterSoftRemove(context, repository, entity) {
+   *   // Create audit log for direct soft delete
+   *   await this.auditService.log('ENTITY_SOFT_REMOVED', entity.id, context.user.id, {
+   *     entityData: entity,
+   *     softDeletedAt: new Date(),
+   *     method: 'direct'
+   *   });
+   *
+   *   // Clear entity cache
+   *   await this.cacheService.invalidate(`entities:${entity.id}`);
+   *
+   *   // Send soft delete notification
+   *   await this.notificationService.sendSoftDeletionNotification(entity, context.user);
+   *
+   *   // Update search index
+   *   await this.searchService.markAsDeleted(entity.id);
+   * }
+   * ```
+   */
+  afterSoftRemove(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  /**
    * Hook method executed after successfully hard-deleting an entity.
    *
    * @param context - The execution context containing request-specific information
@@ -1050,6 +1270,137 @@ export interface CrudService<
     repository: Repository<EntityType>,
     entity: EntityType,
   ): Promise<void>;
+
+  /**
+   * Hook method executed after successfully recovering an entity.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entity
+   * @param entity - The recovered entity instance (after clearing deletion flag)
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform side effects after the entity has been successfully
+   * recovered from soft deletion. You can trigger notifications, update caches, create audit logs,
+   * or perform other post-recovery operations. The entity parameter contains the final state
+   * with the deletion flag cleared.
+   *
+   * @example
+   * ```typescript
+   * async afterRecover(context, repository, entity) {
+   *   // Create audit log
+   *   await this.auditService.log('ENTITY_RECOVERED', entity.id, context.user.id, {
+   *     entityData: entity,
+   *     recoveredAt: new Date()
+   *   });
+   *
+   *   // Clear entity cache
+   *   await this.cacheService.invalidate(`entities:${entity.id}`);
+   *
+   *   // Send notification
+   *   await this.notificationService.sendRecoveryNotification(entity, context.user);
+   *
+   *   // Update search index
+   *   await this.searchService.addToIndex(entity);
+   *
+   *   // Trigger webhooks
+   *   await this.webhookService.trigger('entity.recovered', entity);
+   * }
+   * ```
+   */
+  afterRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    entity: EntityType,
+  ): Promise<void>;
+
+  /**
+   * Hook method executed before performing a bulk recover operation.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entities
+   * @param where - The conditions that determine which entities will be recovered
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform validation or side effects before bulk recovering
+   * entities. You can validate the recover criteria, check permissions, or prepare audit
+   * trails. Note that individual entities are not loaded in bulk operations, so you
+   * work with the recovery criteria rather than specific entity instances.
+   *
+   * @example
+   * ```typescript
+   * async beforeBulkRecover(context, repository, where) {
+   *   // Validate recover permissions
+   *   if (!context.user.canBulkRecover) {
+   *     throw new Error('User does not have permission for bulk recover');
+   *   }
+   *
+   *   // Validate recovery conditions
+   *   const entitiesCount = await repository.count({
+   *     where: { ...where, deletedAt: { _isNotNull: true } }
+   *   });
+   *   if (entitiesCount === 0) {
+   *     throw new Error('No soft-deleted entities found matching criteria');
+   *   }
+   *
+   *   // Log bulk operation
+   *   await this.logBulkRecover(where, context.user.id);
+   * }
+   * ```
+   */
+  beforeBulkRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    where: Where<EntityType>,
+  ): Promise<void>;
+
+  /**
+   * Hook method executed after successfully performing a bulk recover operation.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param repository - The TypeORM repository instance for the entities
+   * @param affectedCount - The number of entities that were recovered (may be undefined)
+   * @param where - The conditions that determined which entities were recovered
+   * @returns A promise that resolves when the hook processing is complete
+   *
+   * @remarks
+   * This hook allows you to perform side effects after entities have been successfully
+   * bulk recovered. You can trigger notifications, update caches, create audit logs, or
+   * perform cleanup operations. The affectedCount parameter tells you how many entities
+   * were actually recovered by the operation.
+   *
+   * @example
+   * ```typescript
+   * async afterBulkRecover(context, repository, affectedCount, where) {
+   *   // Log bulk recovery
+   *   await this.auditService.logBulk('BULK_RECOVER', affectedCount, context.user.id, {
+   *     where,
+   *     recoveredAt: new Date()
+   *   });
+   *
+   *   // Clear related caches
+   *   if (affectedCount && affectedCount > 0) {
+   *     await this.cacheService.invalidatePattern('entities:*');
+   *   }
+   *
+   *   // Send notification
+   *   await this.notificationService.sendBulkRecoveryNotification(
+   *     context.user.id,
+   *     affectedCount || 0
+   *   );
+   *
+   *   // Update search index
+   *   await this.searchService.reindexByQuery(where);
+   * }
+   * ```
+   */
+  afterBulkRecover(
+    context: ContextType,
+    repository: Repository<EntityType>,
+    affectedCount: number | undefined,
+    where: Where<EntityType>,
+  ): Promise<void>;
 }
 
 export interface CreateOptions<
@@ -1064,6 +1415,11 @@ export interface CreateOptions<
     CreateInputType,
     ContextType
   >;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface UpdateOptions<
@@ -1078,6 +1434,11 @@ export interface UpdateOptions<
     UpdateInputType,
     ContextType
   >;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface RemoveOptions<
@@ -1086,6 +1447,24 @@ export interface RemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: RemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
+}
+
+export interface SoftRemoveOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: SoftRemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface HardRemoveOptions<
@@ -1094,6 +1473,24 @@ export interface HardRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: HardRemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
+}
+
+export interface RecoverOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: RecoverEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkInsertOptions<
@@ -1102,6 +1499,11 @@ export interface BulkInsertOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkInsertEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkUpdateOptions<
@@ -1110,6 +1512,11 @@ export interface BulkUpdateOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkUpdateEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkDeleteOptions<
@@ -1118,6 +1525,11 @@ export interface BulkDeleteOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkDeleteEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }
 
 export interface BulkRemoveOptions<
@@ -1126,4 +1538,22 @@ export interface BulkRemoveOptions<
   ContextType extends Context,
 > {
   eventHandler?: BulkRemoveEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
+}
+
+export interface BulkRecoverOptions<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  ContextType extends Context,
+> {
+  eventHandler?: BulkRecoverEventsHandler<IdType, EntityType, ContextType>;
+  /**
+   * When set to true, skips calling the audit service for this operation.
+   * Use this when you want to perform operations without creating audit logs.
+   */
+  noAudits?: boolean;
 }

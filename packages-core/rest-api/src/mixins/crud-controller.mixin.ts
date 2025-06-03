@@ -2,13 +2,16 @@ import {
   Body,
   Delete,
   HttpCode,
+  HttpException,
   HttpStatus,
   Param,
   ParseIntPipe,
   PipeTransform,
   Post,
   Put,
+  Patch,
   Type,
+  ValidationPipe,
   mixin,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
@@ -21,6 +24,7 @@ import {
   CurrentContext,
   applyMethodDecorators,
   DeepPartial,
+  isSoftDeletableCrudService,
 } from '@solid-nestjs/common';
 import { CrudControllerStructure } from '../interfaces';
 import { ApiResponses } from '../decorators';
@@ -136,6 +140,31 @@ export function CrudControllerFrom<
     },
   );
 
+  const softRemoveSettings = extractOperationSettings(
+    controllerStructure.operations?.softRemove,
+    {
+      disabled: !controllerStructure.operations?.softRemove,
+      route: 'soft/:id',
+      summary: 'Soft remove ' + entityType.name.toLowerCase() + ' record',
+      description:
+        'soft removal of ' + entityType.name.toLowerCase() + ' record',
+      successCode: HttpStatus.ACCEPTED,
+      errorCodes: [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
+    },
+  );
+
+  const recoverSettings = extractOperationSettings(
+    controllerStructure.operations?.recover,
+    {
+      disabled: !controllerStructure.operations?.recover,
+      route: 'recover/:id',
+      summary: 'Recover ' + entityType.name.toLowerCase() + ' record',
+      description: 'recovery of ' + entityType.name.toLowerCase() + ' record',
+      successCode: HttpStatus.ACCEPTED,
+      errorCodes: [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
+    },
+  );
+
   const paramApiConfig = {
     name: 'id',
     description: 'ID of the ' + entityType.name + ' entity',
@@ -164,7 +193,16 @@ export function CrudControllerFrom<
     })
     async create?(
       @ContextDecorator() context: ContextType,
-      @Body() createInput: CreateInputType,
+      @Body(
+        new ValidationPipe({
+          transform: true,
+          expectedType: createInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      createInput: CreateInputType,
     ): Promise<EntityType> {
       return this.service.create(context, createInput);
     }
@@ -192,7 +230,16 @@ export function CrudControllerFrom<
     async update?(
       @ContextDecorator() context: ContextType,
       @Param('id', ...pipeTransforms) id: IdType,
-      @Body() updateInput: UpdateInputType,
+      @Body(
+        new ValidationPipe({
+          transform: true,
+          expectedType: updateInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      updateInput: UpdateInputType,
     ): Promise<EntityType> {
       return this.service.update(context, id, updateInput);
     }
@@ -236,7 +283,64 @@ export function CrudControllerFrom<
       @ContextDecorator() context: ContextType,
       @Param('id', ...pipeTransforms) id: IdType,
     ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Hard remove operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
       return this.service.hardRemove(context, id);
+    }
+
+    @Delete(softRemoveSettings.route)
+    @applyMethodDecorators(softRemoveSettings.decorators)
+    @ApiOperation({
+      summary: softRemoveSettings.summary,
+      description: softRemoveSettings.description,
+      operationId: softRemoveSettings.operationId,
+    })
+    @ApiParam(paramApiConfig)
+    @HttpCode(softRemoveSettings.successCode)
+    @ApiResponses({
+      type: entityType,
+      successCodes: softRemoveSettings.successCodes,
+      errorCodes: softRemoveSettings.errorCodes,
+    })
+    async softRemove?(
+      @ContextDecorator() context: ContextType,
+      @Param('id', ...pipeTransforms) id: IdType,
+    ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Soft remove operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
+      return this.service.softRemove(context, id);
+    }
+
+    @Patch(recoverSettings.route)
+    @applyMethodDecorators(recoverSettings.decorators)
+    @ApiOperation({
+      summary: recoverSettings.summary,
+      description: recoverSettings.description,
+      operationId: recoverSettings.operationId,
+    })
+    @ApiParam(paramApiConfig)
+    @HttpCode(recoverSettings.successCode)
+    @ApiResponses({
+      type: entityType,
+      successCodes: recoverSettings.successCodes,
+      errorCodes: recoverSettings.errorCodes,
+    })
+    async recover?(
+      @ContextDecorator() context: ContextType,
+      @Param('id', ...pipeTransforms) id: IdType,
+    ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Recover operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
+      return this.service.recover(context, id);
     }
   }
 
@@ -253,6 +357,13 @@ export function CrudControllerFrom<
   //this method is disabled by default
   if (hardRemoveSettings.disabled) {
     delete CrudController.prototype.hardRemove;
+  }
+  //softRemove and recover are enabled by default if not explicitly disabled
+  if (softRemoveSettings.disabled) {
+    delete CrudController.prototype.softRemove;
+  }
+  if (recoverSettings.disabled) {
+    delete CrudController.prototype.recover;
   }
 
   return mixin(CrudController);

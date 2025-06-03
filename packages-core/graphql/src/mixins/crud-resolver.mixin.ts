@@ -1,4 +1,12 @@
-import { ParseIntPipe, PipeTransform, Type, mixin } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  ParseIntPipe,
+  PipeTransform,
+  Type,
+  ValidationPipe,
+  mixin,
+} from '@nestjs/common';
 import { Args, Mutation } from '@nestjs/graphql';
 import {
   Context,
@@ -9,6 +17,7 @@ import {
   CurrentContext,
   DeepPartial,
   applyMethodDecoratorsIf,
+  isSoftDeletableCrudService,
 } from '@solid-nestjs/common';
 import { CrudResolverStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
@@ -134,6 +143,27 @@ export function CrudResolverFrom<
     },
   );
 
+  const softRemoveSettings = extractOperationSettings(
+    resolverStructure.operations?.softRemove,
+    {
+      disabled: !resolverStructure.operations?.softRemove,
+      name: 'softRemove' + entityType.name,
+      summary: 'Soft remove ' + entityType.name.toLowerCase() + ' record',
+      description:
+        'soft removal of ' + entityType.name.toLowerCase() + ' record',
+    },
+  );
+
+  const recoverSettings = extractOperationSettings(
+    resolverStructure.operations?.recover,
+    {
+      disabled: !resolverStructure.operations?.recover,
+      name: 'recover' + entityType.name,
+      summary: 'Recover ' + entityType.name.toLowerCase() + ' record',
+      description: 'recovery of ' + entityType.name.toLowerCase() + ' record',
+    },
+  );
+
   class CrudController extends DataResolverFrom(resolverStructure) {
     @applyMethodDecoratorsIf(!createSettings.disabled, [
       () =>
@@ -145,7 +175,19 @@ export function CrudResolverFrom<
     ])
     async create?(
       @ContextDecorator() context: ContextType,
-      @Args({ type: () => createInputType, name: 'createInput' })
+      @Args(
+        {
+          type: () => createInputType,
+          name: 'createInput',
+        },
+        new ValidationPipe({
+          transform: true,
+          expectedType: createInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
       createInput: CreateInputType,
     ): Promise<EntityType> {
       return this.service.create(context, createInput);
@@ -163,7 +205,19 @@ export function CrudResolverFrom<
       @ContextDecorator() context: ContextType,
       @Args('id', { type: () => idType }, ...pipeTransforms)
       id: IdType,
-      @Args({ type: () => updateInputType, name: 'updateInput' })
+      @Args(
+        {
+          type: () => updateInputType,
+          name: 'updateInput',
+        },
+        new ValidationPipe({
+          transform: true,
+          expectedType: updateInputType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
       updateInput: UpdateInputType,
     ): Promise<EntityType> {
       return this.service.update(context, id, updateInput);
@@ -196,7 +250,52 @@ export function CrudResolverFrom<
       @ContextDecorator() context: ContextType,
       @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
     ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Hard remove operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
       return this.service.hardRemove(context, id);
+    }
+
+    @applyMethodDecoratorsIf(!softRemoveSettings.disabled, [
+      () =>
+        Mutation(returns => entityType, {
+          name: softRemoveSettings.name,
+          description: softRemoveSettings.description,
+        }),
+      ...softRemoveSettings.decorators,
+    ])
+    async softRemove?(
+      @ContextDecorator() context: ContextType,
+      @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
+    ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Soft remove operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
+      return this.service.softRemove(context, id);
+    }
+
+    @applyMethodDecoratorsIf(!recoverSettings.disabled, [
+      () =>
+        Mutation(returns => entityType, {
+          name: recoverSettings.name,
+          description: recoverSettings.description,
+        }),
+      ...recoverSettings.decorators,
+    ])
+    async recover?(
+      @ContextDecorator() context: ContextType,
+      @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
+    ): Promise<EntityType> {
+      if (!isSoftDeletableCrudService(this.service))
+        throw new HttpException(
+          'Recover operation is not supported by this service',
+          HttpStatus.NOT_IMPLEMENTED,
+        );
+      return this.service.recover(context, id);
     }
   }
 
@@ -212,6 +311,12 @@ export function CrudResolverFrom<
   }
   if (hardRemoveSettings.disabled) {
     delete CrudController.prototype.hardRemove;
+  }
+  if (softRemoveSettings.disabled) {
+    delete CrudController.prototype.softRemove;
+  }
+  if (recoverSettings.disabled) {
+    delete CrudController.prototype.recover;
   }
 
   return mixin(CrudController);

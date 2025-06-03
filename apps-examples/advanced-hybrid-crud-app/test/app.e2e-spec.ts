@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -14,12 +14,14 @@ import { Product } from '../src/products/entities/product.entity';
 import { Supplier } from '../src/suppliers/entities/supplier.entity';
 import { Invoice } from '../src/invoices/entities/invoice.entity';
 import { InvoiceDetail } from '../src/invoices/entities/invoice-detail.entity';
+import { Client } from '../src/clients/entities/client.entity';
 import { AppModule } from '../src/app.module';
 
 describe('Advanced Hybrid CRUD App (e2e)', () => {
   let app: INestApplication;
   let createdSupplier: any;
   let createdProduct: any;
+  let createdClient: any;
   let createdInvoice: any;
 
   beforeEach(async () => {
@@ -36,6 +38,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
             dropSchema: true,
             entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
             synchronize: true,
+            logging: false,
           });
           await dataSource.initialize();
           return dataSource;
@@ -44,6 +47,16 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+
+    // Enable validation pipe for tests (same as main.ts)
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
+
     await app.init();
   });
 
@@ -145,6 +158,411 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
         .get(`/suppliers/${createResponse.body.id}`)
         .expect(404);
     });
+
+    describe('Soft Deletion and Recovery', () => {
+      it('DELETE /suppliers/soft/:id - should soft delete a supplier', async () => {
+        // First create a supplier
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Soft Delete Test Supplier',
+            contactEmail: 'softdelete@supplier.com',
+          });
+
+        const supplierId = createResponse.body.id;
+
+        // Soft delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is not returned in normal queries (soft deleted)
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        // Verify supplier still exists in database with deletedAt set
+        const allSuppliersResponse = await request(app.getHttpServer())
+          .get('/suppliers')
+          .expect(200);
+
+        const foundSupplier = allSuppliersResponse.body.find(
+          (s: any) => s.id === supplierId,
+        );
+        expect(foundSupplier).toBeUndefined(); // Should not be in normal query
+      });
+
+      it('PATCH /suppliers/recover/:id - should recover a soft deleted supplier', async () => {
+        // First create a supplier
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Recovery Test Supplier',
+            contactEmail: 'recovery@supplier.com',
+          });
+
+        const supplierId = createResponse.body.id;
+
+        // Soft delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify it's soft deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        // Recover the supplier
+        const recoverResponse = await request(app.getHttpServer())
+          .patch(`/suppliers/recover/${supplierId}`)
+          .expect(202);
+
+        expect(recoverResponse.body.id).toBe(supplierId);
+        expect(recoverResponse.body.name).toBe('Recovery Test Supplier');
+
+        // Verify supplier is accessible again
+        const getResponse = await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(200);
+
+        expect(getResponse.body.id).toBe(supplierId);
+        expect(getResponse.body.name).toBe('Recovery Test Supplier');
+      });
+
+      it('DELETE /suppliers/hard/:id - should hard delete a supplier', async () => {
+        // First create a supplier
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Hard Delete Test Supplier',
+            contactEmail: 'harddelete@supplier.com',
+          });
+
+        const supplierId = createResponse.body.id;
+
+        // Hard delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/hard/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is completely removed
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+      });
+    });
+
+    describe('Bulk Operations', () => {
+      it('DELETE /suppliers/bulk/remove-by-email - should bulk soft remove suppliers by email', async () => {
+        const targetEmail = 'bulk.remove@test.com';
+        const otherEmail = 'other@test.com';
+
+        // Create multiple suppliers with same email and one with different email
+        const suppliers = [
+          { name: 'Bulk Remove Supplier 1', contactEmail: targetEmail },
+          { name: 'Bulk Remove Supplier 2', contactEmail: targetEmail },
+          { name: 'Keep Supplier', contactEmail: otherEmail },
+        ];
+
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform bulk soft remove
+        const removeDto = {
+          contactEmail: targetEmail,
+        };
+
+        const removeResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(removeDto)
+          .expect(200);
+
+        expect(removeResponse.body.affected).toBe(2);
+
+        // Verify suppliers with target email are soft deleted
+        for (let i = 0; i < 2; i++) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${createdSuppliers[i].id}`)
+            .expect(404);
+        }
+
+        // Verify supplier with different email still exists
+        await request(app.getHttpServer())
+          .get(`/suppliers/${createdSuppliers[2].id}`)
+          .expect(200);
+      });
+
+      it('PATCH /suppliers/bulk/recover-by-email - should bulk recover suppliers by email', async () => {
+        const targetEmail = 'bulk.recover@test.com';
+
+        // Create multiple suppliers
+        const suppliers = [
+          { name: 'Bulk Recover Supplier 1', contactEmail: targetEmail },
+          { name: 'Bulk Recover Supplier 2', contactEmail: targetEmail },
+        ];
+
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // First, soft delete them
+        const removeDto = {
+          contactEmail: targetEmail,
+        };
+
+        await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(removeDto)
+          .expect(200);
+
+        // Verify they are soft deleted
+        for (const supplier of createdSuppliers) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${supplier.id}`)
+            .expect(404);
+        }
+
+        // Now recover them
+        const recoverDto = {
+          contactEmail: targetEmail,
+        };
+
+        const recoverResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/recover-by-email')
+          .send(recoverDto)
+          .expect(200);
+
+        expect(recoverResponse.body.affected).toBe(2);
+
+        // Verify suppliers are accessible again
+        for (const supplier of createdSuppliers) {
+          const getResponse = await request(app.getHttpServer())
+            .get(`/suppliers/${supplier.id}`)
+            .expect(200);
+
+          expect(getResponse.body.id).toBe(supplier.id);
+          expect(getResponse.body.contactEmail).toBe(targetEmail);
+        }
+      });
+
+      it('DELETE /suppliers/bulk/delete-by-email - should bulk hard delete suppliers by email', async () => {
+        const targetEmail = 'bulk.delete@test.com';
+        const otherEmail = 'keep@test.com';
+
+        // Create multiple suppliers
+        const suppliers = [
+          { name: 'Bulk Delete Supplier 1', contactEmail: targetEmail },
+          { name: 'Bulk Delete Supplier 2', contactEmail: targetEmail },
+          { name: 'Keep Supplier', contactEmail: otherEmail },
+        ];
+
+        const createdSuppliers: any[] = [];
+        for (const supplier of suppliers) {
+          const response = await request(app.getHttpServer())
+            .post('/suppliers')
+            .send(supplier)
+            .expect(201);
+          createdSuppliers.push(response.body);
+        }
+
+        // Perform bulk hard delete
+        const deleteDto = {
+          contactEmail: targetEmail,
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(2);
+
+        // Verify suppliers with target email are completely removed
+        for (let i = 0; i < 2; i++) {
+          await request(app.getHttpServer())
+            .get(`/suppliers/${createdSuppliers[i].id}`)
+            .expect(404);
+        }
+
+        // Verify supplier with different email still exists
+        await request(app.getHttpServer())
+          .get(`/suppliers/${createdSuppliers[2].id}`)
+          .expect(200);
+      });
+
+      it('should handle bulk operations with no matching records', async () => {
+        // Try to remove suppliers with non-existent email
+        const removeDto = {
+          contactEmail: 'nonexistent@test.com',
+        };
+
+        const removeResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(removeDto)
+          .expect(200);
+
+        expect(removeResponse.body.affected).toBe(0);
+
+        // Try to recover suppliers with non-existent email
+        const recoverDto = {
+          contactEmail: 'nonexistent@test.com',
+        };
+
+        const recoverResponse = await request(app.getHttpServer())
+          .patch('/suppliers/bulk/recover-by-email')
+          .send(recoverDto)
+          .expect(200);
+
+        expect(recoverResponse.body.affected).toBe(0);
+
+        // Try to delete suppliers with non-existent email
+        const deleteDto = {
+          contactEmail: 'nonexistent@test.com',
+        };
+
+        const deleteResponse = await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(deleteDto)
+          .expect(200);
+
+        expect(deleteResponse.body.affected).toBe(0);
+      });
+
+      it('should handle validation errors for bulk operations', async () => {
+        // Test with invalid email format
+        const invalidDto = {
+          contactEmail: 'invalid-email-format',
+        };
+
+        await request(app.getHttpServer())
+          .delete('/suppliers/bulk/remove-by-email')
+          .send(invalidDto)
+          .expect(400);
+
+        await request(app.getHttpServer())
+          .patch('/suppliers/bulk/recover-by-email')
+          .send(invalidDto)
+          .expect(400);
+
+        await request(app.getHttpServer())
+          .delete('/suppliers/bulk/delete-by-email')
+          .send(invalidDto)
+          .expect(400);
+      });
+    });
+
+    describe('Soft Deletion with Related Entities', () => {
+      it('should cascade soft delete to related products when supplier is soft deleted', async () => {
+        // Create a supplier
+        const supplierResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Cascade Soft Delete Supplier',
+            contactEmail: 'cascade.soft@supplier.com',
+          });
+
+        const supplierId = supplierResponse.body.id;
+
+        // Create a product for this supplier
+        const productResponse = await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: 'Cascade Soft Delete Product',
+            description: 'A product for cascade soft delete testing',
+            price: 99.99,
+            stock: 10,
+            supplier: { id: supplierId },
+          });
+
+        const productId = productResponse.body.id;
+
+        // Soft delete the supplier
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is soft deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        // Verify product is also soft deleted due to cascade
+        await request(app.getHttpServer())
+          .get(`/products/${productId}`)
+          .expect(404);
+      });
+
+      it('should cascade recover to related products when supplier is recovered', async () => {
+        // Create a supplier
+        const supplierResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: 'Cascade Recovery Supplier',
+            contactEmail: 'cascade.recovery@supplier.com',
+          });
+
+        const supplierId = supplierResponse.body.id;
+
+        // Create a product for this supplier
+        const productResponse = await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: 'Cascade Recovery Product',
+            description: 'A product for cascade recovery testing',
+            price: 149.99,
+            stock: 5,
+            supplier: { id: supplierId },
+          });
+
+        const productId = productResponse.body.id;
+
+        // Soft delete the supplier (which should cascade to product)
+        await request(app.getHttpServer())
+          .delete(`/suppliers/soft/${supplierId}`)
+          .expect(202);
+
+        // Verify both are soft deleted
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(404);
+
+        await request(app.getHttpServer())
+          .get(`/products/${productId}`)
+          .expect(404);
+
+        // Recover the supplier
+        await request(app.getHttpServer())
+          .patch(`/suppliers/recover/${supplierId}`)
+          .expect(202);
+
+        // Verify supplier is recovered
+        await request(app.getHttpServer())
+          .get(`/suppliers/${supplierId}`)
+          .expect(200);
+
+        // Verify product is also recovered due to cascade
+        const productRecoveryResponse = await request(app.getHttpServer())
+          .get(`/products/${productId}`)
+          .expect(200);
+
+        expect(productRecoveryResponse.body.id).toBe(productId);
+        expect(productRecoveryResponse.body.name).toBe(
+          'Cascade Recovery Product',
+        );
+      });
+    });
   });
 
   describe('Products REST API', () => {
@@ -165,7 +583,9 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
         description: 'A test product',
         price: 29.99,
         stock: 100,
-        supplierId: createdSupplier.id,
+        supplier: {
+          id: createdSupplier.id,
+        },
       };
 
       const response = await request(app.getHttpServer())
@@ -183,13 +603,17 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
 
     it('GET /products - should return all products', async () => {
       // First create a product
-      await request(app.getHttpServer()).post('/products').send({
-        name: 'Test Product',
-        description: 'A test product',
-        price: 29.99,
-        stock: 100,
-        supplierId: createdSupplier.id,
-      });
+      await request(app.getHttpServer())
+        .post('/products')
+        .send({
+          name: 'Test Product',
+          description: 'A test product',
+          price: 29.99,
+          stock: 100,
+          supplier: {
+            id: createdSupplier.id,
+          },
+        });
 
       const response = await request(app.getHttpServer())
         .get('/products')
@@ -208,7 +632,9 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           description: 'A test product',
           price: 29.99,
           stock: 100,
-          supplierId: createdSupplier.id,
+          supplier: {
+            id: createdSupplier.id,
+          },
         });
 
       const response = await request(app.getHttpServer())
@@ -228,7 +654,9 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           description: 'A test product',
           price: 29.99,
           stock: 100,
-          supplierId: createdSupplier.id,
+          supplier: {
+            id: createdSupplier.id,
+          },
         });
 
       const updateData = {
@@ -236,7 +664,9 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
         description: 'A test product',
         price: 39.99,
         stock: 100,
-        supplierId: createdSupplier.id,
+        supplier: {
+          id: createdSupplier.id,
+        },
       };
 
       const response = await request(app.getHttpServer())
@@ -257,7 +687,9 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           description: 'A test product',
           price: 29.99,
           stock: 100,
-          supplierId: createdSupplier.id,
+          supplier: {
+            id: createdSupplier.id,
+          },
         });
 
       await request(app.getHttpServer())
@@ -271,9 +703,168 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
     });
   });
 
+  describe('Clients REST API', () => {
+    it('POST /clients - should create a client', async () => {
+      const clientData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+        phone: '+1234567890',
+        address: '123 Main St',
+        city: 'New York',
+        country: 'USA',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/clients')
+        .send(clientData)
+        .expect(201);
+
+      expect(response.body.firstName).toBe(clientData.firstName);
+      expect(response.body.lastName).toBe(clientData.lastName);
+      expect(response.body.email).toBe(clientData.email);
+      expect(response.body.phone).toBe(clientData.phone);
+      expect(response.body.address).toBe(clientData.address);
+      expect(response.body.city).toBe(clientData.city);
+      expect(response.body.country).toBe(clientData.country);
+      expect(response.body.id).toBeDefined();
+
+      createdClient = response.body;
+    });
+
+    it('POST /clients - should create a client with only required fields', async () => {
+      const clientData = {
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane.smith@example.com',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/clients')
+        .send(clientData)
+        .expect(201);
+
+      expect(response.body.firstName).toBe(clientData.firstName);
+      expect(response.body.lastName).toBe(clientData.lastName);
+      expect(response.body.email).toBe(clientData.email);
+      expect(response.body.id).toBeDefined();
+    });
+
+    it('POST /clients - should fail when creating client without required fields', async () => {
+      const clientData = {
+        firstName: 'John',
+        // missing lastName and email
+      };
+
+      await request(app.getHttpServer())
+        .post('/clients')
+        .send(clientData)
+        .expect(400); // Should now return validation error instead of database constraint
+    });
+
+    it('POST /clients - should fail when creating client with invalid email', async () => {
+      const clientData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'invalid-email',
+      };
+
+      await request(app.getHttpServer())
+        .post('/clients')
+        .send(clientData)
+        .expect(400); // Should now return validation error for invalid email
+    });
+
+    it('GET /clients - should return all clients', async () => {
+      // First create a client
+      await request(app.getHttpServer()).post('/clients').send({
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/clients')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    it('GET /clients/:id - should return a specific client', async () => {
+      // First create a client
+      const createResponse = await request(app.getHttpServer())
+        .post('/clients')
+        .send({
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john.doe@example.com',
+        });
+
+      const response = await request(app.getHttpServer())
+        .get(`/clients/${createResponse.body.id}`)
+        .expect(200);
+
+      expect(response.body.id).toBe(createResponse.body.id);
+      expect(response.body.firstName).toBe('John');
+      expect(response.body.lastName).toBe('Doe');
+      expect(response.body.email).toBe('john.doe@example.com');
+    });
+
+    it('PUT /clients/:id - should update a client', async () => {
+      // First create a client
+      const createResponse = await request(app.getHttpServer())
+        .post('/clients')
+        .send({
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john.doe@example.com',
+        });
+
+      const updateData = {
+        firstName: 'John Updated',
+        lastName: 'Doe Updated',
+        email: 'john.updated@example.com',
+        phone: '+1234567890',
+        city: 'Updated City',
+      };
+
+      const response = await request(app.getHttpServer())
+        .put(`/clients/${createResponse.body.id}`)
+        .send(updateData)
+        .expect(202);
+
+      expect(response.body.firstName).toBe(updateData.firstName);
+      expect(response.body.lastName).toBe(updateData.lastName);
+      expect(response.body.email).toBe(updateData.email);
+      expect(response.body.phone).toBe(updateData.phone);
+      expect(response.body.city).toBe(updateData.city);
+    });
+
+    it('DELETE /clients/:id - should delete a client', async () => {
+      // First create a client
+      const createResponse = await request(app.getHttpServer())
+        .post('/clients')
+        .send({
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john.doe@example.com',
+        });
+
+      await request(app.getHttpServer())
+        .delete(`/clients/${createResponse.body.id}`)
+        .expect(202);
+
+      // Verify it's deleted
+      await request(app.getHttpServer())
+        .get(`/clients/${createResponse.body.id}`)
+        .expect(404);
+    });
+  });
+
   describe('Invoices REST API', () => {
     beforeEach(async () => {
-      // Create supplier and product for invoice tests
+      // Create supplier, product, and client for invoice tests
       const supplierResponse = await request(app.getHttpServer())
         .post('/suppliers')
         .send({
@@ -289,16 +880,25 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           description: 'A test product',
           price: 29.99,
           stock: 100,
-          supplierId: createdSupplier.id,
+          supplier: { id: createdSupplier.id },
         });
       createdProduct = productResponse.body;
+
+      const clientResponse = await request(app.getHttpServer())
+        .post('/clients')
+        .send({
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john.doe@example.com',
+        });
+      createdClient = clientResponse.body;
     });
 
     it('POST /invoices - should create an invoice with details', async () => {
       const invoiceData = {
         invoiceNumber: 'INV-001',
-        date: new Date().toISOString(),
-        supplierId: createdSupplier.id,
+        status: 'pending',
+        client: { id: createdClient.id },
         details: [
           {
             productId: createdProduct.id,
@@ -324,8 +924,8 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
     it('POST /invoices - should fail when creating invoice without details', async () => {
       const invoiceData = {
         invoiceNumber: 'INV-002',
-        date: new Date().toISOString(),
-        supplierId: createdSupplier.id,
+        status: 'pending',
+        client: { id: createdClient.id },
         details: [],
       };
 
@@ -341,8 +941,8 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
         .post('/invoices')
         .send({
           invoiceNumber: 'INV-001',
-          date: new Date().toISOString(),
-          supplierId: createdSupplier.id,
+          status: 'pending',
+          client: { id: createdClient.id },
           details: [
             {
               productId: createdProduct.id,
@@ -366,8 +966,8 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
         .post('/invoices')
         .send({
           invoiceNumber: 'INV-001',
-          date: new Date().toISOString(),
-          supplierId: createdSupplier.id,
+          status: 'pending',
+          client: { id: createdClient.id },
           details: [
             {
               productId: createdProduct.id,
@@ -392,8 +992,8 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
         .post('/invoices')
         .send({
           invoiceNumber: 'INV-001',
-          date: new Date().toISOString(),
-          supplierId: createdSupplier.id,
+          status: 'pending',
+          client: { id: createdClient.id },
           details: [
             {
               productId: createdProduct.id,
@@ -661,13 +1261,17 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
 
     it('should query all products via GraphQL', async () => {
       // Create a product via REST to ensure it exists
-      await request(app.getHttpServer()).post('/products').send({
-        name: 'Query Test Product',
-        description: 'A product for testing queries',
-        price: 59.99,
-        stock: 50,
-        supplierId: createdSupplier.id,
-      });
+      await request(app.getHttpServer())
+        .post('/products')
+        .send({
+          name: 'Query Test Product',
+          description: 'A product for testing queries',
+          price: 59.99,
+          stock: 50,
+          supplier: {
+            id: createdSupplier.id,
+          },
+        });
 
       const getAllProductsQuery = `
         query {
@@ -832,9 +1436,254 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
     });
   });
 
+  describe('Clients GraphQL API', () => {
+    it('should create a client via GraphQL', async () => {
+      const createClientMutation = `
+        mutation {
+          createClient(createInput: {
+            firstName: "GraphQL"
+            lastName: "Client"
+            email: "graphql@client.com"
+            phone: "+1234567890"
+            address: "123 GraphQL St"
+            city: "Test City"
+            country: "Test Country"
+          }) {
+            id
+            firstName
+            lastName
+            email
+            phone
+            address
+            city
+            country
+          }
+        }
+      `;
+
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: createClientMutation })
+        .expect(200);
+
+      expect(response.body.data.createClient).toBeDefined();
+      expect(response.body.data.createClient.firstName).toBe('GraphQL');
+      expect(response.body.data.createClient.lastName).toBe('Client');
+      expect(response.body.data.createClient.email).toBe('graphql@client.com');
+
+      createdClient = response.body.data.createClient;
+    });
+
+    it('should create a client with only required fields via GraphQL', async () => {
+      const createClientMutation = `
+        mutation {
+          createClient(createInput: {
+            firstName: "Required"
+            lastName: "Only"
+            email: "required.only@client.com"
+          }) {
+            id
+            firstName
+            lastName
+            email
+            phone
+            address
+            city
+            country
+          }
+        }
+      `;
+
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: createClientMutation })
+        .expect(200);
+
+      expect(response.body.data.createClient).toBeDefined();
+      expect(response.body.data.createClient.firstName).toBe('Required');
+      expect(response.body.data.createClient.lastName).toBe('Only');
+      expect(response.body.data.createClient.email).toBe(
+        'required.only@client.com',
+      );
+      expect(response.body.data.createClient.phone).toBeNull();
+      expect(response.body.data.createClient.address).toBeNull();
+    });
+
+    it('should query all clients via GraphQL', async () => {
+      // First create a client
+      const createClientMutation = `
+        mutation {
+          createClient(createInput: {
+            firstName: "Query"
+            lastName: "Test"
+            email: "query.test@client.com"
+          }) {
+            id
+          }
+        }
+      `;
+
+      await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: createClientMutation });
+
+      const getAllClientsQuery = `
+        query {
+          clients {
+            id
+            firstName
+            lastName
+            email
+          }
+        }
+      `;
+
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: getAllClientsQuery })
+        .expect(200);
+
+      expect(response.body.data.clients).toBeDefined();
+      expect(Array.isArray(response.body.data.clients)).toBe(true);
+      expect(response.body.data.clients.length).toBeGreaterThan(0);
+    });
+
+    it('should query a specific client via GraphQL', async () => {
+      // First create a client
+      const createClientMutation = `
+        mutation {
+          createClient(createInput: {
+            firstName: "Specific"
+            lastName: "Client"
+            email: "specific@client.com"
+          }) {
+            id
+            firstName
+          }
+        }
+      `;
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: createClientMutation });
+
+      const clientId = createResponse.body.data.createClient.id;
+
+      const getClientQuery = `
+        query {
+          client(id: "${clientId}") {
+            id
+            firstName
+            lastName
+            email
+          }
+        }
+      `;
+
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: getClientQuery })
+        .expect(200);
+
+      expect(response.body.data.client).toBeDefined();
+      expect(response.body.data.client.id).toBe(clientId);
+      expect(response.body.data.client.firstName).toBe('Specific');
+    });
+
+    it('should update a client via GraphQL', async () => {
+      // First create a client
+      const createClientMutation = `
+        mutation {
+          createClient(createInput: {
+            firstName: "Update"
+            lastName: "Test"
+            email: "update@client.com"
+          }) {
+            id
+            firstName
+          }
+        }
+      `;
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: createClientMutation });
+
+      const clientId = createResponse.body.data.createClient.id;
+
+      const updateClientMutation = `
+        mutation {
+          updateClient(id: "${clientId}", updateInput: {
+            firstName: "Updated"
+            phone: "+9876543210"
+            city: "Updated City"
+          }) {
+            id
+            firstName
+            lastName
+            email
+            phone
+            city
+          }
+        }
+      `;
+
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: updateClientMutation })
+        .expect(200);
+
+      expect(response.body.data.updateClient).toBeDefined();
+      expect(response.body.data.updateClient.firstName).toBe('Updated');
+      expect(response.body.data.updateClient.phone).toBe('+9876543210');
+      expect(response.body.data.updateClient.city).toBe('Updated City');
+      expect(response.body.data.updateClient.id).toBe(clientId);
+    });
+
+    it('should delete a client via GraphQL', async () => {
+      // First create a client
+      const createClientMutation = `
+        mutation {
+          createClient(createInput: {
+            firstName: "Delete"
+            lastName: "Test"
+            email: "delete@client.com"
+          }) {
+            id
+            firstName
+          }
+        }
+      `;
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: createClientMutation });
+
+      const clientId = createResponse.body.data.createClient.id;
+
+      const removeClientMutation = `
+        mutation {
+          removeClient(id: "${clientId}") {
+            id
+            firstName
+            lastName
+          }
+        }
+      `;
+
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: removeClientMutation })
+        .expect(200);
+
+      expect(response.body.data.removeClient).toBeDefined();
+      expect(response.body.data.removeClient.id).toBe(clientId);
+    });
+  });
+
   describe('Invoices GraphQL API', () => {
     beforeEach(async () => {
-      // Create supplier and product for invoice tests
+      // Create supplier, product, and client for invoice tests
       const createSupplierMutation = `
         mutation {
           createSupplier(createInput: {
@@ -873,6 +1722,25 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
         .send({ query: createProductMutation });
 
       createdProduct = productResponse.body.data.createProduct;
+
+      const createClientMutation = `
+        mutation {
+          createClient(createInput: {
+            firstName: "Invoice"
+            lastName: "Client"
+            email: "invoice@client.com"
+          }) {
+            id
+            firstName
+          }
+        }
+      `;
+
+      const clientResponse = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query: createClientMutation });
+
+      createdClient = clientResponse.body.data.createClient;
     });
 
     it('should create an invoice with details via GraphQL', async () => {
@@ -881,6 +1749,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           createInvoice(createInput: {
             invoiceNumber: "GQL-INV-001"
             status: "pending"
+            client: { id: "${createdClient.id}" }
             details: [
               {
                 productId: "${createdProduct.id}"
@@ -931,8 +1800,8 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           .post('/invoices')
           .send({
             invoiceNumber: 'GQL-INV-001-FALLBACK',
-            date: new Date().toISOString(),
-            supplierId: createdSupplier.id,
+            status: 'pending',
+            client: { id: createdClient.id },
             details: [
               {
                 productId: createdProduct.id,
@@ -951,6 +1820,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           createInvoice(createInput: {
             invoiceNumber: "GQL-INV-002"
             status: "pending"
+            client: { id: "${createdClient.id}" }
             details: []
           }) {
             id
@@ -983,6 +1853,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           createInvoice(createInput: {
             invoiceNumber: "GQL-INV-001"
             status: "pending"
+            client: { id: "${createdClient.id}" }
             details: [
               {
                 productId: "${createdProduct.id}"
@@ -1037,6 +1908,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           createInvoice(createInput: {
             invoiceNumber: "GQL-INV-001"
             status: "pending"
+            client: { id: "${createdClient.id}" }
             details: [
               {
                 productId: "${createdProduct.id}"
@@ -1094,6 +1966,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           createInvoice(createInput: {
             invoiceNumber: "GQL-INV-001"
             status: "pending"
+            client: { id: "${createdClient.id}" }
             details: [
               {
                 productId: "${createdProduct.id}"
@@ -1216,7 +2089,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
     });
 
     it('should create invoice via REST and query via GraphQL', async () => {
-      // Create supplier and product via REST
+      // Create supplier, product, and client via REST
       const supplierResponse = await request(app.getHttpServer())
         .post('/suppliers')
         .send({
@@ -1231,14 +2104,24 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           description: 'A mixed API test product',
           price: 75.99,
           stock: 50,
-          supplierId: supplierResponse.body.id,
+          supplier: {
+            id: supplierResponse.body.id,
+          },
+        });
+
+      const clientResponse = await request(app.getHttpServer())
+        .post('/clients')
+        .send({
+          firstName: 'Mixed API',
+          lastName: 'Client',
+          email: 'mixed.api@client.com',
         });
 
       // Create invoice via REST
       const invoiceData = {
         invoiceNumber: 'MIXED-INV-001',
-        date: new Date().toISOString(),
-        supplierId: supplierResponse.body.id,
+        status: 'pending',
+        client: { id: clientResponse.body.id },
         details: [
           {
             productId: productResponse.body.id,
@@ -1294,7 +2177,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
 
   describe('Entity Relationships', () => {
     beforeEach(async () => {
-      // Create supplier and product for relationship tests
+      // Create supplier, product, and client for relationship tests
       const supplierResponse = await request(app.getHttpServer())
         .post('/suppliers')
         .send({
@@ -1310,9 +2193,18 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
           description: 'A relationship test product',
           price: 99.99,
           stock: 25,
-          supplierId: createdSupplier.id,
+          supplier: { id: createdSupplier.id },
         });
       createdProduct = productResponse.body;
+
+      const clientResponse = await request(app.getHttpServer())
+        .post('/clients')
+        .send({
+          firstName: 'Relationship',
+          lastName: 'Client',
+          email: 'relationship@client.com',
+        });
+      createdClient = clientResponse.body;
     });
 
     it('should maintain product-supplier relationship', async () => {
@@ -1364,12 +2256,12 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
       );
     });
 
-    it('should maintain invoice-supplier and invoice-detail-product relationships', async () => {
+    it('should maintain invoice-client and invoice-detail-product relationships', async () => {
       // Create invoice with details
       const invoiceData = {
         invoiceNumber: 'REL-INV-001',
-        date: new Date().toISOString(),
-        supplierId: createdSupplier.id,
+        status: 'pending',
+        client: { id: createdClient.id },
         details: [
           {
             productId: createdProduct.id,
@@ -1434,8 +2326,8 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
       // Create invoice with details
       const invoiceData = {
         invoiceNumber: 'CASCADE-INV-001',
-        date: new Date().toISOString(),
-        supplierId: createdSupplier.id,
+        status: 'pending',
+        client: { id: createdClient.id },
         details: [
           {
             productId: createdProduct.id,

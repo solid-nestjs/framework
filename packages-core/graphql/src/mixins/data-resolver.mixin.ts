@@ -3,6 +3,7 @@ import {
   ParseIntPipe,
   PipeTransform,
   Type,
+  ValidationPipe,
   mixin,
 } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
@@ -129,7 +130,20 @@ export function DataResolverFrom<
     ])
     async findAll?(
       @ContextDecorator() context: ContextType,
-      @Args(undefined as any, { type: () => argsType }) args,
+      @Args(
+        undefined as any,
+        {
+          type: () => argsType,
+        },
+        new ValidationPipe({
+          transform: true,
+          expectedType: argsType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      args,
     ): Promise<EntityType[]> {
       return this.service.findAll(context, args);
     }
@@ -144,7 +158,20 @@ export function DataResolverFrom<
     ])
     async pagination?(
       @ContextDecorator() context: ContextType,
-      @Args(undefined as any, { type: () => argsType }) args,
+      @Args(
+        undefined as any,
+        {
+          type: () => argsType,
+        },
+        new ValidationPipe({
+          transform: true,
+          expectedType: argsType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      args,
     ): Promise<PaginationResult> {
       return this.service.pagination(context, args);
     }
