@@ -42,6 +42,17 @@ interface MyPluginOptions3<
   kekekeke: string;
 }
 
+interface MyPluginOptions4<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  CreateInputType extends DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
+  ContextType extends Context = Context,
+> {
+  rararara: string;
+}
+
 interface MyPluginClassAddOns<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
@@ -76,6 +87,21 @@ interface MyPluginClassAddOns3<
 > {
   hohoho(id: IdType): EntityType;
   tatata(input: CreateInputType): string;
+}
+
+interface MyPluginClassAddOns4<
+  IdType extends IdTypeFrom<EntityType>,
+  EntityType extends Entity<unknown>,
+  CreateInputType extends DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
+  ContextType extends Context = Context,
+> {
+  zozozo(
+    id: IdType,
+    // input: CreateInputType,
+    // input2: UpdateInputType,
+  ): { entity: EntityType; count: number };
 }
 
 // Generic plugin interface that all plugins must implement
@@ -246,9 +272,55 @@ class MyPlugin3 implements CrudPlugin {
   }
 }
 
+class MyPlugin4 implements CrudPlugin {
+  applyCrudServiceClass<
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
+    CreateInputType extends DeepPartial<EntityType>,
+    UpdateInputType extends DeepPartial<EntityType>,
+    FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
+    ContextType extends Context = Context,
+  >(
+    serviceClass: CrudService<
+      IdType,
+      EntityType,
+      CreateInputType,
+      UpdateInputType,
+      FindArgsType,
+      ContextType
+    >,
+    structure: CrudServiceStructure<
+      IdType,
+      EntityType,
+      CreateInputType,
+      UpdateInputType,
+      FindArgsType,
+      ContextType
+    >,
+    options: MyPluginOptions4<
+      IdType,
+      EntityType,
+      CreateInputType,
+      UpdateInputType,
+      FindArgsType,
+      ContextType
+    >,
+  ): MyPluginClassAddOns4<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    FindArgsType,
+    ContextType
+  > {
+    throw new Error('Function not implemented.');
+  }
+}
+
 const plugin1: MyPlugin = new MyPlugin();
 const plugin2: MyPlugin2 = new MyPlugin2();
 const plugin3: MyPlugin3 = new MyPlugin3();
+const plugin4: MyPlugin4 = new MyPlugin4();
 
 class MyEntity {
   id!: string;
@@ -263,7 +335,7 @@ class MyEntityUpdateDto {
   name?: string;
 }
 
-const pluginArray = [plugin1, plugin2, plugin3];
+const pluginArray = [plugin1, plugin2, plugin3, plugin4];
 
 type pluginArrayType = typeof pluginArray;
 
@@ -276,30 +348,37 @@ type ExtractPluginReturnType<
   TUpdateInputType extends DeepPartial<TEntityType>,
   TFindArgsType extends FindArgs<TEntityType> = FindArgs<TEntityType>,
   TContextType extends Context = Context,
-> =
-  T extends CrudPlugin<any, infer TAddOns>
-    ? TAddOns extends Record<string, any>
-      ? {
-          [K in keyof TAddOns]: TAddOns[K] extends (
-            ...args: infer Args
-          ) => infer Return
-            ? (
-                ...args: {
-                  [P in keyof Args]: Args[P] extends TIdType
-                    ? TIdType
-                    : Args[P] extends TCreateInputType
-                      ? TCreateInputType
-                      : Args[P] extends TUpdateInputType
-                        ? TUpdateInputType
-                        : Args[P] extends TEntityType
-                          ? TEntityType
-                          : Args[P];
-                }
-              ) => Return extends TEntityType ? TEntityType : Return
-            : TAddOns[K];
-        }
-      : never
-    : never;
+> = T extends {
+  applyCrudServiceClass<
+    IdType extends IdTypeFrom<EntityType>,
+    EntityType extends Entity<unknown>,
+    CreateInputType extends DeepPartial<EntityType>,
+    UpdateInputType extends DeepPartial<EntityType>,
+    FindArgsType extends FindArgs<EntityType>,
+    ContextType extends Context,
+  >(
+    serviceClass: any,
+    structure: any,
+    options: any,
+  ): infer R;
+}
+  ? R extends Record<string, any>
+    ? {
+        [K in keyof R]: R[K] extends (...args: any[]) => any
+          ? R[K] extends (id: IdTypeFrom<Entity<unknown>>) => Entity<unknown>
+            ? (id: TIdType) => TEntityType
+            : R[K] extends (input: DeepPartial<Entity<unknown>>) => any
+              ? (input: TCreateInputType) => ReturnType<R[K]>
+              : R[K] extends (
+                    input: DeepPartial<Entity<unknown>>,
+                    ...rest: infer Rest
+                  ) => any
+                ? (input: TCreateInputType, ...rest: Rest) => ReturnType<R[K]>
+                : R[K]
+          : R[K];
+      }
+    : never
+  : never;
 
 type PluginArrayReturnTypes<
   TIdType extends IdTypeFrom<TEntityType>,
@@ -322,7 +401,43 @@ type PluginArrayReturnTypes<
     : never;
 }[number];
 
-type TestPluginArrayWith3Plugins = Prettify<
+// Alternative approach: Create a more maintainable solution
+// For true genericity, you would need to register plugin types in a central registry
+// Here's how you could extend this for new plugins:
+
+/*
+To add a new plugin (MyPlugin4), you would:
+1. Create MyPluginClassAddOns4 interface
+2. Create MyPlugin4 class implementing CrudPlugin
+3. Add the case to ExtractPluginReturnType:
+   : T extends MyPlugin4
+   ? MyPluginClassAddOns4<TIdType, TEntityType, TCreateInputType, TUpdateInputType, TFindArgsType, TContextType>
+*/
+
+type PluginReturnType = ExtractPluginReturnType<
+  typeof plugin1,
+  string,
+  MyEntity,
+  MyEntityCreateDto,
+  MyEntityUpdateDto
+>;
+
+// Test that shows the types are working correctly
+type TestPlugin1Methods = ExtractPluginReturnType<
+  MyPlugin3,
+  string,
+  MyEntity,
+  MyEntityCreateDto,
+  MyEntityUpdateDto
+>;
+
+// This should resolve to:
+// {
+//   jajaja(id: string): MyEntity;
+//   nonono(input: MyEntityCreateDto, other: string): boolean;
+// }
+
+type TestPluginArray = Prettify<
   UnionToIntersection<
     PluginArrayReturnTypes<
       string,
