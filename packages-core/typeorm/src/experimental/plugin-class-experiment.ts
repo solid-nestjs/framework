@@ -280,12 +280,22 @@ type ExtractPluginReturnType<
   T extends CrudPlugin<any, infer TAddOns>
     ? TAddOns extends Record<string, any>
       ? {
-          [K in keyof TAddOns]: TAddOns[K] extends (...args: any[]) => any
-            ? TAddOns[K] extends (id: any) => any
-              ? (id: TIdType) => TEntityType
-              : TAddOns[K] extends (input: any) => any
-                ? (input: TCreateInputType) => ReturnType<TAddOns[K]>
-                : TAddOns[K]
+          [K in keyof TAddOns]: TAddOns[K] extends (
+            ...args: infer Args
+          ) => infer Return
+            ? (
+                ...args: {
+                  [P in keyof Args]: Args[P] extends TIdType
+                    ? TIdType
+                    : Args[P] extends TCreateInputType
+                      ? TCreateInputType
+                      : Args[P] extends TUpdateInputType
+                        ? TUpdateInputType
+                        : Args[P] extends TEntityType
+                          ? TEntityType
+                          : Args[P];
+                }
+              ) => Return extends TEntityType ? TEntityType : Return
             : TAddOns[K];
         }
       : never
