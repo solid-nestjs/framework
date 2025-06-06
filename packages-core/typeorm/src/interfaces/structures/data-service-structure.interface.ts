@@ -1,6 +1,8 @@
 import { FindOptionsRelations } from 'typeorm';
 import {
-  Constructable,
+  CommonDataServiceFunctions,
+  CommonDataServiceFunctionStructure,
+  CommonDataServiceStructure,
   Entity,
   EntityProviderStructure,
   fillEntityId,
@@ -89,10 +91,8 @@ export interface QueryBuilderConfig<EntityType> {
  * @template EntityType - The entity type this function operates on
  */
 export interface DataServiceFunctionStructure<EntityType>
-  extends QueryBuilderConfig<EntityType> {
-  /** Array of method decorators to apply to the function */
-  decorators?: (() => MethodDecorator)[];
-}
+  extends QueryBuilderConfig<EntityType>,
+    CommonDataServiceFunctionStructure<EntityType> {}
 
 /**
  * Defines the available data service functions that can be configured.
@@ -100,7 +100,8 @@ export interface DataServiceFunctionStructure<EntityType>
  *
  * @template EntityType - The entity type this service operates on
  */
-export interface DataServiceFunctions<EntityType> {
+export interface DataServiceFunctions<EntityType>
+  extends CommonDataServiceFunctions<EntityType> {
   /** Configuration for the findAll operation */
   findAll?: DataServiceFunctionStructure<EntityType>;
   /** Configuration for the findOne operation */
@@ -124,11 +125,8 @@ export interface DataServiceStructure<
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends EntityProviderStructure<IdType, EntityType>,
-    QueryBuilderConfig<EntityType> {
-  /** Optional constructor for the find arguments type */
-  findArgsType?: Constructable<FindArgsType>;
-  /** Optional constructor for the context type */
-  contextType?: Constructable<ContextType>;
+    QueryBuilderConfig<EntityType>,
+    CommonDataServiceStructure<IdType, EntityType, FindArgsType, ContextType> {
   /** Optional configuration for data service functions */
   functions?: DataServiceFunctions<EntityType>;
 }
