@@ -52,7 +52,12 @@ export interface ParameterDecorators {
 export interface DataResolverOperations<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
 > {
@@ -80,7 +85,12 @@ export interface DataResolverOperations<
 export interface DataResolverStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
 > extends EntityProviderStructure<IdType, EntityType> {
@@ -117,7 +127,12 @@ export interface DataResolverStructure<
 export function DataResolverStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
 >(

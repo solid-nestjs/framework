@@ -63,6 +63,7 @@ export function CrudControllerFrom<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType> = DefaultArgs<EntityType>,

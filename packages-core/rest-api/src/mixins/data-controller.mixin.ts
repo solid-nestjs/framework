@@ -58,7 +58,12 @@ import { ApiResponses } from '../decorators';
 export function DataControllerFrom<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType> = DefaultArgs<EntityType>,
   ContextType extends Context = Context,
 >(

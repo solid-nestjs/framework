@@ -5,13 +5,10 @@ import {
   fillEntityId,
   FindArgs,
   IdTypeFrom,
-} from '@solid-nestjs/common';
-import { CrudServiceStructure } from './crud-service-structure.interface';
-import {
   ServicePlugin,
   ExtractOptionsFromServicePluginArray,
-} from './service-plugins.interface';
-
+} from '@solid-nestjs/common';
+import { CrudServiceStructure } from './crud-service-structure.interface';
 export function CrudServiceStructureEx<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,

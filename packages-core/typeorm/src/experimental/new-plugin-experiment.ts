@@ -1,5 +1,6 @@
 import { helloWorldPlugin } from './crud-plugins/hello-world.plugin';
 import { CrudServiceStructureEx, DataServiceStructureEx } from '../interfaces';
+import { CrudProviderStructure } from '@solid-nestjs/common';
 
 class MyEntity {
   id!: string;
@@ -14,18 +15,20 @@ class MyEntityUpdateDto {
   name?: string;
 }
 
-const dataServiceStructure = DataServiceStructureEx({
+const providerStructure = CrudProviderStructure({
   entityType: MyEntity,
-  plugins: [helloWorldPlugin<string, MyEntity>()],
+  createInputType: MyEntityCreateDto,
+  updateInputType: MyEntityUpdateDto,
+});
+
+const dataServiceStructure = DataServiceStructureEx({
+  ...providerStructure,
+  plugins: [helloWorldPlugin(providerStructure)],
   hwMessage: 'america',
 });
 
 const crudServiceStructure = CrudServiceStructureEx({
-  entityType: MyEntity,
-  createInputType: MyEntityCreateDto,
-  updateInputType: MyEntityUpdateDto,
-  plugins: [
-    helloWorldPlugin<string, MyEntity, MyEntityCreateDto, MyEntityUpdateDto>(),
-  ],
+  ...providerStructure,
+  plugins: [helloWorldPlugin(providerStructure)],
   hwMessage: 'america',
 });

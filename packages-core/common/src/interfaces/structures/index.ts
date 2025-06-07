@@ -9,4 +9,6 @@ export {
   CrudServiceStructure as CommonCrudServiceStructure,
 } from './crud-service-structure.interface';
 
+export * from './service-plugins.interface';
+
 export * from './entity-provider-structure.interface';

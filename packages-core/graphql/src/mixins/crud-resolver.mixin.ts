@@ -74,6 +74,7 @@ export function CrudResolverFrom<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType> = DefaultArgs<EntityType>,

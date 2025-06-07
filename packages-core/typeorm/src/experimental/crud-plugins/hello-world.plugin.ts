@@ -4,8 +4,10 @@ import {
   IdTypeFrom,
   FindArgs,
   Context,
+  ServicePlugin,
+  DataProviderStructure,
+  CrudProviderStructure,
 } from '@solid-nestjs/common';
-import { ServicePlugin } from '../../interfaces';
 
 export interface HelloWorldPluginOptions<
   IdType extends IdTypeFrom<EntityType>,
@@ -41,7 +43,18 @@ export function helloWorldPlugin<
   UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
->() {
+>(
+  structure:
+    | DataProviderStructure<IdType, EntityType, FindArgsType, ContextType>
+    | CrudProviderStructure<
+        IdType,
+        EntityType,
+        CreateInputType,
+        UpdateInputType,
+        FindArgsType,
+        ContextType
+      >,
+) {
   const plugin: ServicePlugin<
     IdType,
     EntityType,

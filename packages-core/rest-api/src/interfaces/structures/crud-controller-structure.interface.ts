@@ -41,6 +41,7 @@ export interface CrudControllerOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType>,
@@ -67,6 +68,7 @@ export interface CrudControllerOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >
     ? OperationStructure | boolean
@@ -80,6 +82,7 @@ export interface CrudControllerOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >
     ? OperationStructure | boolean
@@ -93,6 +96,7 @@ export interface CrudControllerOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >
     ? OperationStructure | boolean
@@ -124,6 +128,7 @@ export interface CrudControllerStructure<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType>,
@@ -170,6 +175,7 @@ export function CrudControllerStructure<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType>,

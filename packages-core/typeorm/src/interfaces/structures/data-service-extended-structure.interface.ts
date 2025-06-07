@@ -5,12 +5,10 @@ import {
   FindArgs,
   IdTypeFrom,
   DeepPartial,
-} from '@solid-nestjs/common';
-import { DataServiceStructure } from './data-service-structure.interface';
-import {
   ExtractDataOptionsFromServicePluginArray,
   ServicePlugin,
-} from './service-plugins.interface';
+} from '@solid-nestjs/common';
+import { DataServiceStructure } from './data-service-structure.interface';
 
 export function DataServiceStructureEx<
   IdType extends IdTypeFrom<EntityType>,

@@ -15,7 +15,6 @@ import {
   DataService,
   CurrentContext,
   applyClassDecorators,
-  applyMethodDecorators,
   applyMethodDecoratorsIf,
 } from '@solid-nestjs/common';
 import { DataResolverStructure, OperationStructure } from '../interfaces';
@@ -53,7 +52,12 @@ import { DefaultArgs, PaginationResult } from '../classes';
 export function DataResolverFrom<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType> = DefaultArgs<EntityType>,
   ContextType extends Context = Context,
 >(

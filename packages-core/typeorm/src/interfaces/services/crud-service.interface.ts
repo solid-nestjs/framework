@@ -118,6 +118,7 @@ export interface CrudService<
       EntityType,
       CreateInputType,
       UpdateInputType,
+      FindArgsType,
       ContextType
     > {
   /**

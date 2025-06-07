@@ -40,6 +40,7 @@ export interface CrudResolverOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType>,
@@ -66,6 +67,7 @@ export interface CrudResolverOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >
     ? OperationStructure | boolean
@@ -79,6 +81,7 @@ export interface CrudResolverOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >
     ? OperationStructure | boolean
@@ -92,6 +95,7 @@ export interface CrudResolverOperations<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >
     ? OperationStructure | boolean
@@ -123,6 +127,7 @@ export interface CrudResolverStructure<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType>,
@@ -169,6 +174,7 @@ export function CrudResolverStructure<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
   FindArgsType extends FindArgs<EntityType>,

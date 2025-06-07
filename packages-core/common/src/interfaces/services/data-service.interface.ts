@@ -30,11 +30,12 @@ import { Where } from '../../types/find-args.type';
 export interface DataService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > {
   findAll<TBool extends BooleanType = false>(
     context: ContextType,
-    args?: FindArgs<EntityType>,
+    args?: FindArgsType,
     withPagination?: TBool,
   ): Promise<
     If<
@@ -46,7 +47,7 @@ export interface DataService<
 
   pagination(
     context: ContextType,
-    args?: FindArgs<EntityType>,
+    args?: FindArgsType,
   ): Promise<PaginationResult>;
 
   findOne<TBool extends BooleanType = false>(

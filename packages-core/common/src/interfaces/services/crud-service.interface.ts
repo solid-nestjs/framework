@@ -1,5 +1,5 @@
 import { DeepPartial } from '../../types';
-import { Context, IdTypeFrom, Entity } from '../misc';
+import { Context, IdTypeFrom, Entity, FindArgs } from '../misc';
 import { DataService } from './data-service.interface';
 
 /**
@@ -16,6 +16,7 @@ export interface CudService<
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > {
   /**
@@ -70,12 +71,14 @@ export interface SoftDeletableCudService<
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends CudService<
     IdType,
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   > {
   /**
@@ -128,13 +131,15 @@ export interface CrudService<
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
-> extends DataService<IdType, EntityType, ContextType>,
+> extends DataService<IdType, EntityType, FindArgsType, ContextType>,
     CudService<
       IdType,
       EntityType,
       CreateInputType,
       UpdateInputType,
+      FindArgsType,
       ContextType
     > {}
 
@@ -153,13 +158,15 @@ export interface SoftDeletableCrudService<
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
-> extends DataService<IdType, EntityType, ContextType>,
+> extends DataService<IdType, EntityType, FindArgsType, ContextType>,
     SoftDeletableCudService<
       IdType,
       EntityType,
       CreateInputType,
       UpdateInputType,
+      FindArgsType,
       ContextType
     > {}
 
@@ -169,6 +176,7 @@ export function isSoftDeletableCrudService<
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
   UpdateInputType extends DeepPartial<EntityType>,
+  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 >(
   service: CrudService<
@@ -176,6 +184,7 @@ export function isSoftDeletableCrudService<
     EntityType,
     CreateInputType,
     UpdateInputType,
+    FindArgsType,
     ContextType
   >,
 ): service is SoftDeletableCrudService<
@@ -183,6 +192,7 @@ export function isSoftDeletableCrudService<
   EntityType,
   CreateInputType,
   UpdateInputType,
+  FindArgsType,
   ContextType
 > {
   return service && typeof (service as any).hardRemove === 'function';
