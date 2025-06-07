@@ -1,4 +1,3 @@
-import { DeepPartial } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import {
   CommonCrudServiceFunctionStructure,
@@ -7,6 +6,7 @@ import {
   fillEntityId,
   FindArgs,
   IdTypeFrom,
+  DeepPartial,
 } from '@solid-nestjs/common';
 import { Context } from '../misc';
 import {
