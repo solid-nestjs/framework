@@ -35,8 +35,12 @@ export {
 export {
   DataServiceFrom,
   CrudServiceFrom,
+  DataServiceExFrom,
+  CrudServiceExFrom,
   DataServiceStructure,
   CrudServiceStructure,
+  DataServiceStructureEx,
+  CrudServiceStructureEx,
   Transactional,
 } from '@solid-nestjs/typeorm';
 

@@ -2,10 +2,10 @@ import {
   CrudControllerFrom,
   CrudControllerStructure,
 } from '@solid-nestjs/typeorm-hybrid-crud';
-import { SuppliersService, serviceStructure } from './suppliers.service';
+import { SuppliersService, providerStructure } from './suppliers.service';
 
 const controllerStructure = CrudControllerStructure({
-  ...serviceStructure,
+  ...providerStructure,
   serviceType: SuppliersService,
 });
 
