@@ -5,7 +5,7 @@ import {
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { Supplier } from './entities/supplier.entity';
 import { CreateSupplierDto, FindSupplierArgs, UpdateSupplierDto } from './dto';
-import { helloWorldPlugin } from '../plugins';
+import { helloWorldServicePlugin } from '../plugins';
 
 export const providerStructure = CrudProviderStructure({
   entityType: Supplier,
@@ -32,8 +32,8 @@ export const serviceStructure = CrudServiceStructureEx({
       },
     },
   },
-  plugins: [helloWorldPlugin(providerStructure)],
-  hwMessage: 'colombia',
+  plugins: [helloWorldServicePlugin(providerStructure)],
+  hwMessage: 'america',
 });
 
 export class SuppliersService extends CrudServiceExFrom(serviceStructure) {}

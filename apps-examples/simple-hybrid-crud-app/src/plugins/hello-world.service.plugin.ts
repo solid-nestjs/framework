@@ -9,14 +9,7 @@ import {
   CrudProviderStructure,
 } from '@solid-nestjs/common';
 
-export interface HelloWorldPluginOptions<
-  IdType extends IdTypeFrom<EntityType>,
-  EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
-  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
-  ContextType extends Context = Context,
-> {
+export interface HelloWorldPluginOptions {
   hwMessage?: string;
 }
 export interface SimpleHelloWorldPluginAddOn {
@@ -24,19 +17,12 @@ export interface SimpleHelloWorldPluginAddOn {
   saySimpleBye(): string;
 }
 
-export interface HelloWorldPluginAddOn<
-  IdType extends IdTypeFrom<EntityType>,
-  EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
-  FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
-  ContextType extends Context = Context,
-> {
+export interface HelloWorldPluginAddOn<CreateInputType, UpdateInputType> {
   sayHelloToCreate(input: CreateInputType): string;
   sayByeToUpdate(input: UpdateInputType): string;
 }
 
-export function helloWorldPlugin<
+export function helloWorldServicePlugin<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
@@ -62,39 +48,17 @@ export function helloWorldPlugin<
     UpdateInputType,
     FindArgsType,
     ContextType,
-    HelloWorldPluginOptions<
-      IdType,
-      EntityType,
-      CreateInputType,
-      UpdateInputType,
-      FindArgsType,
-      ContextType
-    >,
+    HelloWorldPluginOptions,
     {},
     SimpleHelloWorldPluginAddOn,
-    HelloWorldPluginAddOn<
-      IdType,
-      EntityType,
-      CreateInputType,
-      UpdateInputType,
-      FindArgsType,
-      ContextType
-    >
+    HelloWorldPluginAddOn<CreateInputType, UpdateInputType>
   > = {
     applyCrudServiceClass(serviceClass, structure) {
       const msg = structure.hwMessage ?? 'world';
 
       class ServiceClassWithAddOn
         extends serviceClass
-        implements
-          HelloWorldPluginAddOn<
-            IdType,
-            EntityType,
-            CreateInputType,
-            UpdateInputType,
-            FindArgsType,
-            ContextType
-          >
+        implements HelloWorldPluginAddOn<CreateInputType, UpdateInputType>
       {
         saySimpleHello(): string {
           return `hello ${msg}`;

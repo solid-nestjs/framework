@@ -17,8 +17,13 @@ export {
 export {
   DataControllerFrom,
   CrudControllerFrom,
+  DataControllerExFrom,
+  CrudControllerExFrom,
   DataControllerStructure,
   CrudControllerStructure,
+  DataControllerStructureEx,
+  CrudControllerStructureEx,
+  ControllerPlugin,
 } from '@solid-nestjs/rest-api';
 
 //Crud Service

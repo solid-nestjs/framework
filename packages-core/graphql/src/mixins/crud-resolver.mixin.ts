@@ -19,7 +19,7 @@ import {
   applyMethodDecoratorsIf,
   isSoftDeletableCrudService,
 } from '@solid-nestjs/common';
-import { CrudResolverStructure } from '../interfaces';
+import { CrudResolver, CrudResolverStructure } from '../interfaces';
 import { DefaultArgs } from '../classes';
 import {
   DataResolverFrom,
@@ -89,7 +89,17 @@ export function CrudResolverFrom<
     FindArgsType,
     ContextType
   >,
-) {
+): Type<
+  CrudResolver<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    ServiceType,
+    FindArgsType,
+    ContextType
+  >
+> {
   const { entityType, createInputType, updateInputType } = resolverStructure;
 
   const ContextDecorator =
@@ -165,7 +175,19 @@ export function CrudResolverFrom<
     },
   );
 
-  class CrudController extends DataResolverFrom(resolverStructure) {
+  class CrudResolverClass
+    extends DataResolverFrom(resolverStructure)
+    implements
+      CrudResolver<
+        IdType,
+        EntityType,
+        CreateInputType,
+        UpdateInputType,
+        ServiceType,
+        FindArgsType,
+        ContextType
+      >
+  {
     @applyMethodDecoratorsIf(!createSettings.disabled, [
       () =>
         Mutation(returns => entityType, {
@@ -302,23 +324,23 @@ export function CrudResolverFrom<
 
   //remove controller methods if they are disabled in the structure
   if (createSettings.disabled) {
-    delete CrudController.prototype.create;
+    delete CrudResolverClass.prototype.create;
   }
   if (updateSettings.disabled) {
-    delete CrudController.prototype.update;
+    delete CrudResolverClass.prototype.update;
   }
   if (removeSettings.disabled) {
-    delete CrudController.prototype.remove;
+    delete CrudResolverClass.prototype.remove;
   }
   if (hardRemoveSettings.disabled) {
-    delete CrudController.prototype.hardRemove;
+    delete CrudResolverClass.prototype.hardRemove;
   }
   if (softRemoveSettings.disabled) {
-    delete CrudController.prototype.softRemove;
+    delete CrudResolverClass.prototype.softRemove;
   }
   if (recoverSettings.disabled) {
-    delete CrudController.prototype.recover;
+    delete CrudResolverClass.prototype.recover;
   }
 
-  return mixin(CrudController);
+  return mixin(CrudResolverClass);
 }

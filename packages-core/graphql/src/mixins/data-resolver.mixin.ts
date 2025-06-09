@@ -17,7 +17,11 @@ import {
   applyClassDecorators,
   applyMethodDecoratorsIf,
 } from '@solid-nestjs/common';
-import { DataResolverStructure, OperationStructure } from '../interfaces';
+import {
+  DataResolver,
+  DataResolverStructure,
+  OperationStructure,
+} from '../interfaces';
 import { DefaultArgs, PaginationResult } from '../classes';
 
 /**
@@ -68,7 +72,9 @@ export function DataResolverFrom<
     FindArgsType,
     ContextType
   >,
-) {
+): Type<
+  DataResolver<IdType, EntityType, ServiceType, FindArgsType, ContextType>
+> {
   const { entityType, serviceType, findArgsType } = resolverStructure;
 
   const ContextDecorator =
@@ -119,7 +125,10 @@ export function DataResolverFrom<
 
   @Resolver(of => entityType)
   @applyClassDecorators(controllerDecorators)
-  class DataController {
+  class DataResolverClass
+    implements
+      DataResolver<IdType, EntityType, ServiceType, FindArgsType, ContextType>
+  {
     @Inject(serviceType) readonly service!: ServiceType;
 
     constructor() {}
@@ -147,7 +156,7 @@ export function DataResolverFrom<
           forbidUnknownValues: true,
         }),
       )
-      args,
+      args: FindArgsType,
     ): Promise<EntityType[]> {
       return this.service.findAll(context, args);
     }
@@ -175,7 +184,7 @@ export function DataResolverFrom<
           forbidUnknownValues: true,
         }),
       )
-      args,
+      args: FindArgsType,
     ): Promise<PaginationResult> {
       return this.service.pagination(context, args);
     }
@@ -198,16 +207,16 @@ export function DataResolverFrom<
 
   //remove resolver methods if they are disabled in the structure
   if (findAllSettings.disabled) {
-    delete DataController.prototype.findAll;
+    delete DataResolverClass.prototype.findAll;
   }
   if (findOneSettings.disabled) {
-    delete DataController.prototype.findOne;
+    delete DataResolverClass.prototype.findOne;
   }
   if (paginationSettings.disabled) {
-    delete DataController.prototype.pagination;
+    delete DataResolverClass.prototype.pagination;
   }
 
-  return mixin(DataController);
+  return mixin(DataResolverClass);
 }
 
 export function extractOperationSettings(

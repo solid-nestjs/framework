@@ -26,7 +26,7 @@ import {
   DeepPartial,
   isSoftDeletableCrudService,
 } from '@solid-nestjs/common';
-import { CrudControllerStructure } from '../interfaces';
+import { CrudController, CrudControllerStructure } from '../interfaces';
 import { ApiResponses } from '../decorators';
 import { DefaultArgs } from '../classes';
 import {
@@ -78,7 +78,17 @@ export function CrudControllerFrom<
     FindArgsType,
     ContextType
   >,
-) {
+): Type<
+  CrudController<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    ServiceType,
+    FindArgsType,
+    ContextType
+  >
+> {
   const { entityType, createInputType, updateInputType } = controllerStructure;
 
   const ContextDecorator =
@@ -172,7 +182,19 @@ export function CrudControllerFrom<
     required: true,
   };
 
-  class CrudController extends DataControllerFrom(controllerStructure) {
+  class CrudControllerClass
+    extends DataControllerFrom(controllerStructure)
+    implements
+      CrudController<
+        IdType,
+        EntityType,
+        CreateInputType,
+        UpdateInputType,
+        ServiceType,
+        FindArgsType,
+        ContextType
+      >
+  {
     @Post(createSettings.route)
     @applyMethodDecorators(createSettings.decorators)
     @ApiOperation({
@@ -347,25 +369,25 @@ export function CrudControllerFrom<
 
   //remove controller methods if they are disabled in the structure
   if (createSettings.disabled) {
-    delete CrudController.prototype.create;
+    delete CrudControllerClass.prototype.create;
   }
   if (updateSettings.disabled) {
-    delete CrudController.prototype.update;
+    delete CrudControllerClass.prototype.update;
   }
   if (removeSettings.disabled) {
-    delete CrudController.prototype.remove;
+    delete CrudControllerClass.prototype.remove;
   }
   //this method is disabled by default
   if (hardRemoveSettings.disabled) {
-    delete CrudController.prototype.hardRemove;
+    delete CrudControllerClass.prototype.hardRemove;
   }
   //softRemove and recover are enabled by default if not explicitly disabled
   if (softRemoveSettings.disabled) {
-    delete CrudController.prototype.softRemove;
+    delete CrudControllerClass.prototype.softRemove;
   }
   if (recoverSettings.disabled) {
-    delete CrudController.prototype.recover;
+    delete CrudControllerClass.prototype.recover;
   }
 
-  return mixin(CrudController);
+  return mixin(CrudControllerClass);
 }

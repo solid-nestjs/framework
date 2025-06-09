@@ -21,9 +21,7 @@ export function DataServiceStructureEx<
     DeepPartial<EntityType>,
     DeepPartial<EntityType>,
     FindArgsType,
-    ContextType,
-    {},
-    {}
+    ContextType
   >[] = [],
 >(
   input: DataServiceStructure<IdType, EntityType, FindArgsType, ContextType> & {

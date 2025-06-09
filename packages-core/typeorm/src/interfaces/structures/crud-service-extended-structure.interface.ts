@@ -22,9 +22,7 @@ export function CrudServiceStructureEx<
     CreateInputType,
     UpdateInputType,
     FindArgsType,
-    ContextType,
-    {},
-    {}
+    ContextType
   >[] = [],
 >(
   input: CrudServiceStructure<
