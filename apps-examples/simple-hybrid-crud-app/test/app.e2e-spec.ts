@@ -195,6 +195,64 @@ describe('Hybrid CRUD App (e2e)', () => {
           .expect(404);
       });
     });
+
+    describe('Hello World Plugin Endpoints', () => {
+      it('should return hello message from saySimpleHello', async () => {
+        const response = await request(app.getHttpServer())
+          .get('/suppliers/say/good-day')
+          .expect(200); // Plugin endpoints return 200 OK
+
+        expect(response.text).toBeDefined();
+        expect(typeof response.text).toBe('string');
+        expect(response.text).toContain('hello');
+      });
+
+      it('should return hello message for create operation', async () => {
+        const createSupplierDto = {
+          name: 'Plugin Test Supplier',
+          contactEmail: 'plugin@test.com',
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/suppliers/say/good-day')
+          .send(createSupplierDto)
+          .expect(202); // Plugin endpoints return 202 Accepted
+
+        expect(response.text).toBeDefined();
+        expect(typeof response.text).toBe('string');
+        expect(response.text).toContain('hello');
+        expect(response.text).toContain('Plugin Test Supplier');
+      });
+
+      it('should return bye message for update operation', async () => {
+        // First create a supplier
+        const createSupplierDto = {
+          name: 'Update Plugin Test',
+          contactEmail: 'update@test.com',
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send(createSupplierDto)
+          .expect(201);
+
+        const supplierId = createResponse.body.id;
+
+        const updateDto = {
+          name: 'Updated Plugin Test',
+        };
+
+        const response = await request(app.getHttpServer())
+          .put(`/suppliers/say/good-bye/${supplierId}`)
+          .send(updateDto)
+          .expect(202); // Plugin endpoints return 202 Accepted
+
+        expect(response.text).toBeDefined();
+        expect(typeof response.text).toBe('string');
+        expect(response.text).toContain('bye');
+        expect(response.text).toContain(supplierId);
+      });
+    });
   });
 
   describe('REST API - Products', () => {
@@ -633,6 +691,107 @@ describe('Hybrid CRUD App (e2e)', () => {
         // Just verify the response structure is valid
         expect(response.body).toBeDefined();
       }
+    });
+
+    describe('Hello World Plugin GraphQL Operations', () => {
+      it('should return hello message from sayHelloToSupplier query', async () => {
+        const helloQuery = `
+          query {
+            sayHelloToSupplier
+          }
+        `;
+
+        const response = await request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query: helloQuery })
+          .expect(200);
+
+        expect(response.body.data).toBeDefined();
+        expect(response.body.data.sayHelloToSupplier).toBeDefined();
+        expect(typeof response.body.data.sayHelloToSupplier).toBe('string');
+        expect(response.body.data.sayHelloToSupplier).toContain('hello');
+      });
+
+      it('should return hello message for create operation', async () => {
+        const helloCreateQuery = `
+          query($createInput: CreateSupplierDto!) {
+            sayHelloToCreateSupplier(createInput: $createInput)
+          }
+        `;
+
+        const variables = {
+          createInput: {
+            name: 'GraphQL Plugin Test',
+            contactEmail: 'gqlplugin@test.com',
+            products: [],
+          },
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: helloCreateQuery,
+            variables,
+          })
+          .expect(200);
+
+        expect(response.body.data).toBeDefined();
+        expect(response.body.data.sayHelloToCreateSupplier).toBeDefined();
+        expect(typeof response.body.data.sayHelloToCreateSupplier).toBe(
+          'string',
+        );
+        expect(response.body.data.sayHelloToCreateSupplier).toContain('hello');
+      });
+
+      it('should return bye message for update operation', async () => {
+        // First create a supplier to get an ID
+        const createSupplierMutation = `
+          mutation {
+            createSupplier(createInput: {
+              name: "GraphQL Update Plugin Test"
+              contactEmail: "gqlupdate@test.com"
+              products: []
+            }) {
+              id
+              name
+              contactEmail
+            }
+          }
+        `;
+
+        const createResponse = await request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query: createSupplierMutation })
+          .expect(200);
+
+        const supplierId = createResponse.body.data.createSupplier.id;
+
+        const byeUpdateQuery = `
+          query($id: String!, $updateInput: UpdateSupplierDto!) {
+            sayByeToUpdateSupplier(id: $id, updateInput: $updateInput)
+          }
+        `;
+
+        const variables = {
+          id: supplierId,
+          updateInput: {
+            name: 'Updated GraphQL Plugin Test',
+          },
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: byeUpdateQuery,
+            variables,
+          })
+          .expect(200);
+
+        expect(response.body.data).toBeDefined();
+        expect(response.body.data.sayByeToUpdateSupplier).toBeDefined();
+        expect(typeof response.body.data.sayByeToUpdateSupplier).toBe('string');
+        expect(response.body.data.sayByeToUpdateSupplier).toContain('bye');
+      });
     });
   });
 
