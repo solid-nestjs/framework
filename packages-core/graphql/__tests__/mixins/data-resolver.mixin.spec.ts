@@ -51,7 +51,9 @@ class TestContextClass implements TestContext {
 }
 
 // Mock data service
-class MockDataService implements DataService<string, TestEntity, TestContext> {
+class MockDataService
+  implements DataService<string, TestEntity, FindArgs<TestEntity>, TestContext>
+{
   async findAll<TBool extends BooleanType = false>(
     context: TestContext,
     args?: FindArgs<TestEntity>,

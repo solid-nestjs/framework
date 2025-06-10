@@ -19,24 +19,38 @@ export {
 export {
   DataControllerFrom,
   CrudControllerFrom,
+  DataControllerExFrom,
+  CrudControllerExFrom,
   DataControllerStructure,
   CrudControllerStructure,
+  DataControllerStructureEx,
+  CrudControllerStructureEx,
+  ControllerPlugin,
 } from '@solid-nestjs/rest-api';
 
 //Crud Resolver
 export {
   DataResolverFrom,
   CrudResolverFrom,
+  DataResolverExFrom,
+  CrudResolverExFrom,
   DataResolverStructure,
   CrudResolverStructure,
+  DataResolverStructureEx,
+  CrudResolverStructureEx,
+  ResolverPlugin,
 } from '@solid-nestjs/graphql';
 
 //Crud Service
 export {
   DataServiceFrom,
   CrudServiceFrom,
+  DataServiceExFrom,
+  CrudServiceExFrom,
   DataServiceStructure,
   CrudServiceStructure,
+  DataServiceStructureEx,
+  CrudServiceStructureEx,
   Transactional,
 } from '@solid-nestjs/typeorm';
 

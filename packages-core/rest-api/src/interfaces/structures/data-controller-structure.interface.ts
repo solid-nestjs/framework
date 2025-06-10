@@ -64,7 +64,12 @@ export interface ParameterDecorators {
 export interface DataControllerOperations<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
 > {
@@ -94,7 +99,12 @@ export interface DataControllerOperations<
 export interface DataControllerStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
 > extends EntityProviderStructure<IdType, EntityType> {
@@ -133,7 +143,12 @@ export interface DataControllerStructure<
 export function DataControllerStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
 >(

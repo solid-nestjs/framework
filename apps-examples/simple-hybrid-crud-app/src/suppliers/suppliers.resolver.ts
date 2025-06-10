@@ -1,15 +1,17 @@
 import { Resolver } from '@nestjs/graphql';
 import {
-  CrudResolverFrom,
-  CrudResolverStructure,
+  CrudResolverExFrom,
+  CrudResolverStructureEx,
 } from '@solid-nestjs/typeorm-hybrid-crud';
-import { SuppliersService, serviceStructure } from './suppliers.service';
+import { SuppliersService, providerStructure } from './suppliers.service';
 import { Supplier } from './entities/supplier.entity';
+import { helloWorldResolverPlugin } from '../plugins';
 
-const resolverStructure = CrudResolverStructure({
-  ...serviceStructure,
+const resolverStructure = CrudResolverStructureEx({
+  ...providerStructure,
   serviceType: SuppliersService,
+  plugins: [helloWorldResolverPlugin(providerStructure)],
 });
 
 @Resolver(() => Supplier)
-export class SuppliersResolver extends CrudResolverFrom(resolverStructure) {}
+export class SuppliersResolver extends CrudResolverExFrom(resolverStructure) {}

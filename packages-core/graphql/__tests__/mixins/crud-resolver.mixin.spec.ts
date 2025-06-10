@@ -82,6 +82,7 @@ class MockCrudService
       TestEntity,
       TestCreateInput,
       TestUpdateInput,
+      FindArgs<TestEntity>,
       TestContext
     >
 {
@@ -275,6 +276,7 @@ class MockSoftDeletableCrudService
       TestEntity,
       TestCreateInput,
       TestUpdateInput,
+      FindArgs<TestEntity>,
       TestContext
     >
 {

@@ -31,7 +31,11 @@ import {
   applyMethodDecorators,
   QueryTransformPipe,
 } from '@solid-nestjs/common';
-import { DataControllerStructure, OperationStructure } from '../interfaces';
+import {
+  DataControllerStructure,
+  OperationStructure,
+  DataController,
+} from '../interfaces';
 import { DefaultArgs, PaginationResult } from '../classes';
 import { ApiResponses } from '../decorators';
 
@@ -58,7 +62,12 @@ import { ApiResponses } from '../decorators';
 export function DataControllerFrom<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  ServiceType extends DataService<IdType, EntityType, ContextType>,
+  ServiceType extends DataService<
+    IdType,
+    EntityType,
+    FindArgsType,
+    ContextType
+  >,
   FindArgsType extends FindArgs<EntityType> = DefaultArgs<EntityType>,
   ContextType extends Context = Context,
 >(
@@ -69,7 +78,9 @@ export function DataControllerFrom<
     FindArgsType,
     ContextType
   >,
-) {
+): Type<
+  DataController<IdType, EntityType, ServiceType, FindArgsType, ContextType>
+> {
   const { entityType, serviceType, findArgsType } = controllerStructure;
 
   const ContextDecorator =
@@ -152,7 +163,10 @@ export function DataControllerFrom<
   @Controller(controllerRoute)
   @applyClassDecorators(controllerDecorators)
   @ApiExtraModels(argsType, PaginationResult)
-  class DataController {
+  class DataControllerClass
+    implements
+      DataController<IdType, EntityType, ServiceType, FindArgsType, ContextType>
+  {
     @Inject(serviceType) readonly service!: ServiceType;
 
     constructor() {}
@@ -190,7 +204,7 @@ export function DataControllerFrom<
           forbidUnknownValues: true,
         }),
       )
-      args,
+      args: FindArgsType,
     ): Promise<EntityType[]> {
       return this.service.findAll(context, args);
     }
@@ -227,7 +241,7 @@ export function DataControllerFrom<
           forbidUnknownValues: true,
         }),
       )
-      args,
+      args: FindArgsType,
     ): Promise<PaginationResult> {
       return this.service.pagination(context, args);
     }
@@ -278,7 +292,7 @@ export function DataControllerFrom<
           forbidUnknownValues: true,
         }),
       )
-      args,
+      args: FindArgsType,
     ): Promise<{ data: EntityType[]; pagination: PaginationResult }> {
       return this.service.findAll(context, args, true);
     }
@@ -310,19 +324,19 @@ export function DataControllerFrom<
 
   //remove controller methods if they are disabled in the structure
   if (findAllSettings.disabled) {
-    delete DataController.prototype.findAll;
+    delete DataControllerClass.prototype.findAll;
   }
   if (findOneSettings.disabled) {
-    delete DataController.prototype.findOne;
+    delete DataControllerClass.prototype.findOne;
   }
   if (paginationSettings.disabled) {
-    delete DataController.prototype.pagination;
+    delete DataControllerClass.prototype.pagination;
   }
   if (findAllPaginatedSettings.disabled) {
-    delete DataController.prototype.findAllPaginated;
+    delete DataControllerClass.prototype.findAllPaginated;
   }
 
-  return mixin(DataController);
+  return mixin(DataControllerClass);
 }
 
 export function extractOperationSettings(

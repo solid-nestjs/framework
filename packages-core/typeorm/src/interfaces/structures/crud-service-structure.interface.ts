@@ -1,11 +1,12 @@
-import { DeepPartial } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import {
+  CommonCrudServiceFunctionStructure,
   Constructable,
   Entity,
   fillEntityId,
   FindArgs,
   IdTypeFrom,
+  DeepPartial,
 } from '@solid-nestjs/common';
 import { Context } from '../misc';
 import {
@@ -19,13 +20,12 @@ import {
  *
  * @template EntityType - The entity type this function operates on
  */
-export interface CrudServiceFunctionStructure<EntityType> {
+export interface CrudServiceFunctionStructure<EntityType>
+  extends CommonCrudServiceFunctionStructure<EntityType> {
   /** Whether the function should run within a database transaction */
   transactional?: boolean;
   /** Database isolation level for the transaction */
   isolationLevel?: IsolationLevel;
-  /** Array of method decorators to apply to the function */
-  decorators?: (() => MethodDecorator)[];
 }
 
 /**

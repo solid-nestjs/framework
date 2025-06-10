@@ -40,7 +40,7 @@ export interface DataService<
   EntityType extends Entity<unknown>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
-> extends CommonDataService<IdType, EntityType, ContextType> {
+> extends CommonDataService<IdType, EntityType, FindArgsType, ContextType> {
   /**
    * Retrieves the TypeORM repository instance for the entity type.
    *
