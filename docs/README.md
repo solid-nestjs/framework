@@ -13,7 +13,9 @@ Welcome to the comprehensive documentation for the SOLID NestJS Framework! This 
 ### Reference & Advanced Topics
 
 - **[API Reference](API_REFERENCE.md)** - Comprehensive API documentation
+- **[Plugin System Guide](PLUGIN_SYSTEM.md)** - Complete guide to creating and using plugins
 - **[Architecture Decisions](ARCHITECTURE.md)** - Framework design decisions and rationale
+- **[Context Pattern](CONTEXT_PATTERN.md)** - Understanding and using the Context pattern
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### Contributing
@@ -36,6 +38,7 @@ Welcome to the comprehensive documentation for the SOLID NestJS Framework! This 
 
 ### Looking for Specific Information?
 
+- **Plugin Development**: [Plugin System Guide](PLUGIN_SYSTEM.md)
 - **Types & Interfaces**: [API Reference - Types and Interfaces](API_REFERENCE.md#types-and-interfaces)
 - **Service Configuration**: [API Reference - TypeORM Package](API_REFERENCE.md#typeorm-package)
 - **Controller Setup**: [API Reference - REST API Package](API_REFERENCE.md#rest-api-package)
@@ -61,6 +64,7 @@ Welcome to the comprehensive documentation for the SOLID NestJS Framework! This 
 
 - ✅ **Flexible Relations** - Easy configuration of entity relationships and eager loading
 - ✅ **Input Validation** - Integrated class-validator support
+- ✅ **Plugin System** - Extensible plugin architecture for services, controllers, and resolvers
 - ✅ **Modular Architecture** - Clean separation following SOLID principles
 - ✅ **Extensible Design** - Easy to extend and customize for specific needs
 - ✅ **Soft Delete Support** - Built-in soft delete functionality
