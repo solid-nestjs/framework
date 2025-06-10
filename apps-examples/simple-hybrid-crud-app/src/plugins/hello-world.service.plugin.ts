@@ -17,9 +17,13 @@ export interface SimpleHelloWorldPluginAddOn {
   saySimpleBye(): string;
 }
 
-export interface HelloWorldPluginAddOn<CreateInputType, UpdateInputType> {
+export interface HelloWorldPluginAddOn<
+  IdType,
+  CreateInputType,
+  UpdateInputType,
+> {
   sayHelloToCreate(input: CreateInputType): string;
-  sayByeToUpdate(input: UpdateInputType): string;
+  sayByeToUpdate(id: IdType, input: UpdateInputType): string;
 }
 
 export function helloWorldServicePlugin<
@@ -51,26 +55,27 @@ export function helloWorldServicePlugin<
     HelloWorldPluginOptions,
     {},
     SimpleHelloWorldPluginAddOn,
-    HelloWorldPluginAddOn<CreateInputType, UpdateInputType>
+    HelloWorldPluginAddOn<IdType, CreateInputType, UpdateInputType>
   > = {
     applyCrudServiceClass(serviceClass, structure) {
       const msg = structure.hwMessage ?? 'world';
 
       class ServiceClassWithAddOn
         extends serviceClass
-        implements HelloWorldPluginAddOn<CreateInputType, UpdateInputType>
+        implements
+          HelloWorldPluginAddOn<IdType, CreateInputType, UpdateInputType>
       {
         saySimpleHello(): string {
           return `hello ${msg}`;
         }
         saySimpleBye(): string {
-          return `hello ${msg}`;
+          return `bye ${msg}`;
         }
         sayHelloToCreate(input: CreateInputType): string {
           return `hello ${msg}, ${JSON.stringify(input)}`;
         }
-        sayByeToUpdate(input: UpdateInputType): string {
-          return `bye ${msg}, ${JSON.stringify(input)}`;
+        sayByeToUpdate(id: IdType, input: UpdateInputType): string {
+          return `bye ${msg}, id:${id},${JSON.stringify(input)}`;
         }
       }
 
