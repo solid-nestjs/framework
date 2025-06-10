@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/typeorm-crud",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Complete SOLID NestJS TypeORM CRUD bundle - includes common utilities, TypeORM integration, and REST API generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,9 +36,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@solid-nestjs/common": "^0.2.3",
-    "@solid-nestjs/rest-api": "^0.2.3",
-    "@solid-nestjs/typeorm": "^0.2.3"
+    "@solid-nestjs/common": "^0.2.4",
+    "@solid-nestjs/rest-api": "^0.2.4",
+    "@solid-nestjs/typeorm": "^0.2.4"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.1",

@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.4](https://github.com/solid-nestjs/framework/compare/v0.2.3...v0.2.4) (2025-06-10)
+
+### Features
+
+- add issue templates for bug reports, documentation issues, feature requests, package-specific issues, performance issues, and update pull request template ([#10](https://github.com/solid-nestjs/framework/issues/10)) ([c001ac7](https://github.com/solid-nestjs/framework/commit/c001ac7ab48311169a6fdaa4a9dc597c214075ec))
+- plugins support ([#11](https://github.com/solid-nestjs/framework/issues/11)) ([672826b](https://github.com/solid-nestjs/framework/commit/672826bb3c06ed996fb09e3aa6e568e2c4e790a9))
+
 ## [0.2.3](https://github.com/solid-nestjs/framework/compare/v0.2.2...v0.2.3) (2025-06-03)
 
 ### Features

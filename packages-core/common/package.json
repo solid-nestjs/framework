@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/common",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "solid-nestjs common utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

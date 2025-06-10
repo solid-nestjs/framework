@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/typeorm",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "solid-nestjs TypeORM utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,7 +35,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@solid-nestjs/common": "^0.2.3"
+    "@solid-nestjs/common": "^0.2.4"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.1",
