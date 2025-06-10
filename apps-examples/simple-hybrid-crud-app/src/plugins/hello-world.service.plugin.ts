@@ -9,15 +9,15 @@ import {
   CrudProviderStructure,
 } from '@solid-nestjs/common';
 
-export interface HelloWorldPluginOptions {
+export interface HWServicePluginOptions {
   hwMessage?: string;
 }
-export interface SimpleHelloWorldPluginAddOn {
+export interface HWDataServicePluginAddOn {
   saySimpleHello(): string;
   saySimpleBye(): string;
 }
 
-export interface HelloWorldPluginAddOn<
+export interface HWCrudServicePluginAddOn<
   IdType,
   CreateInputType,
   UpdateInputType,
@@ -52,10 +52,10 @@ export function helloWorldServicePlugin<
     UpdateInputType,
     FindArgsType,
     ContextType,
-    HelloWorldPluginOptions,
+    HWServicePluginOptions,
     {},
-    SimpleHelloWorldPluginAddOn,
-    HelloWorldPluginAddOn<IdType, CreateInputType, UpdateInputType>
+    HWDataServicePluginAddOn,
+    HWCrudServicePluginAddOn<IdType, CreateInputType, UpdateInputType>
   > = {
     applyCrudServiceClass(serviceClass, structure) {
       const msg = structure.hwMessage ?? 'world';
@@ -63,7 +63,7 @@ export function helloWorldServicePlugin<
       class ServiceClassWithAddOn
         extends serviceClass
         implements
-          HelloWorldPluginAddOn<IdType, CreateInputType, UpdateInputType>
+          HWCrudServicePluginAddOn<IdType, CreateInputType, UpdateInputType>
       {
         saySimpleHello(): string {
           return `hello ${msg}`;

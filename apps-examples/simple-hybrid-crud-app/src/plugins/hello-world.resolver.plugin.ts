@@ -1,44 +1,36 @@
 import {
-  Body,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
   ParseIntPipe,
   PipeTransform,
-  Post,
-  Put,
   Type,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
 import {
-  ApiResponses,
   extractOperationSettings,
   OperationStructure,
-} from '@solid-nestjs/rest-api';
+} from '@solid-nestjs/graphql';
 import {
-  applyMethodDecorators,
   Context,
-  ControllerPlugin,
+  ResolverPlugin,
   CrudProviderStructure,
   DataProviderStructure,
   DeepPartial,
   Entity,
   FindArgs,
   IdTypeFrom,
+  applyMethodDecoratorsIf,
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import {
   HWCrudServicePluginAddOn,
   HWDataServicePluginAddOn,
 } from './hello-world.service.plugin';
+import { Args, Query } from '@nestjs/graphql';
 
-export interface HWDataControllerPluginAddOn {
+export interface HWDataResolverPluginAddOn {
   saySimpleHello?(): Promise<string>;
   saySimpleBye?(): Promise<string>;
 }
 
-export interface HWCrudControllerPluginAddOn<
+export interface HWCrudResolverPluginAddOn<
   IdType,
   CreateInputType,
   UpdateInputType,
@@ -47,21 +39,21 @@ export interface HWCrudControllerPluginAddOn<
   sayByeToUpdate?(id: IdType, input: UpdateInputType): Promise<string>;
 }
 
-export interface HWDataControllerOptions {
+export interface HWDataResolverOptions {
   operations?: {
     saySimpleHello?: OperationStructure | boolean;
     saySimpleBye?: OperationStructure | boolean;
   };
 }
 
-export interface HWCrudControllerOptions {
+export interface HWCrudResolverOptions {
   operations?: {
     sayHelloToCreate?: OperationStructure | boolean;
     sayByeToUpdate?: OperationStructure | boolean;
   };
 }
 
-export function helloWorldControllerPlugin<
+export function helloWorldResolverPlugin<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
@@ -80,7 +72,7 @@ export function helloWorldControllerPlugin<
         ContextType
       >,
 ) {
-  const plugin: ControllerPlugin<
+  const plugin: ResolverPlugin<
     IdType,
     EntityType,
     CreateInputType,
@@ -89,21 +81,21 @@ export function helloWorldControllerPlugin<
     ContextType,
     HWDataServicePluginAddOn,
     HWCrudServicePluginAddOn<IdType, CreateInputType, UpdateInputType>,
-    HWDataControllerOptions,
-    HWCrudControllerOptions,
-    HWDataControllerPluginAddOn,
-    HWCrudControllerPluginAddOn<IdType, CreateInputType, UpdateInputType>
+    HWDataResolverOptions,
+    HWCrudResolverOptions,
+    HWDataResolverPluginAddOn,
+    HWCrudResolverPluginAddOn<IdType, CreateInputType, UpdateInputType>
   > = {
-    applyDataControllerClass(controllerClass, structure) {
+    applyDataResolverClass(resolverClass, structure) {
+      const { entityType } = structure;
+
       const sayHelloSettings = extractOperationSettings(
         structure.operations?.saySimpleHello,
         {
           disabled: structure.operations?.saySimpleHello === false,
-          route: 'say/hello',
-          summary: 'Say Hello',
+          name: 'sayHelloTo' + entityType.name,
+          summary: 'Say Hello to ' + entityType.name,
           description: 'Say Hello',
-          successCode: HttpStatus.OK,
-          errorCodes: [HttpStatus.BAD_REQUEST],
         },
       );
 
@@ -111,69 +103,59 @@ export function helloWorldControllerPlugin<
         structure.operations?.saySimpleBye,
         {
           disabled: structure.operations?.saySimpleBye === false,
-          route: 'say/bye',
+          name: 'sayByeTo' + entityType.name,
           summary: 'Say Bye',
           description: 'Say Bye',
-          successCode: HttpStatus.OK,
-          errorCodes: [HttpStatus.BAD_REQUEST],
         },
       );
 
-      class ControllerClassWithAddOn
-        extends controllerClass
-        implements HWDataControllerPluginAddOn
+      class ResolverClassWithAddOn
+        extends resolverClass
+        implements HWDataResolverPluginAddOn
       {
-        @Get(sayHelloSettings.route)
-        @HttpCode(sayHelloSettings.successCode)
-        @ApiOperation({
-          summary: sayHelloSettings.summary,
-          description: sayHelloSettings.description,
-          operationId: sayHelloSettings.operationId,
-        })
-        @ApiResponses({
-          type: String,
-          successCodes: sayHelloSettings.successCodes,
-          errorCodes: sayHelloSettings.errorCodes,
-        })
-        @applyMethodDecorators(sayHelloSettings.decorators)
+        @applyMethodDecoratorsIf(!sayHelloSettings.disabled, [
+          () =>
+            Query(returns => String, {
+              name: sayHelloSettings.name,
+              description: sayHelloSettings.description,
+            }),
+          ...sayHelloSettings.decorators,
+        ])
         async saySimpleHello?(): Promise<string> {
           return this.service.saySimpleHello();
         }
 
-        @Get(sayByeSettings.route)
-        @HttpCode(sayByeSettings.successCode)
-        @ApiOperation({
-          summary: sayByeSettings.summary,
-          description: sayByeSettings.description,
-          operationId: sayByeSettings.operationId,
-        })
-        @ApiResponses({
-          type: String,
-          successCodes: sayByeSettings.successCodes,
-          errorCodes: sayByeSettings.errorCodes,
-        })
-        @applyMethodDecorators(sayByeSettings.decorators)
+        @applyMethodDecoratorsIf(!sayByeSettings.disabled, [
+          () =>
+            Query(returns => String, {
+              name: sayByeSettings.name,
+              description: sayByeSettings.description,
+            }),
+          ...sayByeSettings.decorators,
+        ])
         async saySimpleBye?(): Promise<string> {
           return this.service.saySimpleBye();
         }
       }
 
       if (sayHelloSettings.disabled) {
-        delete ControllerClassWithAddOn.prototype.saySimpleHello;
+        delete ResolverClassWithAddOn.prototype.saySimpleHello;
       }
       if (sayByeSettings.disabled) {
-        delete ControllerClassWithAddOn.prototype.saySimpleBye;
+        delete ResolverClassWithAddOn.prototype.saySimpleBye;
       }
 
-      return ControllerClassWithAddOn;
+      return ResolverClassWithAddOn;
     },
 
-    applyCrudControllerClass(controllerClass, structure) {
+    applyCrudResolverClass(resolverClass, structure) {
       const { entityType, createInputType, updateInputType } = structure;
 
+      let idType: any = Number;
       let pipeTransforms: Type<PipeTransform>[] = [ParseIntPipe];
 
       if (structure.entityId) {
+        idType = structure.entityId.type;
         pipeTransforms = structure.entityId.pipeTransforms ?? [];
       }
 
@@ -181,11 +163,9 @@ export function helloWorldControllerPlugin<
         structure.operations?.sayHelloToCreate,
         {
           disabled: structure.operations?.sayHelloToCreate === false,
-          route: 'say/hello',
+          name: 'sayHelloToCreate' + entityType.name,
           summary: 'say Hello to create ' + entityType.name.toLowerCase(),
           description: 'say Hello to create ' + entityType.name.toLowerCase(),
-          successCode: HttpStatus.ACCEPTED,
-          errorCodes: [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
         },
       );
 
@@ -193,45 +173,31 @@ export function helloWorldControllerPlugin<
         structure.operations?.sayByeToUpdate,
         {
           disabled: structure.operations?.sayByeToUpdate === false,
-          route: 'say/bye/:id',
+          name: 'sayByeToUpdate' + entityType.name,
           summary: 'say Bye to update ' + entityType.name.toLowerCase(),
           description: 'say Bye to update ' + entityType.name.toLowerCase(),
-          successCode: HttpStatus.ACCEPTED,
-          errorCodes: [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
         },
       );
 
-      const paramApiConfig = {
-        name: 'id',
-        description: 'ID of the ' + entityType.name + ' entity',
-        required: true,
-      };
-
-      class ControllerClassWithAddOn
-        extends controllerClass
+      class ResolverClassWithAddOn
+        extends resolverClass
         implements
-          HWCrudControllerPluginAddOn<IdType, CreateInputType, UpdateInputType>
+          HWCrudResolverPluginAddOn<IdType, CreateInputType, UpdateInputType>
       {
-        @Post(sayHelloSettings.route)
-        @ApiBody({
-          type: createInputType,
-          required: true,
-          isArray: false,
-        })
-        @HttpCode(sayHelloSettings.successCode)
-        @ApiOperation({
-          summary: sayHelloSettings.summary,
-          description: sayHelloSettings.description,
-          operationId: sayHelloSettings.operationId,
-        })
-        @ApiResponses({
-          type: String,
-          successCodes: sayHelloSettings.successCodes,
-          errorCodes: sayHelloSettings.errorCodes,
-        })
-        @applyMethodDecorators(sayHelloSettings.decorators)
+        @applyMethodDecoratorsIf(!sayHelloSettings.disabled, [
+          () =>
+            Query(returns => String, {
+              name: sayHelloSettings.name,
+              description: sayHelloSettings.description,
+            }),
+          ...sayHelloSettings.decorators,
+        ])
         async sayHelloToCreate?(
-          @Body(
+          @Args(
+            {
+              type: () => createInputType,
+              name: 'createInput',
+            },
             new ValidationPipe({
               transform: true,
               expectedType: createInputType,
@@ -245,28 +211,21 @@ export function helloWorldControllerPlugin<
           return this.service.sayHelloToCreate(input);
         }
 
-        @Put(sayByeSettings.route)
-        @ApiParam(paramApiConfig)
-        @ApiBody({
-          type: updateInputType,
-          required: true,
-          isArray: false,
-        })
-        @HttpCode(sayByeSettings.successCode)
-        @ApiOperation({
-          summary: sayByeSettings.summary,
-          description: sayByeSettings.description,
-          operationId: sayByeSettings.operationId,
-        })
-        @ApiResponses({
-          type: String,
-          successCodes: sayByeSettings.successCodes,
-          errorCodes: sayByeSettings.errorCodes,
-        })
-        @applyMethodDecorators(sayByeSettings.decorators)
+        @applyMethodDecoratorsIf(!sayByeSettings.disabled, [
+          () =>
+            Query(returns => String, {
+              name: sayByeSettings.name,
+              description: sayByeSettings.description,
+            }),
+          ...sayByeSettings.decorators,
+        ])
         async sayByeToUpdate?(
-          @Param('id', ...pipeTransforms) id: IdType,
-          @Body(
+          @Args('id', { type: () => idType }, ...pipeTransforms) id: IdType,
+          @Args(
+            {
+              type: () => updateInputType,
+              name: 'updateInput',
+            },
             new ValidationPipe({
               transform: true,
               expectedType: updateInputType,
@@ -282,13 +241,13 @@ export function helloWorldControllerPlugin<
       }
 
       if (sayHelloSettings.disabled) {
-        delete ControllerClassWithAddOn.prototype.sayHelloToCreate;
+        delete ResolverClassWithAddOn.prototype.sayHelloToCreate;
       }
       if (sayByeSettings.disabled) {
-        delete ControllerClassWithAddOn.prototype.sayByeToUpdate;
+        delete ResolverClassWithAddOn.prototype.sayByeToUpdate;
       }
 
-      return ControllerClassWithAddOn;
+      return ResolverClassWithAddOn;
     },
   };
 

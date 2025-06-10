@@ -1,22 +1,17 @@
-import { Query, Resolver } from '@nestjs/graphql';
+import { Resolver } from '@nestjs/graphql';
 import {
-  Context,
-  CrudResolverFrom,
-  CrudResolverStructure,
-  CurrentContext,
+  CrudResolverExFrom,
+  CrudResolverStructureEx,
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { SuppliersService, providerStructure } from './suppliers.service';
 import { Supplier } from './entities/supplier.entity';
+import { helloWorldResolverPlugin } from '../plugins';
 
-const resolverStructure = CrudResolverStructure({
+const resolverStructure = CrudResolverStructureEx({
   ...providerStructure,
   serviceType: SuppliersService,
+  plugins: [helloWorldResolverPlugin(providerStructure)],
 });
 
 @Resolver(() => Supplier)
-export class SuppliersResolver extends CrudResolverFrom(resolverStructure) {
-  @Query(returns => String, { name: 'sayHelloToSupplier' })
-  sayHello(@CurrentContext() context: Context) {
-    return this.service.saySimpleHello();
-  }
-}
+export class SuppliersResolver extends CrudResolverExFrom(resolverStructure) {}

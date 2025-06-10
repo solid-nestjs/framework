@@ -32,8 +32,13 @@ export {
 export {
   DataResolverFrom,
   CrudResolverFrom,
+  DataResolverExFrom,
+  CrudResolverExFrom,
   DataResolverStructure,
   CrudResolverStructure,
+  DataResolverStructureEx,
+  CrudResolverStructureEx,
+  ResolverPlugin,
 } from '@solid-nestjs/graphql';
 
 //Crud Service

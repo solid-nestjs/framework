@@ -7,14 +7,14 @@ import {
   FindArgs,
   IdTypeFrom,
 } from '@solid-nestjs/common';
-import { DataControllerStructure } from './data-controller-structure.interface';
+import { DataResolverStructure } from './data-resolver-structure.interface';
 import {
-  ControllerPlugin,
-  ExtractDataOptionsFromControllerPluginArray,
-  ExtractDataServiceAddOnsFromControllerPluginArray,
+  ResolverPlugin,
+  ExtractDataOptionsFromResolverPluginArray,
+  ExtractDataServiceAddOnsFromResolverPluginArray,
 } from './plugins.interface';
 
-export function DataControllerStructureEx<
+export function DataResolverStructureEx<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
   ServiceType extends DataService<
@@ -25,7 +25,7 @@ export function DataControllerStructureEx<
   >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
-  PluginArrayType extends ControllerPlugin<
+  PluginArrayType extends ResolverPlugin<
     IdType,
     EntityType,
     DeepPartial<EntityType>,
@@ -34,26 +34,26 @@ export function DataControllerStructureEx<
     ContextType
   >[] = [],
 >(
-  input: DataControllerStructure<
+  input: DataResolverStructure<
     IdType,
     EntityType,
     ServiceType &
-      ExtractDataServiceAddOnsFromControllerPluginArray<PluginArrayType>,
+      ExtractDataServiceAddOnsFromResolverPluginArray<PluginArrayType>,
     FindArgsType,
     ContextType
   > & {
     plugins?: PluginArrayType;
-  } & ExtractDataOptionsFromControllerPluginArray<PluginArrayType>,
-): DataControllerStructure<
+  } & ExtractDataOptionsFromResolverPluginArray<PluginArrayType>,
+): DataResolverStructure<
   IdType,
   EntityType,
   ServiceType &
-    ExtractDataServiceAddOnsFromControllerPluginArray<PluginArrayType>,
+    ExtractDataServiceAddOnsFromResolverPluginArray<PluginArrayType>,
   FindArgsType,
   ContextType
 > & {
   plugins?: PluginArrayType;
-} & ExtractDataOptionsFromControllerPluginArray<PluginArrayType> {
+} & ExtractDataOptionsFromResolverPluginArray<PluginArrayType> {
   fillEntityId(input);
 
   return input;

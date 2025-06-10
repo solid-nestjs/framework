@@ -7,14 +7,14 @@ import {
   FindArgs,
   IdTypeFrom,
 } from '@solid-nestjs/common';
-import { CrudControllerStructure } from './crud-controller-structure.interface';
+import { CrudResolverStructure } from './crud-resolver-structure.interface';
 import {
-  ControllerPlugin,
-  ExtractOptionsFromControllerPluginArray,
-  ExtractServiceAddOnsFromControllerPluginArray,
+  ResolverPlugin,
+  ExtractOptionsFromResolverPluginArray,
+  ExtractServiceAddOnsFromResolverPluginArray,
 } from './plugins.interface';
 
-export function CrudControllerStructureEx<
+export function CrudResolverStructureEx<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
   CreateInputType extends DeepPartial<EntityType>,
@@ -29,7 +29,7 @@ export function CrudControllerStructureEx<
   >,
   FindArgsType extends FindArgs<EntityType>,
   ContextType extends Context,
-  PluginArrayType extends ControllerPlugin<
+  PluginArrayType extends ResolverPlugin<
     IdType,
     EntityType,
     CreateInputType,
@@ -38,29 +38,28 @@ export function CrudControllerStructureEx<
     ContextType
   >[] = [],
 >(
-  input: CrudControllerStructure<
+  input: CrudResolverStructure<
     IdType,
     EntityType,
     CreateInputType,
     UpdateInputType,
-    ServiceType &
-      ExtractServiceAddOnsFromControllerPluginArray<PluginArrayType>,
+    ServiceType & ExtractServiceAddOnsFromResolverPluginArray<PluginArrayType>,
     FindArgsType,
     ContextType
   > & {
     plugins?: PluginArrayType;
-  } & ExtractOptionsFromControllerPluginArray<PluginArrayType>,
-): CrudControllerStructure<
+  } & ExtractOptionsFromResolverPluginArray<PluginArrayType>,
+): CrudResolverStructure<
   IdType,
   EntityType,
   CreateInputType,
   UpdateInputType,
-  ServiceType & ExtractServiceAddOnsFromControllerPluginArray<PluginArrayType>,
+  ServiceType & ExtractServiceAddOnsFromResolverPluginArray<PluginArrayType>,
   FindArgsType,
   ContextType
 > & {
   plugins?: PluginArrayType;
-} & ExtractOptionsFromControllerPluginArray<PluginArrayType> {
+} & ExtractOptionsFromResolverPluginArray<PluginArrayType> {
   fillEntityId(input);
 
   return input;
