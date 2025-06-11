@@ -104,7 +104,14 @@ export function CrudServiceStructureEx<
     UpdateInputType,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ServicePlugin<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   input: CrudServiceStructure<
     IdType,

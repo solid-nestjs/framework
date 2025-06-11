@@ -95,7 +95,14 @@ export function DataControllerExFrom<
     DeepPartial<EntityType>,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ControllerPlugin<
+    IdType,
+    EntityType,
+    DeepPartial<EntityType>,
+    DeepPartial<EntityType>,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   controllerStructure: DataControllerStructure<
     IdType,

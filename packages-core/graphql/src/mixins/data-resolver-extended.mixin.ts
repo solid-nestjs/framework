@@ -100,7 +100,14 @@ export function DataResolverExFrom<
     DeepPartial<EntityType>,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ResolverPlugin<
+    IdType,
+    EntityType,
+    DeepPartial<EntityType>,
+    DeepPartial<EntityType>,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   resolverStructure: DataResolverStructure<
     IdType,

@@ -102,7 +102,14 @@ export function DataServiceStructureEx<
     DeepPartial<EntityType>,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ServicePlugin<
+    IdType,
+    EntityType,
+    DeepPartial<EntityType>,
+    DeepPartial<EntityType>,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   input: DataServiceStructure<IdType, EntityType, FindArgsType, ContextType> & {
     plugins?: PluginArrayType;
