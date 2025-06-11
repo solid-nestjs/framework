@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/typeorm",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "solid-nestjs TypeORM utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

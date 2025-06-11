@@ -1,6 +1,6 @@
 {
   "name": "advanced-crud-app",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Complete REST API CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, auto-generated endpoints, advanced filtering, and Swagger documentation",
   "author": "SOLID NestJS Framework",
   "private": true,
@@ -25,7 +25,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.1.4",
     "@nestjs/typeorm": "^11.0.0",
-    "@solid-nestjs/typeorm-crud": "^0.2.4",
+    "@solid-nestjs/typeorm-crud": "^0.2.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "multer": "^2.0.1",
