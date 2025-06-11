@@ -160,7 +160,14 @@ export function CrudResolverExFrom<
     UpdateInputType,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ResolverPlugin<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   resolverStructure: CrudResolverStructure<
     IdType,

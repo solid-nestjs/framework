@@ -110,7 +110,14 @@ export function CrudControllerExFrom<
     UpdateInputType,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ControllerPlugin<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   controllerStructure: CrudControllerStructure<
     IdType,

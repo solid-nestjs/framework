@@ -2,7 +2,6 @@ import { mixin, Type } from '@nestjs/common';
 import {
   Constructable,
   Context,
-  CrudService,
   DeepPartial,
   Entity,
   ExtractAddOnsFromServicePluginArray,
@@ -11,7 +10,7 @@ import {
   IdTypeFrom,
   ServicePlugin,
 } from '@solid-nestjs/common';
-import { CrudServiceStructure } from '../interfaces';
+import { CrudService, CrudServiceStructure } from '../interfaces';
 import { CrudServiceFrom } from './crud-service.mixin';
 
 /**
@@ -119,7 +118,14 @@ export function CrudServiceExFrom<
     UpdateInputType,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ServicePlugin<
+    IdType,
+    EntityType,
+    CreateInputType,
+    UpdateInputType,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   serviceStructure: CrudServiceStructure<
     IdType,

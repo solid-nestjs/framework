@@ -2,7 +2,6 @@ import { mixin, Type } from '@nestjs/common';
 import {
   Constructable,
   Context,
-  DataService,
   DeepPartial,
   Entity,
   ExtractDataAddOnsFromServicePluginArray,
@@ -11,7 +10,7 @@ import {
   IdTypeFrom,
   ServicePlugin,
 } from '@solid-nestjs/common';
-import { DataServiceStructure } from '../interfaces';
+import { DataService, DataServiceStructure } from '../interfaces';
 import { DataServiceFrom } from './data-service.mixin';
 
 /**
@@ -129,7 +128,14 @@ export function DataServiceExFrom<
     DeepPartial<EntityType>,
     FindArgsType,
     ContextType
-  >[] = [],
+  >[] = ServicePlugin<
+    IdType,
+    EntityType,
+    DeepPartial<EntityType>,
+    DeepPartial<EntityType>,
+    FindArgsType,
+    ContextType
+  >[],
 >(
   serviceStructure: DataServiceStructure<
     IdType,
