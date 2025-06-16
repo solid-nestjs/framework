@@ -57,6 +57,24 @@ export function helloWorldServicePlugin<
     HWDataServicePluginAddOn,
     HWCrudServicePluginAddOn<IdType, CreateInputType, UpdateInputType>
   > = {
+    applyDataServiceClass(serviceClass, structure) {
+      const msg = structure.hwMessage ?? 'world';
+
+      class ServiceClassWithAddOn
+        extends serviceClass
+        implements HWDataServicePluginAddOn
+      {
+        saySimpleHello(): string {
+          return `hello ${msg}`;
+        }
+        saySimpleBye(): string {
+          return `bye ${msg}`;
+        }
+      }
+
+      return ServiceClassWithAddOn;
+    },
+
     applyCrudServiceClass(serviceClass, structure) {
       const msg = structure.hwMessage ?? 'world';
 
@@ -65,12 +83,6 @@ export function helloWorldServicePlugin<
         implements
           HWCrudServicePluginAddOn<IdType, CreateInputType, UpdateInputType>
       {
-        saySimpleHello(): string {
-          return `hello ${msg}`;
-        }
-        saySimpleBye(): string {
-          return `bye ${msg}`;
-        }
         sayHelloToCreate(input: CreateInputType): string {
           return `hello ${msg}, ${JSON.stringify(input)}`;
         }
