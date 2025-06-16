@@ -14,7 +14,7 @@ export interface LockModeNotOptimistic {
     | 'pessimistic_write_or_fail'
     | 'for_no_key_update'
     | 'for_key_share';
-  lockVersion: undefined;
+  lockVersion?: undefined;
   lockTables?: string[];
   onLocked?: 'nowait' | 'skip_locked';
 }
