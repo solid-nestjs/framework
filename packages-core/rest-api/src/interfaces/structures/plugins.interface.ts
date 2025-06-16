@@ -266,7 +266,8 @@ export interface ControllerPlugin<
           TCrudServiceAddOns,
         FindArgsType,
         ContextType
-      >
+      > &
+        TDataAddOns
     >,
     structure: CrudControllerStructure<
       IdType,

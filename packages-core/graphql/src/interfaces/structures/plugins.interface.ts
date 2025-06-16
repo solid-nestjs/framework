@@ -262,7 +262,8 @@ export interface ResolverPlugin<
           TCrudServiceAddOns,
         FindArgsType,
         ContextType
-      >
+      > &
+        TDataAddOns
     >,
     structure: CrudResolverStructure<
       IdType,

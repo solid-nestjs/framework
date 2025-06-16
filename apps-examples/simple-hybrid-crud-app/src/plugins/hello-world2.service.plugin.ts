@@ -57,6 +57,24 @@ export function helloWorld2ServicePlugin<
     HW2DataServicePluginAddOn,
     HW2CrudServicePluginAddOn<IdType, CreateInputType, UpdateInputType>
   > = {
+    applyDataServiceClass(serviceClass, structure) {
+      const msg = structure.hwMessage2 ?? 'world';
+
+      class ServiceClassWithAddOn
+        extends serviceClass
+        implements HW2DataServicePluginAddOn
+      {
+        saySimpleHello2(): string {
+          return `hello ${msg}`;
+        }
+        saySimpleBye2(): string {
+          return `bye ${msg}`;
+        }
+      }
+
+      return ServiceClassWithAddOn;
+    },
+
     applyCrudServiceClass(serviceClass, structure) {
       const msg = structure.hwMessage2 ?? 'world';
 

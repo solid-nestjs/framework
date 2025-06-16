@@ -207,7 +207,8 @@ export interface ServicePlugin<
         UpdateInputType,
         FindArgsType,
         ContextType
-      >
+      > &
+        TDataAddOns
     >,
     structure: CrudServiceStructure<
       IdType,
