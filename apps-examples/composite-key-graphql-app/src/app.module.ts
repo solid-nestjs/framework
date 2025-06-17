@@ -6,13 +6,15 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import { join } from 'path';
 import { ProductsModule } from './products/products.module';
 import { Product } from './products/entities/product.entity';
+import { Supplier } from './suppliers/entities/supplier.entity';
+import { SuppliersModule } from './suppliers/suppliers.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: './database-data/products.sqlite',
-      entities: [Product],
+      entities: [Product, Supplier],
       synchronize: true, // Set to false in production
       logging: true,
     }),
@@ -25,6 +27,7 @@ import { Product } from './products/entities/product.entity';
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     ProductsModule,
+    SuppliersModule,
   ],
 })
 export class AppModule {}
