@@ -1131,10 +1131,9 @@ describe('QueryBuilderHelper', () => {
             relationInfo: { aggregatedCardinality: 'one-to-one' },
           });
 
-        const result = (helper as any).addRelationForConditionOrSorting(
-          context,
-          'profile',
-        );
+        const { alias: result } = (
+          helper as any
+        ).addRelationForConditionOrSorting(context, 'profile');
 
         expect(addRelationSpy).toHaveBeenCalledWith(
           context,
@@ -1193,7 +1192,7 @@ describe('QueryBuilderHelper', () => {
       it('should create relation condition with updated context', () => {
         const addRelationSpy = jest
           .spyOn(helper as any, 'addRelationForConditionOrSorting')
-          .mockReturnValue('profile_alias');
+          .mockReturnValue({ alias: 'profile_alias' });
         const getWhereConditionSpy = jest
           .spyOn(helper as any, 'getWhereCondition')
           .mockReturnValue('mock_condition');

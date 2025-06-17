@@ -1,5 +1,5 @@
 import { Repository, EntityMetadata } from 'typeorm';
-import { getTypeName } from '@solid-nestjs/common';
+import { getTypeClass, getTypeName } from '@solid-nestjs/common';
 import {
   getEntityRelations,
   getEntityRelationsExtended,
@@ -64,6 +64,7 @@ interface AvatarEntity {
 // Mock the getTypeName function
 jest.mock('@solid-nestjs/common', () => ({
   getTypeName: jest.fn(),
+  getTypeClass: jest.fn(),
 }));
 
 const mockGetTypeName = getTypeName as jest.MockedFunction<typeof getTypeName>;
