@@ -23,9 +23,10 @@ export function fillEntityId<
   )
     pipeTransforms = [ParseUUIDPipe];
 
-  //graphql always should take ID
-  entityProvider.entityId = {
-    type: ID as unknown as Constructable<IdType>,
-    pipeTransforms,
-  };
+  if (!entityProvider.entityId)
+    //graphql always should take ID
+    entityProvider.entityId = {
+      type: ID as unknown as Constructable<IdType>,
+      pipeTransforms,
+    };
 }
