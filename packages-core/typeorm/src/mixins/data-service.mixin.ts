@@ -203,11 +203,13 @@ export function DataServiceFrom<
         const ids = await paginatedQueryBuilder.getMany();
 
         if (ids.length > 0) {
+          const _ids = ids.map(i => ({ id: i.id }));
+
           const queryBuilder = this.getQueryBuilder(
             context,
             { ...args, pagination: undefined } as FindArgsType,
             options,
-          ).andWhereInIds(ids);
+          ).andWhereInIds(_ids);
           data = await queryBuilder.getMany();
         } else data = [];
       } else {
