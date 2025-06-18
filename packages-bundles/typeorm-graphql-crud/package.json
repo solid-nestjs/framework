@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/typeorm-graphql-crud",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Complete SOLID NestJS TypeORM CRUD bundle - includes common utilities, TypeORM integration, and GraphQL API generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,9 +36,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@solid-nestjs/common": "^0.2.4",
-    "@solid-nestjs/graphql": "^0.2.5",
-    "@solid-nestjs/typeorm": "^0.2.5"
+    "@solid-nestjs/common": "^0.2.6",
+    "@solid-nestjs/graphql": "^0.2.6",
+    "@solid-nestjs/typeorm": "^0.2.6"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.1",

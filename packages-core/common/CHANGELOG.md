@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.6](https://github.com/solid-nestjs/framework/compare/v0.2.5...v0.2.6) (2025-06-18)
+
+### Bug Fixes
+
+- plugin signature to include DataAddOns on Crud Plugin Definition + Examples ([7e505f8](https://github.com/solid-nestjs/framework/commit/7e505f85299dab73d8e2f8e1326d8aeb75f97e8b))
+
+### Features
+
+- composite key support ([#13](https://github.com/solid-nestjs/framework/issues/13)) ([a3da28f](https://github.com/solid-nestjs/framework/commit/a3da28ff387984c59ec5f72d1bcafecc9ce83b1b))
+
 ## [0.2.4](https://github.com/solid-nestjs/framework/compare/v0.2.3...v0.2.4) (2025-06-10)
 
 ### Features

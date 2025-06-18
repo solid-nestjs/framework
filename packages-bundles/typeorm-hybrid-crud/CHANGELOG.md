@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.6](https://github.com/solid-nestjs/framework/compare/v0.2.5...v0.2.6) (2025-06-18)
+
+### Features
+
+- composite key support ([#13](https://github.com/solid-nestjs/framework/issues/13)) ([a3da28f](https://github.com/solid-nestjs/framework/commit/a3da28ff387984c59ec5f72d1bcafecc9ce83b1b))
+
 ## [0.2.5](https://github.com/solid-nestjs/framework/compare/v0.2.4...v0.2.5) (2025-06-11)
 
 **Note:** Version bump only for package @solid-nestjs/typeorm-hybrid-crud
