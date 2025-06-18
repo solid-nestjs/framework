@@ -7,23 +7,13 @@ import { AutoIncrement } from '@solid-nestjs/typeorm-graphql-crud';
 @ObjectType()
 @Entity()
 @AutoIncrement<SupplierId>('code')
-export class Supplier {
-  //@Field(() => SupplierId, { description: 'The id of the supplier' })
-  @Column(() => SupplierId, { prefix: '' })
-  id: SupplierId;
-
-  @Field(() => ID, {
-    description: 'The type of the unique identifier of the supplier',
-  })
-  get type() {
-    return this.id.type;
+export class Supplier extends SupplierId {
+  get id(): SupplierId {
+    return { type: this.type, code: this.code };
   }
-
-  @Field(() => ID, {
-    description: 'The code of the unique identifier of the supplier',
-  })
-  get code() {
-    return this.id.code;
+  set id(value) {
+    this.type = value.type;
+    this.code = value.code;
   }
 
   @Field({ description: 'The name of the supplier' })

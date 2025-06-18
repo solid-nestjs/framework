@@ -1,23 +1,15 @@
 import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
-import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsString,
   IsNumber,
   IsPositive,
   Min,
-  ValidateNested,
   IsOptional,
 } from 'class-validator';
-import { SupplierId } from '../../../suppliers/entities/supplier.key';
-import { Code } from 'typeorm';
 
 @InputType()
 export class ProductSupplierDto {
-  // @Field(() => SupplierId)
-  // @IsNotEmpty()
-  // id: SupplierId;
-
   @Field(() => ID, {
     description: 'The type of the unique identifier of the supplier',
   })
@@ -65,21 +57,10 @@ export class CreateProductDto {
   @Min(0)
   stock: number;
 
-  @IsOptional()
-  prSupplier?: ProductSupplierDto;
-
   @Field(() => ProductSupplierDto, {
     description: 'product Supplier',
     nullable: true,
   })
   @IsOptional()
-  set supplier(value) {
-    this.prSupplier = value as any;
-  }
-
-  get supplier() {
-    if (!this.prSupplier) return undefined;
-
-    return { id: { type: this.prSupplier.type, code: this.prSupplier.code } };
-  }
+  supplier?: ProductSupplierDto;
 }

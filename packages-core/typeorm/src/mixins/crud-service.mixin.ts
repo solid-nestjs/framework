@@ -220,6 +220,9 @@ export function CrudServiceFrom<
 
       const entity = repository.create(createInput);
 
+      if (createInput.id && typeof createInput.id === 'object')
+        entity.id = createInput.id;
+
       await eventHandler.beforeCreate(context, repository, entity, createInput);
 
       if (autoIncrementKey)
@@ -273,8 +276,8 @@ export function CrudServiceFrom<
         val = (
           await repository
             .createQueryBuilder('tt')
-            .where({ id: id })
-            .select(`MAX(tt.id.${autoincrementKey})`, 'max')
+            .where(id as any)
+            .select(`MAX(tt.${autoincrementKey})`, 'max')
             .getRawOne<{ max: number }>()
         )?.max;
       }

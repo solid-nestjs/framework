@@ -40,7 +40,7 @@ import {
 } from '../interfaces';
 import { getEntityRelationsExtended } from './entity-relations.helper';
 import { isColumnEmbedded } from './embedded-entity.helper';
-import { getEntityColumns } from './columns.helper';
+import { getEntityColumns, getEntityPrimaryColumns } from './columns.helper';
 
 const conditions = {
   _eq: value => value,
@@ -235,16 +235,12 @@ export class QueryBuilderHelper<
       getMainAliasFromConfig(this.defaultOptions?.relationsConfig) ??
       this.entityType.name.toLowerCase();
 
-    const isEmbedded = isColumnEmbedded(this.entityType, 'id');
+    const primaryColumns = [
+      ...getEntityPrimaryColumns(this.entityType),
+      ...getEntityPrimaryColumns(this.idType),
+    ];
 
-    //If not and embedded (composite key)
-    if (!isEmbedded) return qb.select(mainAlias + '.id');
-
-    const embeddedColumns = getEntityColumns(this.idType);
-
-    const compositeKey = embeddedColumns.map(
-      column => mainAlias + '.id.' + column,
-    );
+    const compositeKey = primaryColumns.map(column => mainAlias + '.' + column);
 
     return qb.select(compositeKey);
   }

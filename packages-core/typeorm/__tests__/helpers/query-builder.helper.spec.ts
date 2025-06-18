@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { QueryBuilderHelper } from '../../src/helpers/query-builder.helper';
 import { getEntityRelationsExtended } from '../../src/helpers/entity-relations.helper';
+import { getEntityPrimaryColumns } from '../../src/helpers/columns.helper';
 import {
   Entity,
   FindArgs,
@@ -33,6 +34,7 @@ import {
 
 // Mock dependencies
 jest.mock('../../src/helpers/entity-relations.helper');
+jest.mock('../../src/helpers/columns.helper');
 
 // Test entity interface
 interface TestEntity extends Entity<string> {
@@ -167,6 +169,14 @@ describe('QueryBuilderHelper', () => {
     (getEntityRelationsExtended as jest.Mock).mockReturnValue(
       mockRelationsInfo,
     );
+
+    // Setup columns helper mock
+    (getEntityPrimaryColumns as jest.Mock).mockImplementation(entityClass => {
+      if (entityClass === TestEntityClass) {
+        return ['id'];
+      }
+      return []; // For other entity classes like String, return empty array
+    });
 
     // Create helper instance
     helper = new QueryBuilderHelper(TestEntityClass, String as any);
@@ -371,7 +381,7 @@ describe('QueryBuilderHelper', () => {
       );
 
       expect(result).toBe(queryBuilder);
-      expect(queryBuilder.select).toHaveBeenCalledWith('testentityclass.id');
+      expect(queryBuilder.select).toHaveBeenCalledWith(['testentityclass.id']);
     });
 
     it('should return false when no multiplying relations are found in query', () => {
