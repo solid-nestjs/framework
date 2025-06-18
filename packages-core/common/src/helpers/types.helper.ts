@@ -21,6 +21,27 @@ export function getTypeName(type: string | Function): string {
 }
 
 /**
+ * Returns the constructor function if the provided type is a function (class or constructor),
+ * or `undefined` if the type is a string. Throws an error if the input is neither a string nor a function.
+ *
+ * @param type - The type to evaluate, which can be a string or a constructor function.
+ * @returns The constructor function if `type` is a function, otherwise `undefined`.
+ * @throws {Error} If `type` is neither a string nor a constructor function.
+ */
+export function getTypeClass(type: string | Function): Constructor | undefined {
+  if (typeof type === 'string') {
+    return undefined;
+  }
+
+  // Handle constructor functions/classes
+  if (typeof type === 'function') {
+    return type as Constructor;
+  }
+
+  throw new Error('Type must be a string or a constructor function');
+}
+
+/**
  * Retrieves the design type metadata of a specified property from a class constructor.
  *
  * @param constructor - The class constructor from which to retrieve the property type.

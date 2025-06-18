@@ -1,7 +1,7 @@
 import { EntityMetadata, ObjectLiteral } from 'typeorm';
 import { RelationType } from 'typeorm/metadata/types/RelationTypes';
 import { Repository } from 'typeorm';
-import { getTypeName } from '@solid-nestjs/common';
+import { getTypeClass, getTypeName } from '@solid-nestjs/common';
 import { ExtendedRelationInfo, RelationInfo } from '../interfaces';
 
 function getAggregatedCardinality(
@@ -48,6 +48,7 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(
   metadata.relations.forEach(relation => {
     // Get target type name
     const targetType = getTypeName(relation.type);
+    const targetClass = getTypeClass(relation.type);
 
     // Changed pathKey to include property name
     const pathKey = `${metadata.name}.${relation.propertyName}->${targetType}`;
@@ -59,6 +60,7 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(
         relationType: relation.relationType,
         aggregatedCardinality: relation.relationType,
         target: targetType,
+        targetClass: targetClass,
         isNullable: relation.isNullable,
         isCascade:
           relation.isCascadeInsert ||
@@ -138,6 +140,7 @@ export function getEntityRelationsExtended<T extends ObjectLiteral>(
             relationType: extendedRelation.relationType,
             aggregatedCardinality: newCardinality,
             target: getTypeName(extendedRelation.type),
+            targetClass: getTypeClass(extendedRelation.type),
             isNullable: relation.isNullable || extendedRelation.isNullable,
             isCascade:
               relation.isCascadeInsert ||
@@ -186,6 +189,7 @@ export function getEntityRelations<T extends ObjectLiteral>(
     propertyName: relation.propertyName,
     relationType: relation.relationType,
     target: getTypeName(relation.type),
+    targetClass: getTypeClass(relation.type),
     isNullable: relation.isNullable,
     isCascade:
       relation.isCascadeInsert ||

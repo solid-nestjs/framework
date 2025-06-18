@@ -17,12 +17,14 @@ import {
 } from '@nestjs/common';
 import { QueryBuilderHelper } from '../../src/helpers/query-builder.helper';
 import { getEntityRelationsExtended } from '../../src/helpers/entity-relations.helper';
+import { getEntityPrimaryColumns } from '../../src/helpers/columns.helper';
 import {
   Entity,
   FindArgs,
   OrderBy,
   Where,
   OrderByTypes,
+  Constructable,
 } from '@solid-nestjs/common';
 import {
   DataRetrievalOptions,
@@ -32,6 +34,7 @@ import {
 
 // Mock dependencies
 jest.mock('../../src/helpers/entity-relations.helper');
+jest.mock('../../src/helpers/columns.helper');
 
 // Test entity interface
 interface TestEntity extends Entity<string> {
@@ -167,8 +170,16 @@ describe('QueryBuilderHelper', () => {
       mockRelationsInfo,
     );
 
+    // Setup columns helper mock
+    (getEntityPrimaryColumns as jest.Mock).mockImplementation(entityClass => {
+      if (entityClass === TestEntityClass) {
+        return ['id'];
+      }
+      return []; // For other entity classes like String, return empty array
+    });
+
     // Create helper instance
-    helper = new QueryBuilderHelper(TestEntityClass);
+    helper = new QueryBuilderHelper(TestEntityClass, String as any);
   });
 
   describe('constructor', () => {
@@ -186,6 +197,7 @@ describe('QueryBuilderHelper', () => {
 
       const helperWithOptions = new QueryBuilderHelper(
         TestEntityClass,
+        String as any,
         defaultOptions,
       );
       expect(helperWithOptions).toBeInstanceOf(QueryBuilderHelper);
@@ -369,7 +381,7 @@ describe('QueryBuilderHelper', () => {
       );
 
       expect(result).toBe(queryBuilder);
-      expect(queryBuilder.select).toHaveBeenCalledWith('testentityclass.id');
+      expect(queryBuilder.select).toHaveBeenCalledWith(['testentityclass.id']);
     });
 
     it('should return false when no multiplying relations are found in query', () => {
@@ -1131,10 +1143,9 @@ describe('QueryBuilderHelper', () => {
             relationInfo: { aggregatedCardinality: 'one-to-one' },
           });
 
-        const result = (helper as any).addRelationForConditionOrSorting(
-          context,
-          'profile',
-        );
+        const { alias: result } = (
+          helper as any
+        ).addRelationForConditionOrSorting(context, 'profile');
 
         expect(addRelationSpy).toHaveBeenCalledWith(
           context,
@@ -1193,7 +1204,7 @@ describe('QueryBuilderHelper', () => {
       it('should create relation condition with updated context', () => {
         const addRelationSpy = jest
           .spyOn(helper as any, 'addRelationForConditionOrSorting')
-          .mockReturnValue('profile_alias');
+          .mockReturnValue({ alias: 'profile_alias' });
         const getWhereConditionSpy = jest
           .spyOn(helper as any, 'getWhereCondition')
           .mockReturnValue('mock_condition');

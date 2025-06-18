@@ -21,10 +21,12 @@ import {
   Entity,
   FindArgs,
   getPaginationArgs,
+  getPropertyType,
   IdTypeFrom,
   If,
   NotNullableIf,
   PaginationResult,
+  removeNullish,
   Where,
 } from '@solid-nestjs/common';
 import {
@@ -79,6 +81,9 @@ export function DataServiceFrom<
 ): Type<DataService<IdType, EntityType, FindArgsType, ContextType>> {
   const { entityType, lockMode, relationsConfig } = serviceStructure;
 
+  const idType =
+    serviceStructure.entityId?.type ?? getPropertyType(entityType, 'id');
+
   const findAllStruct = serviceStructure.functions?.findAll;
   const findOneStruct = serviceStructure.functions?.findOne;
   const paginationStruct = serviceStructure.functions?.pagination;
@@ -103,7 +108,7 @@ export function DataServiceFrom<
     private readonly _queryBuilderHelper: QueryBuilderHelper<
       IdType,
       EntityType
-    > = new QueryBuilderHelper<IdType, EntityType>(entityType, {
+    > = new QueryBuilderHelper<IdType, EntityType>(entityType, idType, {
       lockMode,
       relationsConfig,
     });
@@ -199,11 +204,13 @@ export function DataServiceFrom<
         const ids = await paginatedQueryBuilder.getMany();
 
         if (ids.length > 0) {
+          const _ids = removeNullish(ids);
+
           const queryBuilder = this.getQueryBuilder(
             context,
             { ...args, pagination: undefined } as FindArgsType,
             options,
-          ).andWhereInIds(ids);
+          ).andWhereInIds(_ids);
           data = await queryBuilder.getMany();
         } else data = [];
       } else {
@@ -285,12 +292,9 @@ export function DataServiceFrom<
       orFail?: TBool,
       options?: DataRetrievalOptions<EntityType>,
     ): Promise<NotNullableIf<TBool, EntityType>> {
-      let entity = await this.findOneBy(
-        context,
-        { id: id as any },
-        false,
-        options,
-      );
+      const _id = typeof id === 'object' ? id : { id: id as any };
+
+      let entity = await this.findOneBy(context, _id as any, false, options);
 
       if (entity) return entity;
 

@@ -21,9 +21,11 @@ import {
 } from '@nestjs/common';
 import {
   Constructable,
+  Constructor,
   Entity,
   FindArgs,
   getPaginationArgs,
+  getPropertyType,
   IdTypeFrom,
   OrderBy,
   Where,
@@ -37,6 +39,8 @@ import {
   getRelationsFromConfig,
 } from '../interfaces';
 import { getEntityRelationsExtended } from './entity-relations.helper';
+import { isColumnEmbedded } from './embedded-entity.helper';
+import { getEntityColumns, getEntityPrimaryColumns } from './columns.helper';
 
 const conditions = {
   _eq: value => value,
@@ -88,6 +92,7 @@ interface QueryContext<EntityType extends ObjectLiteral> {
 interface RecursiveContext<EntityType extends ObjectLiteral>
   extends QueryContext<EntityType> {
   alias: string;
+  entityType?: Constructable | undefined;
   recusirveDepth: number;
 }
 
@@ -134,6 +139,7 @@ export class QueryBuilderHelper<
 > {
   constructor(
     private readonly entityType: Constructable<EntityType>,
+    private readonly idType: Constructable<IdType>,
     private readonly defaultOptions?: QueryBuilderConfig<EntityType>,
   ) {}
 
@@ -229,7 +235,14 @@ export class QueryBuilderHelper<
       getMainAliasFromConfig(this.defaultOptions?.relationsConfig) ??
       this.entityType.name.toLowerCase();
 
-    return qb.select(mainAlias + '.id');
+    const primaryColumns = [
+      ...getEntityPrimaryColumns(this.entityType),
+      ...getEntityPrimaryColumns(this.idType),
+    ];
+
+    const compositeKey = primaryColumns.map(column => mainAlias + '.' + column);
+
+    return qb.select(compositeKey);
   }
 
   protected implGetQueryBuilder(
@@ -459,6 +472,7 @@ export class QueryBuilderHelper<
       const whereContext = {
         ...queryContext,
         alias: queryBuilder.alias,
+        entityType: this.entityType,
         recusirveDepth: 0,
         constructField: (fieldName, value) => {
           return { [fieldName]: value };
@@ -469,7 +483,12 @@ export class QueryBuilderHelper<
 
     if (args.orderBy)
       this.applyOrderBy(
-        { ...queryContext, alias: queryBuilder.alias, recusirveDepth: 0 },
+        {
+          ...queryContext,
+          alias: queryBuilder.alias,
+          entityType: this.entityType,
+          recusirveDepth: 0,
+        },
         args.orderBy,
       );
 
@@ -517,18 +536,28 @@ export class QueryBuilderHelper<
           if (typeof value !== 'object') {
             queryBuilder.addOrderBy(alias + '.' + key, value);
           } else {
-            const alias = this.addRelationForConditionOrSorting(
-              queryContext,
-              key,
-            );
-            this.applyOrderBy(
-              {
-                ...queryContext,
-                alias,
-                recusirveDepth: queryContext.recusirveDepth + 1,
-              },
-              value,
-            );
+            if (this.hasEmbeddedProperty(queryContext.entityType, key)) {
+              this.applyOrderBy(
+                {
+                  ...queryContext,
+                  alias: alias + '.' + key,
+                  recusirveDepth: queryContext.recusirveDepth + 1,
+                },
+                value,
+              );
+            } else {
+              const { alias, relationInfo } =
+                this.addRelationForConditionOrSorting(queryContext, key);
+              this.applyOrderBy(
+                {
+                  ...queryContext,
+                  alias,
+                  entityType: relationInfo?.targetClass,
+                  recusirveDepth: queryContext.recusirveDepth + 1,
+                },
+                value,
+              );
+            }
           }
         }
       });
@@ -575,7 +604,11 @@ export class QueryBuilderHelper<
           orConditions.push(...this.getComplexConditions(whereContext, value));
           break;
         default:
-          if (this.hasFieldConditions(key, value))
+          if (this.hasEmbeddedProperty(whereContext.entityType, key))
+            andConditions.push(
+              this.embeddedCondition(whereContext, key, value),
+            );
+          else if (this.hasFieldConditions(key, value))
             andConditions.push(
               this.getFieldConditions(whereContext, key, value),
             );
@@ -610,6 +643,55 @@ export class QueryBuilderHelper<
   }
 
   /**
+   * Determines whether the specified key on the given entity type refers to an embedded column.
+   *
+   * @param entityType - The constructor of the entity or `undefined`.
+   * @param key - The property key to check for embedded conditions.
+   * @returns `true` if the key corresponds to an embedded column; otherwise, `false`.
+   */
+  protected hasEmbeddedProperty(
+    entityType: Constructor | undefined,
+    key: string,
+  ): boolean {
+    if (!entityType) return false;
+
+    return isColumnEmbedded(entityType, key);
+  }
+
+  /**
+   * Handles the construction of a where condition for embedded entities within a query.
+   *
+   * This method creates a new `constructField` function that nests the provided `xfieldName`
+   * and value under the specified `fieldName`, allowing for proper handling of embedded fields.
+   * It then delegates to `getWhereCondition` with the updated context and condition.
+   *
+   * @param whereContext - The current context for building the where clause, including field construction logic.
+   * @param fieldName - The name of the embedded field to apply the condition to.
+   * @param condition - The condition object to apply to the embedded field.
+   * @returns The constructed where condition for the embedded entity.
+   */
+  protected embeddedCondition(
+    whereContext: WhereContext<EntityType>,
+    fieldName: string,
+    condition: any,
+  ) {
+    const oldConstructField = whereContext.constructField;
+
+    const constructField = (xfieldName, value) => {
+      return oldConstructField(fieldName, { [xfieldName]: value });
+    };
+
+    return this.getWhereCondition(
+      {
+        ...whereContext,
+        constructField,
+        recusirveDepth: whereContext.recusirveDepth + 1,
+      },
+      condition,
+    );
+  }
+
+  /**
    * Builds a where condition for a related entity field within a query context.
    *
    * This method updates the query context to include the necessary relation alias,
@@ -618,15 +700,15 @@ export class QueryBuilderHelper<
    *
    * @param whereContext - The current context of the where clause, including alias and field construction logic.
    * @param fieldName - The name of the related entity field to apply the condition on.
-   * @param condition - The where condition to apply to the related entity.
+   * @param condition - The condition to apply to the related entity.
    * @returns The constructed where condition for the related entity.
    */
   protected relationCondition(
     whereContext: WhereContext<EntityType>,
     fieldName: string,
-    condition: Where<EntityType>,
+    condition: any,
   ) {
-    const alias: string = this.addRelationForConditionOrSorting(
+    const { alias, relationInfo } = this.addRelationForConditionOrSorting(
       whereContext,
       fieldName,
     );
@@ -641,6 +723,7 @@ export class QueryBuilderHelper<
       {
         ...whereContext,
         alias,
+        entityType: relationInfo?.targetClass,
         constructField,
         recusirveDepth: whereContext.recusirveDepth + 1,
       },
@@ -663,7 +746,7 @@ export class QueryBuilderHelper<
   protected addRelationForConditionOrSorting(
     context: RecursiveContext<EntityType>,
     fieldName: string,
-  ): string {
+  ): Relation {
     const property = context.alias + '.' + fieldName;
 
     const relation = this.addRelation(context, property);
@@ -689,7 +772,7 @@ export class QueryBuilderHelper<
         },
       );
 
-    return relation.alias;
+    return relation;
   }
 
   /**

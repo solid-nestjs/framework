@@ -31,7 +31,7 @@ import {
 } from '../interfaces';
 import { hasDeleteDateColumn } from '../helpers';
 import { DataServiceFrom } from './data-service.mixin';
-import { Transactional } from '../decorators';
+import { getAutoIncrementKey, Transactional } from '../decorators';
 import { TypeOrmRepository } from '../types';
 
 /**
@@ -193,6 +193,8 @@ export function CrudServiceFrom<
   if (bulkRecoverStruct?.decorators)
     bulkRecoverDecorators.push(...bulkRecoverStruct.decorators);
 
+  const autoIncrementKey = getAutoIncrementKey(entityType);
+
   @Injectable()
   class CrudServiceClass
     extends DataServiceFrom(serviceStructure)
@@ -218,7 +220,18 @@ export function CrudServiceFrom<
 
       const entity = repository.create(createInput);
 
+      if (createInput.id && typeof createInput.id === 'object')
+        entity.id = createInput.id;
+
       await eventHandler.beforeCreate(context, repository, entity, createInput);
+
+      if (autoIncrementKey)
+        entity.id = await this.autoIncrement(
+          context,
+          repository,
+          entity.id as IdType,
+          autoIncrementKey,
+        );
 
       const responseEntity = await repository.save(entity);
 
@@ -242,6 +255,38 @@ export function CrudServiceFrom<
       return responseEntity;
     }
 
+    async autoIncrement(
+      context: ContextType,
+      repository: Repository<EntityType>,
+      id: IdType,
+      autoincrementKey: string,
+    ): Promise<IdType> {
+      let val: number | undefined;
+
+      if (typeof id !== 'object') {
+        val = (
+          await repository
+            .createQueryBuilder('tt')
+            .select(`MAX(tt.id)`, 'max')
+            .getRawOne<{ max: number }>()
+        )?.max;
+      } else {
+        if (id) delete id[autoincrementKey];
+
+        val = (
+          await repository
+            .createQueryBuilder('tt')
+            .where(id as any)
+            .select(`MAX(tt.${autoincrementKey})`, 'max')
+            .getRawOne<{ max: number }>()
+        )?.max;
+      }
+
+      id[autoincrementKey] = (val ?? 0) + 1;
+
+      return id;
+    }
+
     @applyMethodDecorators(bulkInsertDecorators)
     async bulkInsert(
       context: ContextType,
@@ -263,6 +308,8 @@ export function CrudServiceFrom<
         entities,
         createInputs,
       );
+
+      //TODO: autoIncrement support in bulkInsert
 
       // Perform true bulk insert using query builder - single DB operation
       const insertResult = await repository
