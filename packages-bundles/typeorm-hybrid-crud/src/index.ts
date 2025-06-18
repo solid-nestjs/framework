@@ -52,6 +52,7 @@ export {
   DataServiceStructureEx,
   CrudServiceStructureEx,
   Transactional,
+  AutoIncrement,
 } from '@solid-nestjs/typeorm';
 
 //Interfaces
