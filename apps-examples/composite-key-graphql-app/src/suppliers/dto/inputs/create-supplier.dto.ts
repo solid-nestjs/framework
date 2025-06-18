@@ -1,6 +1,7 @@
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, ID, InputType } from '@nestjs/graphql';
 
+/*
 @InputType()
 export class SupplierIdDto {
   @Field({ description: 'The type of the product' })
@@ -8,12 +9,22 @@ export class SupplierIdDto {
   @IsString()
   type: string;
 }
+*/
 
 @InputType()
 export class CreateSupplierDto {
-  @Field(() => SupplierIdDto, { description: 'id of the product' })
+  @Field(() => ID, { description: 'The type of the product' })
   @IsNotEmpty()
-  id: SupplierIdDto;
+  @IsString()
+  type: string;
+
+  get id() {
+    return { type: this.type };
+  }
+
+  // @Field(() => SupplierIdDto, { description: 'id of the product' })
+  // @IsNotEmpty()
+  // id: SupplierIdDto;
 
   @Field({ description: 'The name of the supplier' })
   @IsNotEmpty()

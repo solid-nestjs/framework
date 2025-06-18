@@ -23,6 +23,7 @@ import {
   OrderBy,
   Where,
   OrderByTypes,
+  Constructable,
 } from '@solid-nestjs/common';
 import {
   DataRetrievalOptions,
@@ -168,7 +169,7 @@ describe('QueryBuilderHelper', () => {
     );
 
     // Create helper instance
-    helper = new QueryBuilderHelper(TestEntityClass);
+    helper = new QueryBuilderHelper(TestEntityClass, String as any);
   });
 
   describe('constructor', () => {
@@ -186,6 +187,7 @@ describe('QueryBuilderHelper', () => {
 
       const helperWithOptions = new QueryBuilderHelper(
         TestEntityClass,
+        String as any,
         defaultOptions,
       );
       expect(helperWithOptions).toBeInstanceOf(QueryBuilderHelper);

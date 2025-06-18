@@ -25,6 +25,7 @@ import {
   Entity,
   FindArgs,
   getPaginationArgs,
+  getPropertyType,
   IdTypeFrom,
   OrderBy,
   Where,
@@ -39,6 +40,7 @@ import {
 } from '../interfaces';
 import { getEntityRelationsExtended } from './entity-relations.helper';
 import { isColumnEmbedded } from './embedded-entity.helper';
+import { getEntityColumns } from './columns.helper';
 
 const conditions = {
   _eq: value => value,
@@ -137,6 +139,7 @@ export class QueryBuilderHelper<
 > {
   constructor(
     private readonly entityType: Constructable<EntityType>,
+    private readonly idType: Constructable<IdType>,
     private readonly defaultOptions?: QueryBuilderConfig<EntityType>,
   ) {}
 
@@ -232,7 +235,18 @@ export class QueryBuilderHelper<
       getMainAliasFromConfig(this.defaultOptions?.relationsConfig) ??
       this.entityType.name.toLowerCase();
 
-    return qb.select(mainAlias + '.id');
+    const isEmbedded = isColumnEmbedded(this.entityType, 'id');
+
+    //If not and embedded (composite key)
+    if (!isEmbedded) return qb.select(mainAlias + '.id');
+
+    const embeddedColumns = getEntityColumns(this.idType);
+
+    const compositeKey = embeddedColumns.map(
+      column => mainAlias + '.id.' + column,
+    );
+
+    return qb.select(compositeKey);
   }
 
   protected implGetQueryBuilder(

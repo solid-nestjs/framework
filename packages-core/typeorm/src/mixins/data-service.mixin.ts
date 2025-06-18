@@ -21,6 +21,7 @@ import {
   Entity,
   FindArgs,
   getPaginationArgs,
+  getPropertyType,
   IdTypeFrom,
   If,
   NotNullableIf,
@@ -79,6 +80,9 @@ export function DataServiceFrom<
 ): Type<DataService<IdType, EntityType, FindArgsType, ContextType>> {
   const { entityType, lockMode, relationsConfig } = serviceStructure;
 
+  const idType =
+    serviceStructure.entityId?.type ?? getPropertyType(entityType, 'id');
+
   const findAllStruct = serviceStructure.functions?.findAll;
   const findOneStruct = serviceStructure.functions?.findOne;
   const paginationStruct = serviceStructure.functions?.pagination;
@@ -103,7 +107,7 @@ export function DataServiceFrom<
     private readonly _queryBuilderHelper: QueryBuilderHelper<
       IdType,
       EntityType
-    > = new QueryBuilderHelper<IdType, EntityType>(entityType, {
+    > = new QueryBuilderHelper<IdType, EntityType>(entityType, idType, {
       lockMode,
       relationsConfig,
     });

@@ -10,17 +10,30 @@ import {
   IsOptional,
 } from 'class-validator';
 import { SupplierId } from '../../../suppliers/entities/supplier.key';
+import { Code } from 'typeorm';
 
 @InputType()
 export class ProductSupplierDto {
-  @Field(() => SupplierId)
+  // @Field(() => SupplierId)
+  // @IsNotEmpty()
+  // id: SupplierId;
+
+  @Field(() => ID, {
+    description: 'The type of the unique identifier of the supplier',
+  })
   @IsNotEmpty()
-  id: SupplierId;
+  type: string;
+
+  @Field(() => ID, {
+    description: 'The code of the unique identifier of the supplier',
+  })
+  @IsNotEmpty()
+  code: number;
 }
 
 @InputType()
 export class ProductIdDto {
-  @Field({ description: 'The type of the product' })
+  @Field(() => ID, { description: 'The type of the product' })
   @IsNotEmpty()
   @IsString()
   type: string;
@@ -57,5 +70,11 @@ export class CreateProductDto {
     nullable: true,
   })
   @IsOptional()
-  supplier: ProductSupplierDto;
+  prSupplier: ProductSupplierDto;
+
+  get supplier() {
+    if (!this.prSupplier) return undefined;
+
+    return { id: { type: this.prSupplier.type, code: this.prSupplier.code } };
+  }
 }

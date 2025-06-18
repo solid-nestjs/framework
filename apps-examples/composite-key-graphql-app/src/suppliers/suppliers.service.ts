@@ -4,6 +4,7 @@ import {
 } from '@solid-nestjs/typeorm-graphql-crud';
 import { Supplier } from './entities/supplier.entity';
 import { CreateSupplierDto, FindSupplierArgs, UpdateSupplierDto } from './dto';
+import { SupplierId } from './entities/supplier.key';
 
 export const serviceStructure = CrudServiceStructure({
   entityType: Supplier,
@@ -25,6 +26,9 @@ export const serviceStructure = CrudServiceStructure({
         products: true,
       },
     },
+  },
+  entityId: {
+    type: SupplierId,
   },
 });
 

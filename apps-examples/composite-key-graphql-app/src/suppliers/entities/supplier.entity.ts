@@ -1,5 +1,5 @@
 import { Column, Entity, OneToMany } from 'typeorm';
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Product } from '../../products/entities/product.entity';
 import { SupplierId } from './supplier.key';
 import { AutoIncrement } from '@solid-nestjs/typeorm-graphql-crud';
@@ -8,9 +8,23 @@ import { AutoIncrement } from '@solid-nestjs/typeorm-graphql-crud';
 @Entity()
 @AutoIncrement<SupplierId>('code')
 export class Supplier {
-  @Field(() => SupplierId, { description: 'The id of the supplier' })
+  //@Field(() => SupplierId, { description: 'The id of the supplier' })
   @Column(() => SupplierId, { prefix: '' })
   id: SupplierId;
+
+  @Field(() => ID, {
+    description: 'The type of the unique identifier of the supplier',
+  })
+  get type() {
+    return this.id.type;
+  }
+
+  @Field(() => ID, {
+    description: 'The code of the unique identifier of the supplier',
+  })
+  get code() {
+    return this.id.code;
+  }
 
   @Field({ description: 'The name of the supplier' })
   @Column()
