@@ -65,12 +65,17 @@ export class CreateProductDto {
   @Min(0)
   stock: number;
 
+  @IsOptional()
+  prSupplier?: ProductSupplierDto;
+
   @Field(() => ProductSupplierDto, {
     description: 'product Supplier',
     nullable: true,
   })
   @IsOptional()
-  prSupplier: ProductSupplierDto;
+  set supplier(value) {
+    this.prSupplier = value as any;
+  }
 
   get supplier() {
     if (!this.prSupplier) return undefined;
