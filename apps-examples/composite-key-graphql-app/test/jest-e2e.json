@@ -1,0 +1,29 @@
+{
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(ts|tsx)$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "target": "ES2021",
+          "module": "CommonJS",
+          "esModuleInterop": true,
+          "allowSyntheticDefaultImports": true,
+          "strict": false,
+          "skipLibCheck": true
+        }
+      }
+    ]
+  },
+  "setupFilesAfterEnv": ["<rootDir>/jest-e2e.setup.js"],
+  "testTimeout": 60000,
+  "forceExit": true,
+  "detectOpenHandles": true,
+  "maxWorkers": 1
+}
