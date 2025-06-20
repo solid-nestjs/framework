@@ -14,7 +14,7 @@ export const serviceStructure = CrudServiceStructure({
   entityType: Invoice,
   createInputType: CreateInvoiceDto,
   updateInputType: UpdateInvoiceDto,
-  // findArgsType: FindInvoiceArgs,
+  findArgsType: FindInvoiceArgs,
   relationsConfig: {
     client: true,
     details: {
