@@ -9,6 +9,7 @@ packages-bundles/**/build
 apps-examples/**/dist
 apps-examples/**/node_modules
 apps-examples/**/build
+apps-debug
 
 # database-data
 database-data
