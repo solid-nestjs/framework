@@ -594,7 +594,7 @@ export class QueryBuilderHelper<
     keys.forEach(key => {
       const value = where[key];
 
-      if (!value) return;
+      if (value === null || value === undefined) return;
 
       switch (key) {
         case '_and':
