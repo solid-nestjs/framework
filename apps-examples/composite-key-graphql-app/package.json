@@ -1,6 +1,6 @@
 {
   "name": "composite-key-graphql-app",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Complete GraphQL CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, auto-generated resolvers, and Apollo GraphQL Playground",
   "author": "SOLID NestJS Framework",
   "private": true,
@@ -27,7 +27,7 @@
     "@nestjs/graphql": "^13.1.0",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
-    "@solid-nestjs/typeorm-graphql-crud": "^0.2.6",
+    "@solid-nestjs/typeorm-graphql-crud": "^0.2.7",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "graphql": "^16.11.0",

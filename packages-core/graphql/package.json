@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/graphql",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "solid-nestjs GraphQL utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
