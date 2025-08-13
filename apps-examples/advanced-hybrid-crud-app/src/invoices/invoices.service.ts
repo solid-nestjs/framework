@@ -18,7 +18,9 @@ export const serviceStructure = CrudServiceStructure({
   relationsConfig: {
     client: true,
     details: {
-      product: true,
+      product: {
+        supplier: true,
+      },
     },
   },
 });

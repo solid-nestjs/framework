@@ -9,18 +9,15 @@ import {
   OrderByTypes,
   StringFilter,
   Where,
-  DateFilter,
   getWhereClass,
 } from '@solid-nestjs/typeorm-hybrid-crud';
-import { Invoice } from '../../entities/invoice.entity';
-import { FindClientArgs } from '../../../clients/dto';
-import { FindInvoiceDetailArgs } from './find-invoice-detail-args.dto';
+import { InvoiceDetail } from '../../entities/invoice-detail.entity';
+import { FindProductArgs } from '../../../products/dto';
 
-const ClientWhere = getWhereClass(FindClientArgs);
-const InvoiceDetailWhere = getWhereClass(FindInvoiceDetailArgs);
+const ProductWhere = getWhereClass(FindProductArgs);
 
 @InputType({ isAbstract: true })
-class FindInvoiceWhere implements Where<Invoice> {
+class FindInvoiceDetailWhere implements Where<InvoiceDetail> {
   @Field(() => NumberFilter, { nullable: true })
   @ApiProperty({ type: () => NumberFilter, required: false })
   @Type(() => NumberFilter)
@@ -28,10 +25,19 @@ class FindInvoiceWhere implements Where<Invoice> {
   @ValidateNested()
   id?: NumberFilter | undefined;
 
-  @Field(() => String, { nullable: true })
-  @ApiProperty({ type: () => String, required: false })
+  @Field(() => NumberFilter, { nullable: true })
+  @ApiProperty({ type: () => NumberFilter, required: false })
+  @Type(() => NumberFilter)
   @IsOptional()
-  invoiceNumber?: string | string[] | StringFilter | undefined;
+  @ValidateNested()
+  quantity?: NumberFilter | undefined;
+
+  @Field(() => NumberFilter, { nullable: true })
+  @ApiProperty({ type: () => NumberFilter, required: false })
+  @Type(() => NumberFilter)
+  @IsOptional()
+  @ValidateNested()
+  unitPrice?: NumberFilter | undefined;
 
   @Field(() => NumberFilter, { nullable: true })
   @ApiProperty({ type: () => NumberFilter, required: false })
@@ -43,32 +49,18 @@ class FindInvoiceWhere implements Where<Invoice> {
   @Field(() => String, { nullable: true })
   @ApiProperty({ type: () => String, required: false })
   @IsOptional()
-  status?: string | string[] | StringFilter | undefined;
+  productId?: string | string[] | StringFilter | undefined;
 
-  @Field(() => DateFilter, { nullable: true })
-  @ApiProperty({ type: () => DateFilter, required: false })
-  @Type(() => DateFilter)
+  @Field(() => ProductWhere, { nullable: true })
+  @ApiProperty({ type: () => ProductWhere, required: false })
+  @Type(() => ProductWhere)
   @IsOptional()
   @ValidateNested()
-  invoiceDate?: DateFilter | undefined;
-
-  @Field(() => ClientWhere, { nullable: true })
-  @ApiProperty({ type: () => ClientWhere, required: false })
-  @Type(() => ClientWhere)
-  @IsOptional()
-  @ValidateNested()
-  client?: InstanceType<typeof ClientWhere> | undefined;
-
-  @Field(() => InvoiceDetailWhere, { nullable: true })
-  @ApiProperty({ type: () => InvoiceDetailWhere, required: false })
-  @Type(() => InvoiceDetailWhere)
-  @IsOptional()
-  @ValidateNested()
-  details?: InstanceType<typeof InvoiceDetailWhere> | undefined;
+  product?: InstanceType<typeof ProductWhere> | undefined;
 }
 
 @InputType({ isAbstract: true })
-class FindInvoiceOrderBy implements OrderBy<Invoice> {
+class FindInvoiceDetailOrderBy implements OrderBy<InvoiceDetail> {
   @Field(() => OrderByTypes, { nullable: true })
   @ApiProperty({ enum: OrderByTypes, required: false })
   @IsOptional()
@@ -79,7 +71,13 @@ class FindInvoiceOrderBy implements OrderBy<Invoice> {
   @ApiProperty({ enum: OrderByTypes, required: false })
   @IsOptional()
   @IsEnum(OrderByTypes)
-  invoiceNumber?: OrderByTypes | undefined;
+  quantity?: OrderByTypes | undefined;
+
+  @Field(() => OrderByTypes, { nullable: true })
+  @ApiProperty({ enum: OrderByTypes, required: false })
+  @IsOptional()
+  @IsEnum(OrderByTypes)
+  unitPrice?: OrderByTypes | undefined;
 
   @Field(() => OrderByTypes, { nullable: true })
   @ApiProperty({ enum: OrderByTypes, required: false })
@@ -91,17 +89,11 @@ class FindInvoiceOrderBy implements OrderBy<Invoice> {
   @ApiProperty({ enum: OrderByTypes, required: false })
   @IsOptional()
   @IsEnum(OrderByTypes)
-  status?: OrderByTypes | undefined;
-
-  @Field(() => OrderByTypes, { nullable: true })
-  @ApiProperty({ enum: OrderByTypes, required: false })
-  @IsOptional()
-  @IsEnum(OrderByTypes)
-  invoiceDate?: OrderByTypes | undefined;
+  productId?: OrderByTypes | undefined;
 }
 
 @ArgsType()
-export class FindInvoiceArgs extends FindArgsFrom<Invoice>({
-  whereType: FindInvoiceWhere,
-  orderByType: FindInvoiceOrderBy,
+export class FindInvoiceDetailArgs extends FindArgsFrom<InvoiceDetail>({
+  whereType: FindInvoiceDetailWhere,
+  orderByType: FindInvoiceDetailOrderBy,
 }) {}
