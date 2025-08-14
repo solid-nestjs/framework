@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm run test:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(Get-Date -Format \"yyyyMMddHHmm\")",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

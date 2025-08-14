@@ -284,3 +284,5 @@ The framework provides comprehensive soft deletion and bulk operation support:
 # Important in Planning and execution:
 
 - after planning always create a file in the 'tasks' folder with the following naming convention: "yyyyMMddhhmm - title", in that file you must add the summary of what was planned, and the task list to be executed (you must check them when they are finished).
+
+- the planning, tasks and documentation files must always be in english.

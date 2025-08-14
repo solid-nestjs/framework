@@ -29,10 +29,10 @@ import {
   IdTypeFrom,
   OrderBy,
   Where,
+  GroupByArgs,
   GroupBy,
   GroupByRequest,
   GroupResult,
-  GroupedPaginationResult,
   AggregateField,
   AggregateFunctionTypes,
 } from '@solid-nestjs/common';
@@ -1413,7 +1413,7 @@ export class QueryBuilderHelper<
    */
   getGroupedQueryBuilder(
     repository: Repository<EntityType>,
-    args: FindArgs<EntityType> & { groupBy: GroupByRequest<EntityType> },
+    args: GroupByArgs<EntityType>,
     options?: DataRetrievalOptions<EntityType>,
   ): SelectQueryBuilder<EntityType> {
     const queryBuilder = repository.createQueryBuilder(
@@ -1462,61 +1462,20 @@ export class QueryBuilderHelper<
   }
 
   /**
-   * Executes a grouped query and returns formatted results.
+   * Builds a grouped query without executing it.
+   * This method only constructs the QueryBuilder, leaving execution to the caller.
    *
    * @param repository - The TypeORM repository for the entity type.
    * @param args - Find arguments that include groupBy configuration.
    * @param options - Optional data retrieval options.
-   * @returns Promise resolving to grouped pagination results.
+   * @returns The configured QueryBuilder ready for execution.
    */
-  async executeGroupedQuery(
+  buildGroupedQuery(
     repository: Repository<EntityType>,
-    args: FindArgs<EntityType> & { groupBy: GroupByRequest<EntityType> },
+    args: GroupByArgs<EntityType>,
     options?: DataRetrievalOptions<EntityType>,
-  ): Promise<GroupedPaginationResult<EntityType>> {
-    const groupBy = args.groupBy;
-    const { skip, take } = getPaginationArgs(args.pagination ?? { page: 1, limit: 10 });
-    const page = args.pagination?.page ?? 1;
-    const limit = take;
-
-    // Build the main grouped query
-    const queryBuilder = this.getGroupedQueryBuilder(repository, args, options);
-
-    // Apply pagination to groups
-    queryBuilder.limit(take).offset(skip);
-
-    // Execute the query
-    const rawResults = await queryBuilder.getRawMany();
-
-    // Count total groups for pagination
-    const countQuery = this.getGroupedQueryBuilder(repository, args, options);
-    // For grouped queries, we need to count distinct groups, not total records
-    const totalGroupsResult = await countQuery.getRawMany();
-    const totalGroups = totalGroupsResult.length;
-
-    // Format results
-    const groups = this.formatGroupedResults(rawResults, groupBy);
-
-    // Calculate total items across all groups if needed
-    let totalItems = 0;
-    if (groupBy.aggregates?.some(agg => agg.function === AggregateFunctionTypes.COUNT)) {
-      totalItems = groups.reduce((sum, group) => {
-        const countField = groupBy.aggregates?.find(agg => agg.function === AggregateFunctionTypes.COUNT);
-        if (countField) {
-          const countAlias = countField.alias || `${countField.function}_${countField.field}`;
-          return sum + (group.aggregates[countAlias] || 0);
-        }
-        return sum;
-      }, 0);
-    }
-
-    return {
-      groups,
-      totalGroups,
-      page,
-      limit,
-      totalItems,
-    };
+  ): SelectQueryBuilder<EntityType> {
+    return this.getGroupedQueryBuilder(repository, args, options);
   }
 
   /**
@@ -1706,13 +1665,13 @@ export class QueryBuilderHelper<
 
   /**
    * Formats raw query results into grouped result structures.
+   * Made public to allow DataService to format results after execution.
    *
-   * @private
    * @param rawResults - Raw results from the database.
    * @param groupBy - The groupBy configuration used.
    * @returns Formatted group results.
    */
-  private formatGroupedResults(
+  formatGroupedResults(
     rawResults: any[],
     groupBy: GroupByRequest<EntityType>,
   ): GroupResult<EntityType>[] {

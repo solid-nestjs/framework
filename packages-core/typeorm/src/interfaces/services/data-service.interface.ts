@@ -10,6 +10,7 @@ import {
   PaginationResult,
   Where,
   DataService as CommonDataService,
+  GroupByArgs,
   GroupByRequest,
   GroupedPaginationResult,
 } from '@solid-nestjs/common';
@@ -423,7 +424,7 @@ export interface DataService<
    */
   findAllGrouped(
     context: ContextType,
-    args: FindArgsType & { groupBy: GroupByRequest<EntityType> },
+    args: GroupByArgs<EntityType>,
     options?: DataRetrievalOptions<EntityType>,
   ): Promise<GroupedPaginationResult<EntityType>>;
 

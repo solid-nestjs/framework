@@ -173,9 +173,15 @@ describe('GroupBy Functionality (e2e)', () => {
               aggregates
               count
             }
-            totalGroups
-            page
-            limit
+            pagination {
+              total
+              count
+              limit
+              page
+              pageCount
+              hasNextPage
+              hasPreviousPage
+            }
             totalItems
           }
         }
@@ -183,8 +189,13 @@ describe('GroupBy Functionality (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/graphql')
-        .send({ query: groupByQuery })
-        .expect(200);
+        .send({ query: groupByQuery });
+      
+      if (response.status !== 200) {
+        console.log('GraphQL Error:', JSON.stringify(response.body, null, 2));
+      }
+      
+      expect(response.status).toBe(200);
 
       // Verify the response structure
       expect(response.body.data.productsGrouped).toBeDefined();
@@ -210,9 +221,10 @@ describe('GroupBy Functionality (e2e)', () => {
       });
 
       // Verify pagination info
-      expect(response.body.data.productsGrouped.totalGroups).toBe(2);
-      expect(typeof response.body.data.productsGrouped.page).toBe('number');
-      expect(typeof response.body.data.productsGrouped.limit).toBe('number');
+      expect(response.body.data.productsGrouped.pagination).toBeDefined();
+      expect(response.body.data.productsGrouped.pagination.total).toBe(2);
+      expect(response.body.data.productsGrouped.pagination.page).toBe(1);
+      expect(response.body.data.productsGrouped.pagination.limit).toBe(10);
     });
 
     it('should handle empty results for grouped queries', async () => {
@@ -232,21 +244,29 @@ describe('GroupBy Functionality (e2e)', () => {
               aggregates
               count
             }
-            totalGroups
+            pagination {
+              total
+            }
           }
         }
       `;
 
       const response = await request(app.getHttpServer())
         .post('/graphql')
-        .send({ query: groupByQuery })
-        .expect(200);
+        .send({ query: groupByQuery });
+      
+      if (response.status !== 200) {
+        console.log('GraphQL Error:', JSON.stringify(response.body, null, 2));
+      }
+      
+      expect(response.status).toBe(200);
 
       expect(response.body.data.productsGrouped).toBeDefined();
       expect(response.body.data.productsGrouped.groups).toBeDefined();
       expect(Array.isArray(response.body.data.productsGrouped.groups)).toBe(true);
       expect(response.body.data.productsGrouped.groups.length).toBe(0);
-      expect(response.body.data.productsGrouped.totalGroups).toBe(0);
+      expect(response.body.data.productsGrouped.pagination).toBeDefined();
+      expect(response.body.data.productsGrouped.pagination.total).toBe(0);
     });
   });
 });
