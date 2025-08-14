@@ -3,12 +3,12 @@ import {
   CrudControllerStructure,
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { ProductsService, serviceStructure } from './products.service';
-import { GroupedProductArgsRest } from './dto';
+import { GroupedProductArgs } from './dto';
 
 const controllerStructure = CrudControllerStructure({
   ...serviceStructure,
   serviceType: ProductsService,
-  groupByArgsType: GroupedProductArgsRest,
+  groupByArgsType: GroupedProductArgs,
   operations: {
     findAll: true,
     findOne: true,

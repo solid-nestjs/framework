@@ -3,8 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ArgsType, Field, InputType } from '@nestjs/graphql';
 import { IsOptional, ValidateNested } from 'class-validator';
 import { GroupByArgs } from '@solid-nestjs/common';
-import { GroupByRequestInput } from '@solid-nestjs/rest-api';
-import { GroupByRequestInput as GraphQLGroupByRequestInput } from '@solid-nestjs/graphql';
+import { GroupByRequestInput } from '@solid-nestjs/rest-graphql';
 import { FindProductArgs } from './find-product-args.dto';
 import { Product } from '../../entities/product.entity';
 
@@ -86,25 +85,15 @@ export class ProductGroupByFields {
 }
 
 /**
- * Unified Product-specific GroupBy request for REST API
+ * Unified Product-specific GroupBy request (works with both REST and GraphQL)
  */
+@InputType('ProductGroupByInput')
 export class ProductGroupByRequest extends GroupByRequestInput {
   @ApiProperty({
     type: ProductGroupByFields,
     required: false,
     description: 'Fields to group by',
   })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ProductGroupByFields)
-  fields?: ProductGroupByFields;
-}
-
-/**
- * Unified Product-specific GroupBy request for GraphQL
- */
-@InputType('ProductGroupByInput')
-export class ProductGroupByRequestGraphQL extends GraphQLGroupByRequestInput {
   @Field(() => ProductGroupByFields, {
     nullable: true,
     description: 'Fields to group by',
@@ -116,9 +105,10 @@ export class ProductGroupByRequestGraphQL extends GraphQLGroupByRequestInput {
 }
 
 /**
- * REST API GroupBy arguments for products
+ * Unified GroupBy arguments for products (works with both REST and GraphQL)
  */
-export class GroupedProductArgsRest
+@ArgsType()
+export class GroupedProductArgs
   extends FindProductArgs
   implements GroupByArgs<Product>
 {
@@ -126,23 +116,10 @@ export class GroupedProductArgsRest
     type: ProductGroupByRequest,
     description: 'GroupBy configuration for products',
   })
-  @ValidateNested()
-  @Type(() => ProductGroupByRequest)
-  groupBy!: ProductGroupByRequest;
-}
-
-/**
- * GraphQL GroupBy arguments for products
- */
-@ArgsType()
-export class GroupedProductArgsGraphQL
-  extends FindProductArgs
-  implements GroupByArgs<Product>
-{
-  @Field(() => ProductGroupByRequestGraphQL, {
+  @Field(() => ProductGroupByRequest, {
     description: 'GroupBy configuration for products',
   })
   @ValidateNested()
-  @Type(() => ProductGroupByRequestGraphQL)
-  groupBy!: ProductGroupByRequestGraphQL;
+  @Type(() => ProductGroupByRequest)
+  groupBy!: ProductGroupByRequest;
 }
