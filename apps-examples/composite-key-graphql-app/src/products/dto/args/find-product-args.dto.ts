@@ -14,7 +14,6 @@ import { Type } from 'class-transformer';
 import { FindSupplierArgs } from '../../../suppliers/dto';
 import { Supplier } from '../../../suppliers/entities/supplier.entity';
 import { Product } from '../../entities/product.entity';
-import { ProductGroupByRequest } from '../inputs';
 
 const SupplierWhere = getWhereClass(FindSupplierArgs);
 
@@ -75,5 +74,4 @@ class FindProductOrderBy implements OrderBy<Product> {
 export class FindProductArgs extends FindArgsFrom<Product>({
   whereType: FindProductWhere,
   orderByType: FindProductOrderBy,
-  groupByType: ProductGroupByRequest,
 }) {}

@@ -16,13 +16,14 @@ import {
   CurrentContext,
   applyClassDecorators,
   applyMethodDecoratorsIf,
+  GroupByArgs,
 } from '@solid-nestjs/common';
 import {
   DataResolver,
   DataResolverStructure,
   OperationStructure,
 } from '../interfaces';
-import { DefaultArgs, PaginationResult } from '../classes';
+import { DefaultArgs, PaginationResult, GroupedPaginationResultOutput } from '../classes';
 
 /**
  * Generates a NestJS GraphQL resolver class for a given entity, service, and context.
@@ -75,7 +76,7 @@ export function DataResolverFrom<
 ): Type<
   DataResolver<IdType, EntityType, ServiceType, FindArgsType, ContextType>
 > {
-  const { entityType, serviceType, findArgsType } = resolverStructure;
+  const { entityType, serviceType, findArgsType, groupByArgsType } = resolverStructure;
 
   const ContextDecorator =
     resolverStructure.parameterDecorators?.context ?? CurrentContext;
@@ -120,6 +121,16 @@ export function DataResolverFrom<
       name: findAllSettings.name + 'Pagination',
       summary: 'Pagination of ' + entityType.name.toLowerCase(),
       description: 'pagination of ' + entityType.name.toLowerCase(),
+    },
+  );
+
+  const findAllGroupedSettings = extractOperationSettings(
+    resolverStructure.operations?.findAllGrouped,
+    {
+      disabled: resolverStructure.operations?.findAllGrouped === false || !groupByArgsType,
+      name: findAllSettings.name + 'Grouped',
+      summary: 'Grouped query of ' + entityType.name.toLowerCase() + 's',
+      description: 'grouped query with aggregations for ' + entityType.name.toLowerCase() + 's',
     },
   );
 
@@ -203,6 +214,43 @@ export function DataResolverFrom<
     ): Promise<EntityType> {
       return await this.service.findOne(context, id, true);
     }
+
+    @applyMethodDecoratorsIf(!findAllGroupedSettings.disabled && !!groupByArgsType, [
+      () =>
+        Query(returns => GroupedPaginationResultOutput, {
+          name: findAllGroupedSettings.name,
+          description: findAllGroupedSettings.description,
+        }),
+      ...findAllGroupedSettings.decorators,
+    ])
+    async findAllGrouped?(
+      @ContextDecorator() context: ContextType,
+      @Args(
+        undefined as any,
+        {
+          type: () => groupByArgsType,
+        },
+        new ValidationPipe({
+          transform: true,
+          expectedType: groupByArgsType,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      args: GroupByArgs<EntityType>,
+    ): Promise<GroupedPaginationResultOutput> {
+      const result = await (this.service as any).findAllGrouped(context, args);
+      
+      // Convert to GraphQL output format
+      return {
+        groups: result.groups.map(group => ({
+          key: typeof group.key === 'string' ? group.key : JSON.stringify(group.key),
+          aggregates: typeof group.aggregates === 'string' ? group.aggregates : JSON.stringify(group.aggregates),
+        })),
+        pagination: result.pagination,
+      };
+    }
   }
 
   //remove resolver methods if they are disabled in the structure
@@ -214,6 +262,9 @@ export function DataResolverFrom<
   }
   if (paginationSettings.disabled) {
     delete DataResolverClass.prototype.pagination;
+  }
+  if (findAllGroupedSettings.disabled || !groupByArgsType) {
+    delete DataResolverClass.prototype.findAllGrouped;
   }
 
   return mixin(DataResolverClass);
