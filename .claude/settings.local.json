@@ -7,6 +7,9 @@
       "Bash(rm:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "D:\\d D:\\NodeJS\\solid-nestjs"
+    ]
   }
 }

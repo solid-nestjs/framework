@@ -1,6 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { GroupResultOutput } from './group-result.output';
-import { PaginationResultOutput } from './pagination-result.output';
+import { PaginationResult as PaginationResultOutput } from './pagination-result.output';
 
 /**
  * GraphQL output type representing paginated grouped query results.

@@ -1,80 +1,39 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { PaginationResult as CommonPaginationResult } from '@solid-nestjs/common';
 
 /**
- * GraphQL output type representing pagination metadata.
- * Based on the PaginationResult interface from @solid-nestjs/common.
+ * Represents the result of a paginated query.
  *
- * @class PaginationResultOutput
+ * @implements {CommonPaginationResult}
  *
- * @example
- * ```graphql
- * type PaginationResultOutput {
- *   total: Int!
- *   count: Int!
- *   limit: Int
- *   page: Int!
- *   pageCount: Int!
- *   hasNextPage: Boolean!
- *   hasPreviousPage: Boolean!
- * }
- * ```
+ * @property {number} total - The total number of items available.
+ * @property {number} count - The number of items returned in the current page.
+ * @property {number} [limit] - The maximum number of items per page (optional).
+ * @property {number} page - The current page number.
+ * @property {number} pageCount - The total number of pages available.
+ * @property {boolean} hasNextPage - Indicates if there is a next page.
+ * @property {boolean} hasPreviousPage - Indicates if there is a previous page.
  */
 @ObjectType()
-export class PaginationResultOutput {
-  /**
-   * Total number of items across all pages
-   */
-  @Field(() => Int, {
-    description: 'Total number of items across all pages',
-  })
+export class PaginationResult implements CommonPaginationResult {
+  @Field(() => Int)
   total!: number;
 
-  /**
-   * Number of items on the current page
-   */
-  @Field(() => Int, {
-    description: 'Number of items on the current page',
-  })
+  @Field(() => Int)
   count!: number;
 
-  /**
-   * Maximum number of items per page
-   */
-  @Field(() => Int, {
-    nullable: true,
-    description: 'Maximum number of items per page',
-  })
+  @Field(() => Int, { nullable: true })
   limit?: number;
 
-  /**
-   * Current page number
-   */
-  @Field(() => Int, {
-    description: 'Current page number',
-  })
+  @Field(() => Int)
   page!: number;
 
-  /**
-   * Total number of pages
-   */
-  @Field(() => Int, {
-    description: 'Total number of pages',
-  })
+  @Field(() => Int)
   pageCount!: number;
 
-  /**
-   * Whether there is a next page
-   */
-  @Field(() => Boolean, {
-    description: 'Whether there is a next page',
-  })
+  @Field(() => Boolean)
   hasNextPage!: boolean;
 
-  /**
-   * Whether there is a previous page
-   */
-  @Field(() => Boolean, {
-    description: 'Whether there is a previous page',
-  })
+  @Field(() => Boolean)
   hasPreviousPage!: boolean;
 }
