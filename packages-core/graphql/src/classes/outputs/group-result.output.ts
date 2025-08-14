@@ -11,8 +11,6 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
  * type GroupResultOutput {
  *   key: JSONObject!
  *   aggregates: JSONObject!
- *   count: Int!
- *   items: [EntityType]
  * }
  * ```
  *
@@ -21,9 +19,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
  * // Example response structure
  * {
  *   key: { category: "Electronics", supplier_name: "TechCorp" },
- *   aggregates: { avgPrice: 1250.50, totalProducts: 15 },
- *   count: 15,
- *   items: [product1, product2, ...] // optional
+ *   aggregates: { avgPrice: 1250.50, totalProducts: 15 }
  * }
  * ```
  */
@@ -52,23 +48,4 @@ export class GroupResultOutput {
     description: 'The computed aggregate values as JSON string',
   })
   aggregates!: string;
-
-  /**
-   * Total count of items in this group
-   */
-  @Field(() => Int, {
-    description: 'Total count of items in this group',
-  })
-  count!: number;
-
-  /**
-   * Individual items in this group (optional)
-   * Only included when includeItems is true in the request
-   * The actual type will be determined by the specific resolver implementation
-   */
-  @Field(() => [String], {
-    nullable: true,
-    description: 'Individual items in this group as JSON strings (optional)',
-  })
-  items?: string[];
 }

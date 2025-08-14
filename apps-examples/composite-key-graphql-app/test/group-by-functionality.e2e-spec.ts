@@ -171,7 +171,6 @@ describe('GroupBy Functionality (e2e)', () => {
             groups {
               key
               aggregates
-              count
             }
             pagination {
               total
@@ -182,7 +181,6 @@ describe('GroupBy Functionality (e2e)', () => {
               hasNextPage
               hasPreviousPage
             }
-            totalItems
           }
         }
       `;
@@ -209,7 +207,6 @@ describe('GroupBy Functionality (e2e)', () => {
         expect(typeof group.key).toBe('string');
         expect(group.aggregates).toBeDefined();
         expect(typeof group.aggregates).toBe('string');
-        expect(typeof group.count).toBe('number');
 
         // Parse JSON strings to verify content
         const key = JSON.parse(group.key);
@@ -224,7 +221,7 @@ describe('GroupBy Functionality (e2e)', () => {
       expect(response.body.data.productsGrouped.pagination).toBeDefined();
       expect(response.body.data.productsGrouped.pagination.total).toBe(2);
       expect(response.body.data.productsGrouped.pagination.page).toBe(1);
-      expect(response.body.data.productsGrouped.pagination.limit).toBe(10);
+      expect(response.body.data.productsGrouped.pagination.limit).toBeNull(); // No pagination specified, so no limit
     });
 
     it('should handle empty results for grouped queries', async () => {
@@ -242,7 +239,6 @@ describe('GroupBy Functionality (e2e)', () => {
             groups {
               key
               aggregates
-              count
             }
             pagination {
               total

@@ -33,12 +33,14 @@ import {
   GroupByRequest,
   GroupedPaginationResult,
   AggregateFunctionTypes,
+  PaginationRequest,
 } from '@solid-nestjs/common';
 import {
   Context,
   DataService as DataService,
   ExtendedRelationInfo,
   DataRetrievalOptions,
+  GroupByOptions,
   DataServiceStructure,
   getMainAliasFromConfig,
   getRelationsFromConfig,
@@ -262,11 +264,11 @@ export function DataServiceFrom<
       return this.getPagination(context, await queryBuilder.getCount(), args);
     }
 
-    async getPagination(
+    getPagination(
       context: ContextType,
       total: number,
-      args?: FindArgsType,
-    ): Promise<PaginationResult> {
+      args?: { pagination?: PaginationRequest },
+    ): PaginationResult {
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
 
       let limit = take;
@@ -357,63 +359,63 @@ export function DataServiceFrom<
     async findAllGrouped(
       context: ContextType,
       args: GroupByArgs<EntityType>,
-      options?: DataRetrievalOptions<EntityType>,
+      options?: GroupByOptions<EntityType>,
     ): Promise<GroupedPaginationResult<EntityType>> {
       if (!args.groupBy) {
-        throw new BadRequestException('groupBy configuration is required for grouped queries');
+        throw new BadRequestException(
+          'groupBy configuration is required for grouped queries',
+        );
       }
 
       const queryBuilderHelper = this.queryBuilderHelper;
       const repository = this.getRepository(context);
       const groupBy = args.groupBy;
-      const { skip, take } = getPaginationArgs(args.pagination ?? { page: 1, limit: 10 });
-      const page = args.pagination?.page ?? 1;
-      const limit = take;
 
-      // Build the main grouped query
-      const queryBuilder = queryBuilderHelper.buildGroupedQuery(repository, args, options);
-
-      // Apply pagination to groups
-      queryBuilder.limit(take).offset(skip);
-
-      // Execute the query
+      // Build and execute the main grouped query (with pagination already applied in helper)
+      const queryBuilder = queryBuilderHelper.buildGroupedQuery(
+        repository,
+        args,
+        options,
+      );
       const rawResults = await queryBuilder.getRawMany();
 
-      // Count total groups for pagination
-      const countQuery = queryBuilderHelper.buildGroupedQuery(repository, args, options);
-      const totalGroupsResult = await countQuery.getRawMany();
-      const totalGroups = totalGroupsResult.length;
-
       // Format results
-      const groups = queryBuilderHelper.formatGroupedResults(rawResults, groupBy);
+      const groups = queryBuilderHelper.formatGroupedResults(
+        rawResults,
+        groupBy,
+      );
 
-      // Calculate total items across all groups if needed
-      let totalItems = 0;
-      if (groupBy.aggregates?.some(agg => agg.function === AggregateFunctionTypes.COUNT)) {
-        const countField = groupBy.aggregates?.find(agg => agg.function === AggregateFunctionTypes.COUNT);
-        if (countField) {
-          const countAlias = countField.alias || `${countField.function}_${countField.field}`;
-          totalItems = groups.reduce((sum, group) => {
-            const aggregates = typeof group.aggregates === 'string' 
-              ? JSON.parse(group.aggregates) 
-              : group.aggregates;
-            return sum + (aggregates[countAlias] || 0);
-          }, 0);
-        }
+      // Build pagination result
+      let paginationResult: PaginationResult;
+      if (args.pagination) {
+        // Count total groups efficiently using subconsulta
+        const countQueryBuilder = queryBuilderHelper.getGroupCountQueryBuilder(
+          repository,
+          args,
+          options,
+        );
+
+        const countResult = await countQueryBuilder.getRawOne();
+        const totalGroups = parseInt(countResult?.count || '0', 10);
+
+        // Use standard pagination logic when pagination is requested
+        paginationResult = this.getPagination(context, totalGroups, args);
+      } else {
+        // No pagination requested - return basic pagination info
+        paginationResult = {
+          total: groups.length,
+          count: groups.length,
+          limit: undefined,
+          page: 1,
+          pageCount: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        };
       }
 
       return {
         groups,
-        pagination: {
-          total: totalGroups,
-          count: groups.length,
-          limit,
-          page,
-          pageCount: Math.ceil(totalGroups / limit),
-          hasNextPage: page < Math.ceil(totalGroups / limit),
-          hasPreviousPage: page > 1,
-        },
-        totalItems,
+        pagination: paginationResult,
       };
     }
 

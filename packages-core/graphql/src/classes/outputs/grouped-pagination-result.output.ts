@@ -1,6 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { GroupResultOutput } from './group-result.output';
-import { PaginationOutput } from './pagination.output';
+import { PaginationResultOutput } from './pagination-result.output';
 
 /**
  * GraphQL output type representing paginated grouped query results.
@@ -54,16 +54,8 @@ export class GroupedPaginationResultOutput {
   /**
    * Pagination information for the groups
    */
-  @Field(() => PaginationOutput, {
+  @Field(() => PaginationResultOutput, {
     description: 'Pagination information for the groups',
   })
-  pagination!: PaginationOutput;
-
-  /**
-   * Total number of individual items across all groups
-   */
-  @Field(() => Int, {
-    description: 'Total number of individual items across all groups',
-  })
-  totalItems!: number;
+  pagination!: PaginationResultOutput;
 }

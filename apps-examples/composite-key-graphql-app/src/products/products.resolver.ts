@@ -35,11 +35,8 @@ export class ProductsResolver extends CrudResolverFrom(resolverStructure) {
       groups: result.groups.map(group => ({
         key: typeof group.key === 'string' ? group.key : JSON.stringify(group.key),
         aggregates: typeof group.aggregates === 'string' ? group.aggregates : JSON.stringify(group.aggregates),
-        count: group.count,
-        items: group.items?.map(item => JSON.stringify(item)),
       })),
       pagination: result.pagination,
-      totalItems: result.totalItems,
     };
   }
 }

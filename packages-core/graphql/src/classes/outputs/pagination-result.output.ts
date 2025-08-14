@@ -2,13 +2,13 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 
 /**
  * GraphQL output type representing pagination metadata.
- * Maps to the PaginationResult interface.
+ * Based on the PaginationResult interface from @solid-nestjs/common.
  *
- * @class PaginationOutput
+ * @class PaginationResultOutput
  *
  * @example
  * ```graphql
- * type PaginationOutput {
+ * type PaginationResultOutput {
  *   total: Int!
  *   count: Int!
  *   limit: Int
@@ -20,7 +20,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
  * ```
  */
 @ObjectType()
-export class PaginationOutput {
+export class PaginationResultOutput {
   /**
    * Total number of items across all pages
    */

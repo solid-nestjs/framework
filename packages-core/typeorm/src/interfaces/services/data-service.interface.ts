@@ -19,7 +19,7 @@ import {
   TypeOrmRepository as Repository,
   TypeOrmSelectQueryBuilder as SelectQueryBuilder,
 } from '../../types';
-import { Context, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
+import { Context, DataRetrievalOptions, GroupByOptions, ExtendedRelationInfo } from '../misc';
 import { QueryBuilderHelper } from '../../helpers';
 
 /**
@@ -425,7 +425,7 @@ export interface DataService<
   findAllGrouped(
     context: ContextType,
     args: GroupByArgs<EntityType>,
-    options?: DataRetrievalOptions<EntityType>,
+    options?: GroupByOptions<EntityType>,
   ): Promise<GroupedPaginationResult<EntityType>>;
 
   /**

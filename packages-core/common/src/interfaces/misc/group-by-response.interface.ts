@@ -10,9 +10,7 @@ import { PaginationResult } from './pagination-result.interface';
  * ```typescript
  * const groupResult: GroupResult<Product> = {
  *   key: { category: 'Electronics', supplierName: 'TechCorp' },
- *   aggregates: { avgPrice: 1250.50, totalProducts: 15 },
- *   items: [product1, product2, ...], // optional
- *   count: 15
+ *   aggregates: { avgPrice: 1250.50, totalProducts: 15 }
  * };
  * ```
  */
@@ -26,16 +24,6 @@ export interface GroupResult<T = any> {
    * The computed aggregate values (can be object or JSON string for GraphQL compatibility)
    */
   aggregates: Record<string, any> | string;
-
-  /**
-   * Individual items in this group (optional)
-   */
-  items?: T[];
-
-  /**
-   * Total count of items in this group
-   */
-  count: number;
 }
 
 /**
@@ -57,8 +45,7 @@ export interface GroupResult<T = any> {
  *     pageCount: 3,
  *     hasNextPage: true,
  *     hasPreviousPage: false
- *   },
- *   totalItems: 150
+ *   }
  * };
  * ```
  */
@@ -72,10 +59,4 @@ export interface GroupedPaginationResult<T = any> {
    * Pagination information for the groups
    */
   pagination: PaginationResult;
-
-  /**
-   * Total number of individual items across all groups
-   * This is different from pagination.total which represents total number of groups
-   */
-  totalItems: number;
 }
