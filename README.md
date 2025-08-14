@@ -16,6 +16,7 @@ The SOLID NestJS Framework is a collection of utilities and mixins that accelera
 
 - **🔧 Auto-generated CRUD Operations** - Instantly create controllers and services with full CRUD functionality
 - **🔍 Advanced Query System** - Powerful filtering, pagination, sorting, and relation handling
+- **📊 GROUP BY Aggregations** - Advanced data grouping with COUNT, SUM, AVG, MIN, MAX functions for both REST and GraphQL
 - **🔒 Transaction Support** - Built-in transaction management with isolation levels
 - **📝 Type Safety** - Full TypeScript support with comprehensive type definitions
 - **🎯 OpenAPI Integration** - Automatic Swagger documentation generation
@@ -279,12 +280,59 @@ The framework automatically generates the following REST endpoints:
 
 - `GET /products` - List all products with filtering, pagination, and sorting
 - `GET /products/:id` - Get a specific product by ID
+- `GET /products/grouped` - Group products with aggregation functions (COUNT, SUM, AVG, MIN, MAX)
 - `POST /products` - Create a new product
 - `PUT /products/:id` - Update an existing product
 - `DELETE /products/:id` - Soft delete a product
 - `DELETE /products/soft/:id` - Explicit soft delete a product
 - `DELETE /products/hard/:id` - Hard delete a product (if enabled)
 - `PATCH /products/recover/:id` - Recover a soft-deleted product
+
+### 📊 GROUP BY Aggregations
+
+The framework provides powerful GROUP BY capabilities with comprehensive aggregation functions for both REST API and GraphQL. This feature enables advanced data analysis and reporting directly from your CRUD endpoints.
+
+#### Key Features
+
+- **Universal Protocol Support**: Works seamlessly with both REST API and GraphQL
+- **Comprehensive Aggregations**: Support for COUNT, SUM, AVG, MIN, MAX functions
+- **Nested Field Grouping**: Group by related entity fields (e.g., `supplier.name`)
+- **Pagination Integration**: Full pagination support for grouped results
+- **Type Safety**: Complete TypeScript support with proper type inference
+
+#### REST API Example
+
+```bash
+# Group products by supplier with price aggregations
+GET /products/grouped?groupBy={"fields":{"supplier":{"name":true}},"aggregates":[{"field":"price","function":"AVG","alias":"avgPrice"},{"field":"stock","function":"SUM","alias":"totalStock"}]}
+```
+
+#### GraphQL Example
+
+```graphql
+query {
+  productsGrouped(
+    groupBy: {
+      fields: { supplier: { name: true } }
+      aggregates: [
+        { field: "price", function: AVG, alias: "avgPrice" }
+        { field: "stock", function: SUM, alias: "totalStock" }
+      ]
+    }
+  ) {
+    groups {
+      key
+      aggregates
+    }
+    pagination {
+      total
+      count
+    }
+  }
+}
+```
+
+For complete GROUP BY documentation, see [docs/GROUP_BY.md](docs/GROUP_BY.md).
 
 ### 🔄 Soft Deletion & Recovery Operations
 
@@ -337,6 +385,9 @@ const controllerStructure = CrudControllerStructure({
     create: true,
     update: true,
     remove: true, // Default soft delete
+
+    // GROUP BY operations
+    findAllGrouped: true, // GET /products/grouped
 
     // Explicit soft deletion operations
     softRemove: true, // DELETE /products/soft/:id

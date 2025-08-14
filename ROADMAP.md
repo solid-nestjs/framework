@@ -11,7 +11,11 @@ The framework currently provides:
 - ✅ GraphQL support with automatic resolvers
 - ✅ Hybrid REST + GraphQL capabilities
 - ✅ Advanced query system (filtering, pagination, sorting)
-- ✅ Transaction support
+- ✅ GROUP BY aggregations with COUNT, SUM, AVG, MIN, MAX functions for both REST and GraphQL
+- ✅ Composite key support for complex primary keys
+- ✅ Soft deletion and recovery operations with cascade support
+- ✅ Bulk operations (insert, update, delete, remove, recover)
+- ✅ Transaction support with configurable isolation levels
 - ✅ Type-safe DTOs and validation
 - ✅ Modular architecture following SOLID principles
 
@@ -50,6 +54,8 @@ The framework currently provides:
 
 - ✅ **Soft Deletion & Recovery Operations** - Built-in soft delete functionality with recovery operations
 - ✅ **Bulk Operations** - Efficient bulk insert, update, delete, and remove operations
+- ✅ **GROUP BY Aggregations** - Advanced data grouping with comprehensive aggregation functions
+- ✅ **Composite Key Support** - Full support for entities with composite primary keys
 - 🔲 **Custom Operation Definitions** - Framework for defining custom business operations beyond CRUD
 
 #### 🎨 Enhanced GraphQL Features
@@ -73,9 +79,11 @@ The framework currently provides:
 
 ### 📊 Advanced Reporting & Analytics
 
+- ✅ **Basic Aggregations** - GROUP BY with COUNT, SUM, AVG, MIN, MAX functions
 - 🔲 **Custom Reports** - Configurable report generation with templates
 - 🔲 **Data Visualization** - Charts and graphs integration
 - 🔲 **Export Capabilities** - PDF, Excel, and CSV export functionality
+- 🔲 **Advanced Aggregations** - Window functions, recursive queries, statistical functions
 
 #### 📊 Performance & Monitoring
 
@@ -184,5 +192,28 @@ We welcome community input on our roadmap! Here's how you can contribute:
 
 ---
 
-_Last Updated: June 2, 2025_  
+_Last Updated: August 14, 2025_  
 _This roadmap is subject to change based on community feedback and development priorities._
+
+## 📋 Recent Accomplishments
+
+### ✅ Completed in Version 0.2.7
+
+- **GROUP BY Feature Implementation** - Complete GROUP BY functionality with aggregations for both REST and GraphQL
+  - Support for COUNT, SUM, AVG, MIN, MAX aggregation functions
+  - Nested field grouping (e.g., group by `supplier.name`)
+  - Pagination integration for grouped results
+  - Type-safe DTOs with unified decorators for both protocols
+  - Comprehensive E2E test coverage for all scenarios
+  - Full documentation and examples
+
+- **Composite Key Support** - Enhanced support for entities with composite primary keys
+  - Complete CRUD operations with composite keys
+  - GraphQL and REST API support
+  - Advanced filtering and relations with composite keys
+
+- **Framework Maturity Improvements**
+  - Enhanced error handling and validation
+  - Improved TypeScript type safety across all packages
+  - Better documentation and examples
+  - Comprehensive test coverage improvements
