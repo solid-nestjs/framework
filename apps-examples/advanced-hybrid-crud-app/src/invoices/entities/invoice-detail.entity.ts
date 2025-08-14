@@ -53,6 +53,8 @@ export class InvoiceDetail {
   @JoinColumn({ name: 'productId' })
   product: Product;
 
+  @ApiProperty({ description: 'The ID of the product in this detail' })
+  @Field(() => String, { description: 'The ID of the product in this detail' })
   @Column()
   productId: string;
 

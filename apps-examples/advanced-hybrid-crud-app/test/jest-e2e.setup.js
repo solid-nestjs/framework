@@ -12,5 +12,5 @@ afterEach(async () => {
 
 // Global error handling for unhandled promises
 process.on('unhandledRejection', (reason, promise) => {
-  console.log('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Silent handling - can be enabled for debugging if needed
 });
