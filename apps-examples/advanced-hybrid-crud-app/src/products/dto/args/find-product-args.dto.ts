@@ -6,6 +6,7 @@ import {
   FindArgsFrom,
   getOrderByClass,
   getWhereClass,
+  NumberFilter,
   OrderBy,
   OrderByTypes,
   StringFilter,
@@ -19,19 +20,40 @@ const SupplierWhere = getWhereClass(FindSupplierArgs);
 
 @InputType({ isAbstract: true })
 class FindProductWhere implements Where<Product> {
-  @Field(() => StringFilter)
+  @Field(() => StringFilter, { nullable: true })
   @ApiProperty({ type: () => StringFilter, required: false })
   @Type(() => StringFilter)
   @IsOptional()
   @ValidateNested()
-  name: StringFilter;
+  name?: StringFilter;
 
-  @Field(() => SupplierWhere)
+  @Field(() => StringFilter, { nullable: true })
+  @ApiProperty({ type: () => StringFilter, required: false })
+  @Type(() => StringFilter)
+  @IsOptional()
+  @ValidateNested()
+  description?: StringFilter;
+
+  @Field(() => NumberFilter, { nullable: true })
+  @ApiProperty({ type: () => NumberFilter, required: false })
+  @Type(() => NumberFilter)
+  @IsOptional()
+  @ValidateNested()
+  price?: NumberFilter;
+
+  @Field(() => NumberFilter, { nullable: true })
+  @ApiProperty({ type: () => NumberFilter, required: false })
+  @Type(() => NumberFilter)
+  @IsOptional()
+  @ValidateNested()
+  stock?: NumberFilter;
+
+  @Field(() => SupplierWhere, { nullable: true })
   @ApiProperty({ type: () => SupplierWhere, required: false })
   @Type(() => SupplierWhere)
   @IsOptional()
   @ValidateNested()
-  supplier: Where<Supplier> | undefined;
+  supplier?: Where<Supplier> | undefined;
 }
 
 const SupplierOrderBy = getOrderByClass(FindSupplierArgs);

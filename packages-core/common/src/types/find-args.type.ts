@@ -12,6 +12,7 @@ import {
  * - For `number` fields, allows a number, an array of numbers, or a `NumberFilter` object.
  * - For `Date` fields, allows a `Date`, an array of `Date`s, or a `DateFilter` object.
  * - For `boolean` fields, allows a boolean value.
+ * - For array fields (e.g., `InvoiceDetail[]`), extracts the element type and applies `Where<ElementType>`.
  * - For all other types, recursively applies the `Where<T>` type.
  *
  * This utility type is typically used to define the shape of "where" filter arguments in query builders or ORM-like APIs.
@@ -26,7 +27,9 @@ type WhereField<T> = T extends string
       ? Date | Date[] | DateFilter
       : T extends boolean
         ? boolean
-        : Where<T>;
+        : T extends (infer U)[]
+          ? Where<U>  // For arrays, extract element type and apply Where to it
+          : Where<T>;
 
 /**
  * Represents a flexible filter type for querying objects of type `T`.
@@ -49,10 +52,11 @@ export type Where<T> = {
 /**
  * Infers the appropriate ordering type for a given field type `T`.
  *
- * - If `T` is a `string`, the type is `string`.
- * - If `T` is a `number`, the type is `number`.
- * - If `T` is a `Date`, the type is `Date`.
- * - If `T` is a `boolean`, the type is `boolean`.
+ * - If `T` is a `string`, the type is `OrderByTypes`.
+ * - If `T` is a `number`, the type is `OrderByTypes`.
+ * - If `T` is a `Date`, the type is `OrderByTypes`.
+ * - If `T` is a `boolean`, the type is `OrderByTypes`.
+ * - For array fields (e.g., `InvoiceDetail[]`), extracts the element type and applies `OrderBy<ElementType>`.
  * - Otherwise, falls back to `OrderBy<T>`, allowing for nested ordering.
  *
  * @template T - The type of the field to determine the order-by type for.
@@ -65,7 +69,9 @@ type OrderByField<T> = T extends string
       ? OrderByTypes
       : T extends boolean
         ? OrderByTypes
-        : OrderBy<T>;
+        : T extends (infer U)[]
+          ? OrderBy<U>  // For arrays, extract element type and apply OrderBy to it
+          : OrderBy<T>;
 
 /**
  * Represents an object for specifying sorting order for each property of type `T`.
