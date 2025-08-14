@@ -3,11 +3,14 @@ import {
   FindArgsFrom,
   getOrderByClass,
   getWhereClass,
+  NumberFilter,
   OrderBy,
   OrderByTypes,
   StringFilter,
   Where,
 } from '@solid-nestjs/typeorm-graphql-crud';
+import { IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { FindSupplierArgs } from '../../../suppliers/dto';
 import { Supplier } from '../../../suppliers/entities/supplier.entity';
 import { Product } from '../../entities/product.entity';
@@ -16,11 +19,35 @@ const SupplierWhere = getWhereClass(FindSupplierArgs);
 
 @InputType({ isAbstract: true })
 class FindProductWhere implements Where<Product> {
-  @Field(() => StringFilter)
-  name: StringFilter;
+  @Field(() => StringFilter, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => StringFilter)
+  name?: StringFilter;
 
-  @Field(() => SupplierWhere)
-  supplier: Where<Supplier> | undefined;
+  @Field(() => StringFilter, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => StringFilter)
+  description?: StringFilter;
+
+  @Field(() => NumberFilter, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NumberFilter)
+  price?: NumberFilter;
+
+  @Field(() => NumberFilter, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NumberFilter)
+  stock?: NumberFilter;
+
+  @Field(() => SupplierWhere, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SupplierWhere)
+  supplier?: Where<Supplier> | undefined;
 }
 
 const SupplierOrderBy = getOrderByClass(FindSupplierArgs);
