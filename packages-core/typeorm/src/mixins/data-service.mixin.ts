@@ -6,6 +6,7 @@ import {
 } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
@@ -28,6 +29,8 @@ import {
   PaginationResult,
   removeNullish,
   Where,
+  GroupByRequest,
+  GroupedPaginationResult,
 } from '@solid-nestjs/common';
 import {
   Context,
@@ -347,6 +350,21 @@ export function DataServiceFrom<
       const manager = this.getEntityManager(context);
 
       return runInTransaction(context, manager.connection, fn, isolationLevel);
+    }
+
+    async findAllGrouped(
+      context: ContextType,
+      args: FindArgsType & { groupBy: GroupByRequest<EntityType> },
+      options?: DataRetrievalOptions<EntityType>,
+    ): Promise<GroupedPaginationResult<EntityType>> {
+      if (!args.groupBy) {
+        throw new BadRequestException('groupBy configuration is required for grouped queries');
+      }
+
+      const queryBuilderHelper = this.queryBuilderHelper;
+      const repository = this.getRepository(context);
+
+      return queryBuilderHelper.executeGroupedQuery(repository, args, options);
     }
 
     async audit(

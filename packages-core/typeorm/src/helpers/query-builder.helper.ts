@@ -29,6 +29,12 @@ import {
   IdTypeFrom,
   OrderBy,
   Where,
+  GroupBy,
+  GroupByRequest,
+  GroupResult,
+  GroupedPaginationResult,
+  AggregateField,
+  AggregateFunctionTypes,
 } from '@solid-nestjs/common';
 import {
   DataRetrievalOptions,
@@ -1382,6 +1388,387 @@ export class QueryBuilderHelper<
     if (objKeys.some(item => conditionsKeys.includes(item))) return true;
 
     return false;
+  }
+
+  /**
+   * Creates a grouped query builder for aggregated results.
+   *
+   * @param repository - The TypeORM repository for the entity type.
+   * @param args - Find arguments that include groupBy configuration.
+   * @param options - Optional data retrieval options.
+   * @returns A configured SelectQueryBuilder for grouped queries.
+   *
+   * @example
+   * ```typescript
+   * const qb = helper.getGroupedQueryBuilder(repository, {
+   *   groupBy: {
+   *     fields: { category: true, supplier: { name: true } },
+   *     aggregates: [
+   *       { field: 'price', function: AggregateFunctionTypes.AVG, alias: 'avgPrice' },
+   *       { field: 'id', function: AggregateFunctionTypes.COUNT, alias: 'totalProducts' }
+   *     ]
+   *   }
+   * });
+   * ```
+   */
+  getGroupedQueryBuilder(
+    repository: Repository<EntityType>,
+    args: FindArgs<EntityType> & { groupBy: GroupByRequest<EntityType> },
+    options?: DataRetrievalOptions<EntityType>,
+  ): SelectQueryBuilder<EntityType> {
+    const queryBuilder = repository.createQueryBuilder(
+      options?.mainAlias ?? 'entity',
+    );
+
+    const queryContext: QueryContext<EntityType> = {
+      queryBuilder,
+      relations: [],
+      relationsInfo: this.getRelationsInfo(repository),
+      ignoreMultiplyingJoins: false,
+      ignoreSelects: false,
+    };
+
+    // Apply WHERE conditions if present
+    if (args.where) {
+      const whereContext = {
+        ...queryContext,
+        alias: queryBuilder.alias,
+        entityType: this.entityType,
+        recusirveDepth: 0,
+        constructField: (fieldName, value) => {
+          return { [fieldName]: value };
+        },
+      };
+      queryBuilder.where(this.getWhereCondition(whereContext, args.where));
+    }
+
+    // Apply GROUP BY
+    this.applyGroupBy(args.groupBy, queryContext);
+
+    // Apply ORDER BY if specified
+    if (args.orderBy) {
+      this.applyOrderBy(
+        {
+          ...queryContext,
+          alias: queryBuilder.alias,
+          entityType: this.entityType,
+          recusirveDepth: 0,
+        },
+        args.orderBy,
+      );
+    }
+
+    return queryBuilder;
+  }
+
+  /**
+   * Executes a grouped query and returns formatted results.
+   *
+   * @param repository - The TypeORM repository for the entity type.
+   * @param args - Find arguments that include groupBy configuration.
+   * @param options - Optional data retrieval options.
+   * @returns Promise resolving to grouped pagination results.
+   */
+  async executeGroupedQuery(
+    repository: Repository<EntityType>,
+    args: FindArgs<EntityType> & { groupBy: GroupByRequest<EntityType> },
+    options?: DataRetrievalOptions<EntityType>,
+  ): Promise<GroupedPaginationResult<EntityType>> {
+    const groupBy = args.groupBy;
+    const { skip, take } = getPaginationArgs(args.pagination ?? { page: 1, limit: 10 });
+    const page = args.pagination?.page ?? 1;
+    const limit = take;
+
+    // Build the main grouped query
+    const queryBuilder = this.getGroupedQueryBuilder(repository, args, options);
+
+    // Apply pagination to groups
+    queryBuilder.limit(take).offset(skip);
+
+    // Execute the query
+    const rawResults = await queryBuilder.getRawMany();
+
+    // Count total groups for pagination
+    const countQuery = this.getGroupedQueryBuilder(repository, args, options);
+    // For grouped queries, we need to count distinct groups, not total records
+    const totalGroupsResult = await countQuery.getRawMany();
+    const totalGroups = totalGroupsResult.length;
+
+    // Format results
+    const groups = this.formatGroupedResults(rawResults, groupBy);
+
+    // Calculate total items across all groups if needed
+    let totalItems = 0;
+    if (groupBy.aggregates?.some(agg => agg.function === AggregateFunctionTypes.COUNT)) {
+      totalItems = groups.reduce((sum, group) => {
+        const countField = groupBy.aggregates?.find(agg => agg.function === AggregateFunctionTypes.COUNT);
+        if (countField) {
+          const countAlias = countField.alias || `${countField.function}_${countField.field}`;
+          return sum + (group.aggregates[countAlias] || 0);
+        }
+        return sum;
+      }, 0);
+    }
+
+    return {
+      groups,
+      totalGroups,
+      page,
+      limit,
+      totalItems,
+    };
+  }
+
+  /**
+   * Applies GROUP BY clauses to the query builder.
+   *
+   * @private
+   * @param groupBy - The groupBy configuration.
+   * @param queryContext - The query context containing the query builder.
+   */
+  private applyGroupBy(
+    groupBy: GroupByRequest<EntityType>,
+    queryContext: QueryContext<EntityType>,
+  ): void {
+    const { queryBuilder } = queryContext;
+
+    // Add GROUP BY fields
+    if (groupBy.fields) {
+      this.addGroupByFields(groupBy.fields, queryContext, queryContext.queryBuilder.alias);
+    }
+
+    // Add SELECT clauses for aggregates
+    if (groupBy.aggregates) {
+      this.addAggregateSelects(groupBy.aggregates, queryContext);
+    }
+
+    // Add SELECT clauses for grouped fields
+    if (groupBy.fields) {
+      this.addGroupedFieldSelects(groupBy.fields, queryContext, queryContext.queryBuilder.alias);
+    }
+  }
+
+  /**
+   * Recursively adds GROUP BY fields from the groupBy configuration.
+   *
+   * @private
+   * @param fields - The fields to group by.
+   * @param queryContext - The query context.
+   * @param parentAlias - The parent table alias.
+   * @param parentPath - The parent path for nested fields.
+   */
+  private addGroupByFields(
+    fields: GroupBy<EntityType>,
+    queryContext: QueryContext<EntityType>,
+    parentAlias: string,
+    parentPath: string = '',
+  ): void {
+    for (const [fieldName, fieldValue] of Object.entries(fields)) {
+      if (fieldValue === true) {
+        // Simple field grouping
+        const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
+        queryContext.queryBuilder.addGroupBy(`${parentAlias}.${fieldName}`);
+      } else if (typeof fieldValue === 'object' && fieldValue !== null) {
+        // Nested relation grouping
+        const relationAlias = this.getOrCreateRelationAlias(fieldName, queryContext, parentAlias);
+        const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
+        this.addGroupByFields(fieldValue as GroupBy<any>, queryContext, relationAlias, fullPath);
+      }
+    }
+  }
+
+  /**
+   * Adds SELECT clauses for aggregate functions.
+   *
+   * @private
+   * @param aggregates - The aggregate configurations.
+   * @param queryContext - The query context.
+   */
+  private addAggregateSelects(
+    aggregates: AggregateField[],
+    queryContext: QueryContext<EntityType>,
+  ): void {
+    for (const aggregate of aggregates) {
+      const alias = aggregate.alias || `${aggregate.function}_${aggregate.field}`;
+      const fieldPath = this.resolveFieldPath(aggregate.field, queryContext);
+      
+      let selectExpression: string;
+      switch (aggregate.function) {
+        case AggregateFunctionTypes.COUNT:
+          selectExpression = `COUNT(${fieldPath})`;
+          break;
+        case AggregateFunctionTypes.COUNT_DISTINCT:
+          selectExpression = `COUNT(DISTINCT ${fieldPath})`;
+          break;
+        case AggregateFunctionTypes.SUM:
+          selectExpression = `SUM(${fieldPath})`;
+          break;
+        case AggregateFunctionTypes.AVG:
+          selectExpression = `AVG(${fieldPath})`;
+          break;
+        case AggregateFunctionTypes.MIN:
+          selectExpression = `MIN(${fieldPath})`;
+          break;
+        case AggregateFunctionTypes.MAX:
+          selectExpression = `MAX(${fieldPath})`;
+          break;
+        default:
+          throw new BadRequestException(`Unsupported aggregate function: ${aggregate.function}`);
+      }
+
+      queryContext.queryBuilder.addSelect(selectExpression, alias);
+    }
+  }
+
+  /**
+   * Adds SELECT clauses for grouped fields.
+   *
+   * @private
+   * @param fields - The fields being grouped.
+   * @param queryContext - The query context.
+   * @param parentAlias - The parent table alias.
+   * @param parentPath - The parent path for nested fields.
+   */
+  private addGroupedFieldSelects(
+    fields: GroupBy<EntityType>,
+    queryContext: QueryContext<EntityType>,
+    parentAlias: string,
+    parentPath: string = '',
+  ): void {
+    for (const [fieldName, fieldValue] of Object.entries(fields)) {
+      if (fieldValue === true) {
+        // Add select for simple field
+        const alias = parentPath ? `${parentPath}_${fieldName}` : fieldName;
+        queryContext.queryBuilder.addSelect(`${parentAlias}.${fieldName}`, alias);
+      } else if (typeof fieldValue === 'object' && fieldValue !== null) {
+        // Handle nested relation fields
+        const relationAlias = this.getOrCreateRelationAlias(fieldName, queryContext, parentAlias);
+        const fullPath = parentPath ? `${parentPath}_${fieldName}` : fieldName;
+        this.addGroupedFieldSelects(fieldValue as GroupBy<any>, queryContext, relationAlias, fullPath);
+      }
+    }
+  }
+
+  /**
+   * Gets or creates a relation alias for JOIN operations.
+   *
+   * @private
+   * @param relationName - The name of the relation.
+   * @param queryContext - The query context.
+   * @param parentAlias - The parent table alias.
+   * @returns The alias for the relation.
+   */
+  private getOrCreateRelationAlias(
+    relationName: string,
+    queryContext: QueryContext<EntityType>,
+    parentAlias: string,
+  ): string {
+    const relationAlias = `${parentAlias}_${relationName}`;
+    
+    // Check if the join already exists
+    const existingJoin = queryContext.queryBuilder.expressionMap.joinAttributes.find(
+      join => join.alias.name === relationAlias
+    );
+
+    if (!existingJoin) {
+      // Add the join
+      queryContext.queryBuilder.leftJoin(`${parentAlias}.${relationName}`, relationAlias);
+    }
+
+    return relationAlias;
+  }
+
+  /**
+   * Resolves the full field path for aggregate functions, handling relations.
+   *
+   * @private
+   * @param fieldPath - The field path (e.g., "supplier.name" or "price").
+   * @param queryContext - The query context.
+   * @returns The resolved field path for the query.
+   */
+  private resolveFieldPath(fieldPath: string, queryContext: QueryContext<EntityType>): string {
+    const parts = fieldPath.split('.');
+    if (parts.length === 1) {
+      // Simple field on main entity
+      return `${queryContext.queryBuilder.alias}.${fieldPath}`;
+    }
+
+    // Build the path through relations
+    let currentAlias = queryContext.queryBuilder.alias;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const relationName = parts[i];
+      currentAlias = this.getOrCreateRelationAlias(relationName, queryContext, currentAlias);
+    }
+
+    const finalField = parts[parts.length - 1];
+    return `${currentAlias}.${finalField}`;
+  }
+
+  /**
+   * Formats raw query results into grouped result structures.
+   *
+   * @private
+   * @param rawResults - Raw results from the database.
+   * @param groupBy - The groupBy configuration used.
+   * @returns Formatted group results.
+   */
+  private formatGroupedResults(
+    rawResults: any[],
+    groupBy: GroupByRequest<EntityType>,
+  ): GroupResult<EntityType>[] {
+    return rawResults.map(raw => {
+      // Extract grouped field values
+      const key: Record<string, any> = {};
+      if (groupBy.fields) {
+        this.extractGroupKeyFromRaw(raw, groupBy.fields, key);
+      }
+
+      // Extract aggregate values
+      const aggregates: Record<string, any> = {};
+      if (groupBy.aggregates) {
+        for (const aggregate of groupBy.aggregates) {
+          const alias = aggregate.alias || `${aggregate.function}_${aggregate.field}`;
+          aggregates[alias] = raw[alias];
+        }
+      }
+
+      // Determine count (from aggregates or default to 1)
+      const countField = groupBy.aggregates?.find(agg => agg.function === AggregateFunctionTypes.COUNT);
+      const count = countField ? aggregates[countField.alias || `${countField.function}_${countField.field}`] : 1;
+
+      return {
+        key: JSON.stringify(key),
+        aggregates: JSON.stringify(aggregates),
+        count: Number(count) || 0,
+        // items would be populated separately if includeItems is true
+      };
+    });
+  }
+
+  /**
+   * Extracts grouped field values from raw results into the key object.
+   *
+   * @private
+   * @param raw - Raw result object.
+   * @param fields - The groupBy fields configuration.
+   * @param key - The key object to populate.
+   * @param parentPath - The parent path for nested fields.
+   */
+  private extractGroupKeyFromRaw(
+    raw: any,
+    fields: GroupBy<EntityType>,
+    key: Record<string, any>,
+    parentPath: string = '',
+  ): void {
+    for (const [fieldName, fieldValue] of Object.entries(fields)) {
+      if (fieldValue === true) {
+        const alias = parentPath ? `${parentPath}_${fieldName}` : fieldName;
+        key[alias] = raw[alias];
+      } else if (typeof fieldValue === 'object' && fieldValue !== null) {
+        const fullPath = parentPath ? `${parentPath}_${fieldName}` : fieldName;
+        this.extractGroupKeyFromRaw(raw, fieldValue as GroupBy<any>, key, fullPath);
+      }
+    }
   }
 }
 
