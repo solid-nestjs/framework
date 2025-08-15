@@ -13,13 +13,14 @@
       "Bash(node:*)",
       "Bash(timeout:*)",
       "Bash(taskkill:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": [],
+    "defaultMode": "acceptEdits",
     "additionalDirectories": [
       "D:\\d D:\\NodeJS\\solid-nestjs"
-    ],
-    "defaultMode": "acceptEdits"
+    ]
   }
 }

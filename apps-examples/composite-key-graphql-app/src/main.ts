@@ -17,9 +17,9 @@ async function bootstrap() {
   // Enable CORS for GraphQL playground
   app.enableCors();
 
-  await app.listen(3000);
+  await app.listen(3002);
 
-  console.log('🚀 GraphQL server ready at http://localhost:3000/graphql');
+  console.log('🚀 GraphQL server ready at http://localhost:3002/graphql');
 }
 
 bootstrap();
