@@ -1,5 +1,6 @@
 import { Constructable, DeepPartial } from '../../types';
-import { Context, Entity, FindArgs, IdTypeFrom } from '../misc';
+import { Context, Entity, IdTypeFrom } from '../misc';
+import { FindArgs } from '../inputs';
 import {
   DataServiceFunctions,
   DataServiceStructure,

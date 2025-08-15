@@ -1,5 +1,5 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsOptional, IsArray, ValidateNested, IsBoolean, IsInt, Min } from 'class-validator';
+import { InputType, Field } from '@nestjs/graphql';
+import { IsOptional, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AggregateFieldInput } from './aggregate-field.input';
 
@@ -33,31 +33,4 @@ export class GroupByRequestInput {
   @ValidateNested({ each: true })
   @Type(() => AggregateFieldInput)
   aggregates?: AggregateFieldInput[];
-
-  /**
-   * Whether to include individual items in each group
-   * @default false
-   */
-  @Field(() => Boolean, {
-    nullable: true,
-    defaultValue: false,
-    description: 'Whether to include individual items in each group',
-  })
-  @IsOptional()
-  @IsBoolean()
-  includeItems?: boolean;
-
-  /**
-   * Maximum number of items to include per group when includeItems is true
-   * @default 10
-   */
-  @Field(() => Int, {
-    nullable: true,
-    defaultValue: 10,
-    description: 'Maximum number of items to include per group when includeItems is true',
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  maxItemsPerGroup?: number;
 }

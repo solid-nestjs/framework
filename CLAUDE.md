@@ -286,3 +286,5 @@ The framework provides comprehensive soft deletion and bulk operation support:
 - after planning always create a file in the 'tasks' folder with the following naming convention: "yyyyMMddhhmm - title", in that file you must add the summary of what was planned, and the task list to be executed (you must check them when they are finished).
 
 - the planning, tasks and documentation files must always be in english.
+
+- for each new planned feature i want to be documented in a folder called planed-features where we can put all the functionalities, scope and explanations of the feature we plan, you must also keep updating that documentation when the feature is been progressed, this applies just for new features, not Fixes or refactoring.

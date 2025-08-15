@@ -1,5 +1,6 @@
 import { DeepPartial } from '../../types';
-import { Context, IdTypeFrom, Entity, FindArgs } from '../misc';
+import { Context, IdTypeFrom, Entity } from '../misc';
+import { FindArgs } from '../inputs';
 import { DataService } from './data-service.interface';
 
 /**
