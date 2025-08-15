@@ -7,27 +7,17 @@ import { createTestDataSource, cleanupTestData, destroyTestDataSource } from './
 
 describe('GraphQL Soft Deletion E2E Tests', () => {
   let app: INestApplication;
-  let dataSource: DataSource;
-
-  beforeAll(async () => {
-    // Create shared data source once
-    dataSource = await createTestDataSource();
-  });
-
-  afterAll(async () => {
-    // Cleanup shared data source
-    await destroyTestDataSource();
-  });
 
   beforeEach(async () => {
-    // Clean data before each test
-    await cleanupTestData(dataSource);
-    
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(DataSource)
-      .useValue(dataSource)
+      .useFactory({
+        factory: async () => {
+          return await createTestDataSource();
+        },
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -38,6 +28,11 @@ describe('GraphQL Soft Deletion E2E Tests', () => {
     if (app) {
       await app.close();
     }
+  });
+  
+  afterAll(async () => {
+    // Cleanup shared SQL Server connection if exists
+    await destroyTestDataSource();
   });
 
   describe('Supplier GraphQL Soft Deletion Operations', () => {

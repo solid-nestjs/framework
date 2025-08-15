@@ -128,7 +128,12 @@ export const createTestDataSource = async (): Promise<DataSource> => {
 export const cleanupTestData = async (dataSource?: DataSource): Promise<void> => {
   const ds = dataSource || sharedDataSource;
   
-  if (!ds || !ds.isInitialized || ds.options.type !== 'mssql') {
+  if (!ds || !ds.isInitialized) {
+    return;
+  }
+  
+  // Only clean data for SQL Server - SQLite uses fresh in-memory DB for each test
+  if (ds.options.type !== 'mssql') {
     return;
   }
 

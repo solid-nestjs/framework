@@ -25,10 +25,7 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
   let createdClient: any;
   let createdInvoice: any;
 
-  let dataSource: DataSource;
-
-  beforeAll(async () => {
-    // Initialize database connection once for all tests
+  beforeEach(async () => {
     const testDbConfig = await getTestDatabaseConfig();
     
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -62,22 +59,21 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
 
     await app.init();
     
-    // Get the DataSource for cleanup
-    dataSource = app.get(DataSource);
-  });
-
-  beforeEach(async () => {
-    // Clean data before each test (SQL Server only)
+    // Clean data before each test (SQL Server only - SQLite creates fresh DB)
     if (process.env.DB_TYPE === 'mssql') {
+      const dataSource = app.get(DataSource);
       await cleanupTestData(dataSource);
     }
   });
 
-  afterAll(async () => {
-    // Close app and destroy shared connection
+  afterEach(async () => {
     if (app) {
       await app.close();
     }
+  });
+  
+  afterAll(async () => {
+    // Cleanup shared SQL Server connection if exists
     await destroyTestDataSource();
   });
 
