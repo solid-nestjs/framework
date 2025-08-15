@@ -10,13 +10,16 @@ import {
   PaginationResult,
   Where,
   DataService as CommonDataService,
+  GroupByArgs,
+  GroupByRequest,
+  GroupedPaginationResult,
 } from '@solid-nestjs/common';
 import {
   TypeOrmFindManyOptions as FindManyOptions,
   TypeOrmRepository as Repository,
   TypeOrmSelectQueryBuilder as SelectQueryBuilder,
 } from '../../types';
-import { Context, DataRetrievalOptions, ExtendedRelationInfo } from '../misc';
+import { Context, DataRetrievalOptions, GroupByOptions, ExtendedRelationInfo } from '../misc';
 import { QueryBuilderHelper } from '../../helpers';
 
 /**
@@ -370,6 +373,60 @@ export interface DataService<
     fn: (context: ContextType) => Promise<ReturnType>,
     isolationLevel?: IsolationLevel,
   ): Promise<ReturnType>;
+
+  /**
+   * Executes a grouped query with aggregations and returns formatted grouped results.
+   *
+   * @param context - The execution context containing request-specific information
+   * @param args - Find arguments that must include groupBy configuration
+   * @param options - Optional data retrieval options such as main alias and relations
+   * @returns A promise resolving to grouped pagination results with aggregations
+   *
+   * @remarks
+   * This method allows querying entities with GROUP BY clauses and aggregate functions
+   * such as COUNT, SUM, AVG, MIN, MAX. It supports grouping by entity fields and 
+   * related entity fields, enabling complex analytics and reporting scenarios.
+   *
+   * The method handles:
+   * - Grouping by simple entity fields
+   * - Grouping by related entity fields (through JOINs)
+   * - Multiple aggregate functions on different fields
+   * - Pagination of grouped results
+   * - Proper alias handling for nested relations
+   *
+   * @example
+   * ```typescript
+   * // Group products by category and supplier, with price statistics
+   * const groupedResults = await dataService.findAllGrouped(context, {
+   *   groupBy: {
+   *     fields: { 
+   *       category: true, 
+   *       supplier: { name: true } 
+   *     },
+   *     aggregates: [
+   *       { field: 'price', function: AggregateFunctionTypes.AVG, alias: 'avgPrice' },
+   *       { field: 'id', function: AggregateFunctionTypes.COUNT, alias: 'totalProducts' },
+   *       { field: 'price', function: AggregateFunctionTypes.MAX, alias: 'maxPrice' }
+   *     ]
+   *   },
+   *   pagination: { page: 1, limit: 10 },
+   *   where: { active: true }
+   * });
+   *
+   * // Access grouped results
+   * groupedResults.groups.forEach(group => {
+   *   console.log(`Category: ${group.key.category}`);
+   *   console.log(`Supplier: ${group.key.supplier_name}`);
+   *   console.log(`Average Price: ${group.aggregates.avgPrice}`);
+   *   console.log(`Total Products: ${group.aggregates.totalProducts}`);
+   * });
+   * ```
+   */
+  findAllGrouped(
+    context: ContextType,
+    args: GroupByArgs<EntityType>,
+    options?: GroupByOptions<EntityType>,
+  ): Promise<GroupedPaginationResult<EntityType>>;
 
   /**
    * Records an audit log entry for tracking entity changes and actions.

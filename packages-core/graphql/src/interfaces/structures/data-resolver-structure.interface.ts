@@ -6,6 +6,7 @@ import {
   DataService,
   EntityProviderStructure,
   Constructable,
+  GroupByArgs,
 } from '@solid-nestjs/common';
 import { fillEntityId } from './entity-provider-structure.interface';
 
@@ -41,7 +42,7 @@ export interface ParameterDecorators {
  * Interface defining the available data operations for a GraphQL resolver.
  *
  * Provides configuration for common data retrieval operations like
- * finding all entities, pagination, and finding specific entities as GraphQL queries.
+ * finding all entities, pagination, grouped queries, and finding specific entities as GraphQL queries.
  *
  * @template IdType - The type of the entity identifier
  * @template EntityType - The entity type that must extend Entity<unknown>
@@ -67,6 +68,8 @@ export interface DataResolverOperations<
   pagination?: OperationStructure | boolean;
   /** Configuration for the find one query - retrieves a single entity by ID */
   findOne?: OperationStructure | boolean;
+  /** Configuration for the find all grouped query - retrieves entities grouped by specified fields with aggregations */
+  findAllGrouped?: OperationStructure | boolean;
 }
 
 /**
@@ -98,6 +101,8 @@ export interface DataResolverStructure<
   serviceType: Constructable<ServiceType>;
   /** Optional constructable type for GraphQL query arguments - defines query parameters and filters */
   findArgsType?: Constructable<FindArgsType>;
+  /** Optional constructable type for GraphQL group by arguments - defines group by parameters and aggregations */
+  groupByArgsType?: Constructable<GroupByArgs<EntityType>>;
   /** Optional constructable type for GraphQL request context - provides additional request metadata */
   contextType?: Constructable<ContextType>;
   /** Configuration for which GraphQL data operations should be available and how they should be configured */

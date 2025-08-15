@@ -1,3 +1,3 @@
 export * from './args';
 export * from './inputs';
-export * from './pagination-result';
+export * from './outputs';
