@@ -95,11 +95,14 @@ npm run test:e2e -- multiplicative-relations-filter.e2e-spec.ts
 
 ### Testing Specific Applications
 
-**Important**: Currently, only the `apps-examples/advanced-hybrid-crud-app` is fully configured and tested for SQL Server compatibility.
+**SQL Server Compatible Applications**: The following applications are fully configured and tested for SQL Server compatibility.
 
 ```bash
-# Advanced hybrid with all features (SQL Server compatible)
+# Advanced hybrid with REST + GraphQL and all features (SQL Server compatible)
 npm run test:e2e -w apps-examples/advanced-hybrid-crud-app
+
+# Composite key GraphQL application (SQL Server compatible)
+npm run test:e2e -w apps-examples/composite-key-graphql-app
 ```
 
 Other example applications are designed for SQLite and may require additional configuration for SQL Server:
@@ -110,14 +113,24 @@ Other example applications are designed for SQLite and may require additional co
 # npm run test:e2e -w apps-examples/simple-graphql-crud-app
 # npm run test:e2e -w apps-examples/simple-hybrid-crud-app
 # npm run test:e2e -w apps-examples/advanced-crud-app
-# npm run test:e2e -w apps-examples/composite-key-graphql-app
 ```
 
-**Recommendation**: Use `advanced-hybrid-crud-app` for SQL Server testing as it includes:
-- Complete SQL Server configuration
-- Database initialization service
-- Proper test data cleanup
-- All 102 E2E tests verified for SQL Server compatibility
+**Recommendations for SQL Server Testing**:
+
+- **advanced-hybrid-crud-app**: Best for comprehensive testing with REST + GraphQL APIs, including:
+  - Complete SQL Server configuration
+  - Database initialization service  
+  - Proper test data cleanup
+  - All 102 E2E tests verified for SQL Server compatibility
+  - Multiplicative relations filtering
+  - Soft deletion and bulk operations
+
+- **composite-key-graphql-app**: Best for testing composite key functionality with SQL Server, including:
+  - Composite primary keys (string + number)
+  - GraphQL-only API with auto-generated resolvers
+  - All 31 E2E tests verified for SQL Server compatibility
+  - Group-by functionality with composite keys
+  - Multiplicative relation filtering with composite keys
 
 ## Database Management
 

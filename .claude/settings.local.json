@@ -23,7 +23,12 @@
       "Bash(docker-compose:*)",
       "Bash(docker exec:*)",
       "Bash(docker run:*)",
-      "Bash(copy .env.sqlserver .env)"
+      "Bash(copy .env.sqlserver .env)",
+      "Bash(set DB_HOST=localhost)",
+      "Bash(set DB_PORT=1533)",
+      "Bash(set DB_USERNAME=sa)",
+      "Bash(set DB_PASSWORD=Lcv3015380039*)",
+      "Bash(set DB_DATABASE=composite_key_graphql_crud)"
     ],
     "deny": [],
     "ask": [],
