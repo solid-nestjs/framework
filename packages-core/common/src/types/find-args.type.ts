@@ -3,7 +3,7 @@ import {
   StringFilter,
   NumberFilter,
   DateFilter,
-} from './../interfaces/misc/filters.interfaces';
+} from './../interfaces/inputs/filters.interfaces';
 
 /**
  * Represents a flexible filter type for a given field type `T` in query operations.

@@ -42,7 +42,7 @@ export interface AggregateField {
  * @example
  * ```typescript
  * const groupByRequest: GroupByRequest<Product> = {
- *   fields: { 
+ *   fields: {
  *     category: true,
  *     supplier: { name: true }
  *   },
@@ -64,16 +64,4 @@ export interface GroupByRequest<T = any> {
    * Aggregate functions to apply
    */
   aggregates?: AggregateField[];
-
-  /**
-   * Whether to include individual items in each group
-   * @default false
-   */
-  includeItems?: boolean;
-
-  /**
-   * Maximum number of items to include per group when includeItems is true
-   * @default 10
-   */
-  maxItemsPerGroup?: number;
 }
