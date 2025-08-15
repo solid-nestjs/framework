@@ -152,30 +152,31 @@ export const cleanupTestData = async (dataSource?: DataSource): Promise<void> =>
     `);
     
     if (tables.length > 0) {
-      // Disable all foreign key constraints
-      await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"');
+      // Get table names in reverse order for proper deletion (respecting FK constraints)
+      const tableNames = tables.map(t => t.TABLE_NAME);
       
-      // Delete data from all tables (TRUNCATE is faster but doesn't work with FK)
-      for (const table of tables) {
-        try {
-          await queryRunner.query(`DELETE FROM [${table.TABLE_NAME}]`);
+      try {
+        // Disable all foreign key constraints
+        await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"');
+        
+        // Delete data from all tables
+        for (const tableName of tableNames) {
+          await queryRunner.query(`DELETE FROM [${tableName}]`);
           
           // Reset identity if table has one
           const hasIdentity = await queryRunner.query(`
             SELECT 1 FROM sys.identity_columns 
-            WHERE OBJECT_NAME(object_id) = '${table.TABLE_NAME}'
+            WHERE OBJECT_NAME(object_id) = '${tableName}'
           `);
           
           if (hasIdentity.length > 0) {
-            await queryRunner.query(`DBCC CHECKIDENT ('[${table.TABLE_NAME}]', RESEED, 0)`);
+            await queryRunner.query(`DBCC CHECKIDENT ('[${tableName}]', RESEED, 0)`);
           }
-        } catch (error) {
-          console.warn(`Warning: Could not clean table ${table.TABLE_NAME}:`, error.message);
         }
+      } finally {
+        // Always re-enable foreign key constraints
+        await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? CHECK CONSTRAINT all"');
       }
-      
-      // Re-enable all foreign key constraints
-      await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? CHECK CONSTRAINT all"');
     }
   } catch (error) {
     console.error('Error during test data cleanup:', error);

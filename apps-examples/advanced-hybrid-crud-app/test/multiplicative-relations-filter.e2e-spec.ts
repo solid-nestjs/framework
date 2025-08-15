@@ -38,6 +38,11 @@ describe('Multiplicative Relations Filter (e2e)', () => {
     await app.init();
 
     dataSource = app.get(DataSource);
+    
+    // Clean up data before each test (SQL Server only - SQLite creates fresh DB)
+    if (process.env.DB_TYPE === 'mssql') {
+      await cleanupTestData(dataSource);
+    }
 
     // Setup test data
     await setupTestData();
@@ -400,9 +405,10 @@ describe('Multiplicative Relations Filter (e2e)', () => {
     });
 
     it('should return empty array when no invoices match multiplicative filter', async () => {
+      const nonExistentProductId = '00000000-0000-0000-0000-000000000000'; // Use valid UUID format
       const filterQuery = `
         query {
-          invoices(where: { details: { productId: "non-existent-product-id" } }) {
+          invoices(where: { details: { productId: "${nonExistentProductId}" } }) {
             id
             invoiceNumber
           }
@@ -414,6 +420,7 @@ describe('Multiplicative Relations Filter (e2e)', () => {
         .send({ query: filterQuery })
         .expect(200);
 
+      expect(response.body.data).toBeDefined();
       expect(response.body.data.invoices).toBeDefined();
       expect(Array.isArray(response.body.data.invoices)).toBe(true);
       expect(response.body.data.invoices.length).toBe(0);

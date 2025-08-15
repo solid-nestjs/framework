@@ -32,6 +32,11 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
     await app.init();
 
     dataSource = app.get(DataSource);
+    
+    // Clean up data before each test (SQL Server only - SQLite creates fresh DB)
+    if (process.env.DB_TYPE === 'mssql') {
+      await cleanupTestData(dataSource);
+    }
   });
 
   afterEach(async () => {

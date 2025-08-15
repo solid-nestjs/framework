@@ -21,7 +21,7 @@ async function ensureSqlServerDatabase(config: any): Promise<void> {
     entities: [], // No entities needed for database creation
     synchronize: false,
     migrationsRun: false,
-    logging: false,
+    logging: true,
   };
 
   let masterDataSource: DataSource;
@@ -37,16 +37,16 @@ async function ensureSqlServerDatabase(config: any): Promise<void> {
 
       // Check if database exists
       const result = await masterDataSource.query(
-        `SELECT database_id FROM sys.databases WHERE name = '${dbName}'`
+        `SELECT database_id FROM sys.databases WHERE name = '${dbName}'`,
       );
 
       if (result.length === 0) {
         // Database does not exist. Creating it...
-        
+
         // Create the database
         await masterDataSource.query(`CREATE DATABASE [${dbName}]`);
         // Database created successfully
-        
+
         // Configure database settings
         try {
           await masterDataSource.query(`
@@ -60,24 +60,22 @@ async function ensureSqlServerDatabase(config: any): Promise<void> {
       } else {
         // Database already exists
       }
-      
+
       // If we get here, everything worked
       return;
-      
     } catch (error) {
       retries++;
       // Error on attempt
-      
+
       if (retries >= maxRetries) {
         // Failed to ensure database exists after max attempts
         // TypeORM will handle connection retries during application startup...
         return; // Don't throw, let TypeORM handle it
       }
-      
+
       const waitTime = Math.min(1000 * Math.pow(2, retries), 10000); // Exponential backoff
       // Waiting before retry...
       await new Promise(resolve => setTimeout(resolve, waitTime));
-      
     } finally {
       if (masterDataSource?.isInitialized) {
         try {
@@ -92,17 +90,21 @@ async function ensureSqlServerDatabase(config: any): Promise<void> {
 
 export default registerAs('database', (): TypeOrmModuleOptions => {
   const dbType = process.env.DB_TYPE || 'sqlite';
-  
+
   // Database configuration loaded
-  
+
   const entities = [Product, Supplier, Invoice, InvoiceDetail, Client];
-  
+
   // Common configuration with defaults for SQLite when no .env file
   const commonConfig: Partial<TypeOrmModuleOptions> = {
     entities,
-    synchronize: process.env.DB_SYNCHRONIZE ? process.env.DB_SYNCHRONIZE === 'true' : (dbType === 'sqlite'),
-    logging: process.env.DB_LOGGING ? process.env.DB_LOGGING === 'true' : false,
-    migrationsRun: process.env.DB_MIGRATIONS_RUN ? process.env.DB_MIGRATIONS_RUN === 'true' : false,
+    synchronize: process.env.DB_SYNCHRONIZE
+      ? process.env.DB_SYNCHRONIZE === 'true'
+      : dbType === 'sqlite',
+    logging: process.env.DB_LOGGING ? process.env.DB_LOGGING === 'true' : true,
+    migrationsRun: process.env.DB_MIGRATIONS_RUN
+      ? process.env.DB_MIGRATIONS_RUN === 'true'
+      : false,
     retryAttempts: 10,
     retryDelay: 3000,
   };
@@ -133,8 +135,8 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
         extra: {
           onConnect: async (connection: any) => {
             // Connected to SQL Server successfully
-          }
-        }
+          },
+        },
       } as SqlServerConnectionOptions;
 
     case 'sqlite':
@@ -142,23 +144,26 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
       return {
         ...commonConfig,
         type: 'sqlite',
-        database: process.env.SQLITE_DATABASE || './database-data/products.sqlite',
+        database:
+          process.env.SQLITE_DATABASE || './database-data/products.sqlite',
       } as SqliteConnectionOptions;
   }
 });
 
 // Helper function to get database configuration for testing
-export const getDatabaseConfig = (overrides?: Partial<TypeOrmModuleOptions>): TypeOrmModuleOptions => {
+export const getDatabaseConfig = (
+  overrides?: Partial<TypeOrmModuleOptions>,
+): TypeOrmModuleOptions => {
   const baseConfig = registerAs('database', (): TypeOrmModuleOptions => {
     const dbType = process.env.DB_TYPE || 'sqlite';
-    
+
     const entities = [Product, Supplier, Invoice, InvoiceDetail, Client];
-    
+
     // Common configuration
     const commonConfig: Partial<TypeOrmModuleOptions> = {
       entities,
       synchronize: true,
-      logging: false,
+      logging: true,
       dropSchema: true, // For testing
     };
 
