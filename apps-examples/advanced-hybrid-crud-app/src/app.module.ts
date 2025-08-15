@@ -1,8 +1,9 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver } from '@nestjs/apollo';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { DataSource } from 'typeorm';
 import { SeederService } from '@solid-nestjs/typeorm';
@@ -16,23 +17,41 @@ import { InvoiceDetail } from './invoices/entities/invoice-detail.entity';
 import { ClientsModule } from './clients/clients.module';
 import { Client } from './clients/entities/client.entity';
 import { SuppliersSeeder, ProductsSeeder, ClientsSeeder, InvoicesSeeder } from './seeders';
+import { AppConfigModule } from './config/config.module';
+import databaseConfig from './config/database.config';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: './database-data/products.sqlite',
-      entities: [Product, Supplier, Invoice, InvoiceDetail, Client],
-      synchronize: true, // Set to false in production
-      logging: true,
+    AppConfigModule,
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const config = configService.get('database');
+        
+        // For SQL Server, ensure database exists before connecting
+        if (config?.type === 'mssql') {
+          // Import the helper function locally to avoid import issues
+          const { ensureSqlServerDatabase } = await import('./config/database-initializer.service');
+          await ensureSqlServerDatabase(config);
+        }
+        
+        return config;
+      },
+      inject: [ConfigService],
     }),
-    GraphQLModule.forRoot({
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      playground: false,
-      introspection: true,
-      sortSchema: true,
+    GraphQLModule.forRootAsync({
       driver: ApolloDriver,
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        playground: configService.get('GRAPHQL_PLAYGROUND', 'true') === 'true' ? false : false,
+        introspection: configService.get('GRAPHQL_INTROSPECTION', 'true') === 'true',
+        sortSchema: true,
+        plugins: configService.get('GRAPHQL_PLAYGROUND', 'true') === 'true' 
+          ? [ApolloServerPluginLandingPageLocalDefault()] 
+          : [],
+      }),
+      inject: [ConfigService],
     }),
     ProductsModule,
     SuppliersModule,
@@ -41,7 +60,7 @@ import { SuppliersSeeder, ProductsSeeder, ClientsSeeder, InvoicesSeeder } from '
   ],
   providers: [SeederService, SuppliersSeeder, ProductsSeeder, ClientsSeeder, InvoicesSeeder],
 })
-export class AppModule implements OnModuleInit {
+export class AppModule implements OnApplicationBootstrap {
   constructor(
     private readonly dataSource: DataSource,
     private readonly seederService: SeederService,
@@ -51,7 +70,7 @@ export class AppModule implements OnModuleInit {
     private readonly invoicesSeeder: InvoicesSeeder,
   ) {}
 
-  async onModuleInit() {
+  async onApplicationBootstrap() {
     // Skip seeders during testing to avoid interference with E2E tests
     const isTestEnvironment = process.env.NODE_ENV === 'test' || 
                              process.env.JEST_WORKER_ID !== undefined ||
@@ -61,6 +80,15 @@ export class AppModule implements OnModuleInit {
       return;
     }
 
+    // Wait a bit to ensure TypeORM has finished creating tables
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Verify that the DataSource is properly initialized
+    if (!this.dataSource.isInitialized) {
+      console.warn('⚠️ DataSource is not initialized yet, waiting...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
     const seeders = [
       this.suppliersSeeder,
       this.productsSeeder,
@@ -68,14 +96,18 @@ export class AppModule implements OnModuleInit {
       this.invoicesSeeder,
     ];
     
-    // Check if any seeder needs to run before running them
-    const shouldRunSeeders = await this.seederService.shouldRunAnySeeder(
-      this.dataSource,
-      seeders,
-    );
+    try {
+      // Check if any seeder needs to run before running them
+      const shouldRunSeeders = await this.seederService.shouldRunAnySeeder(
+        this.dataSource,
+        seeders,
+      );
 
-    if (shouldRunSeeders) {
-      await this.seederService.runSeeders(this.dataSource, seeders);
+      if (shouldRunSeeders) {
+        await this.seederService.runSeeders(this.dataSource, seeders);
+      }
+    } catch (error) {
+      console.error('⚠️ Error during seeding, tables might not be ready yet:', error.message);
     }
   }
 }

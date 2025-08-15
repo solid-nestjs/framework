@@ -1,4 +1,5 @@
 // Jest setup file for e2e tests
+require('dotenv').config({ path: '.env' });
 require('reflect-metadata');
 
 // Set longer timeout for e2e tests

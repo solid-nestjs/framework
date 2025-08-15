@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { DataSource } from 'typeorm';
+import { createTestDataSource, cleanupTestData, destroyTestDataSource } from './test-database.config';
 
 describe('Composite Key GraphQL CRUD App (e2e)', () => {
   let app: INestApplication;
@@ -17,16 +18,7 @@ describe('Composite Key GraphQL CRUD App (e2e)', () => {
       .overrideProvider(DataSource)
       .useFactory({
         factory: async () => {
-          const { DataSource } = await import('typeorm');
-          const dataSource = new DataSource({
-            type: 'sqlite',
-            database: ':memory:',
-            dropSchema: true,
-            entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
-            synchronize: true,
-          });
-          await dataSource.initialize();
-          return dataSource;
+          return await createTestDataSource();
         },
       })
       .compile();
@@ -38,12 +30,21 @@ describe('Composite Key GraphQL CRUD App (e2e)', () => {
   });
 
   beforeEach(async () => {
-    // Clear database before each test
-    await dataSource.synchronize(true);
+    if (process.env.DB_TYPE === 'mssql') {
+      // For SQL Server, clean up data but keep schema
+      await cleanupTestData(dataSource);
+    } else {
+      // For SQLite, clear database before each test
+      await dataSource.synchronize(true);
+    }
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
+    // Cleanup shared SQL Server connection if exists
+    await destroyTestDataSource();
   });
 
   describe('Suppliers API (Composite Keys)', () => {

@@ -28,7 +28,10 @@ export class Invoice {
 
   @ApiProperty({ description: 'The total amount of the invoice' })
   @Field(() => Float, { description: 'The total amount of the invoice' })
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value)
+  }})
   totalAmount: number;
 
   @ApiProperty({ description: 'The status of the invoice' })

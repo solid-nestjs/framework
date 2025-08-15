@@ -1489,6 +1489,10 @@ export class QueryBuilderHelper<
       options?.mainAlias ?? 'entity',
     );
 
+    // Clear the default SELECT * that TypeORM adds automatically
+    // This is crucial for SQL Server GROUP BY compatibility
+    queryBuilder.select([]);
+
     // Apply withDeleted option
     if (options?.withDeleted) {
       queryBuilder.withDeleted();
@@ -1584,10 +1588,11 @@ export class QueryBuilderHelper<
     args: GroupByArgs<EntityType>,
     options?: GroupByOptions<EntityType>,
   ): SelectQueryBuilder<ObjectLiteral> {
-    // Create the grouped query as a subquery ignoring pagination
+    // Create the grouped query as a subquery ignoring pagination AND ordering
+    // For count queries, we don't need ORDER BY (and SQL Server doesn't allow it in subqueries)
     const groupedQuery = this.getGroupedQueryBuilder(
       repository,
-      { ...args, pagination: undefined },
+      { ...args, pagination: undefined, orderBy: undefined },
       options,
     );
 
@@ -1841,6 +1846,7 @@ export class QueryBuilderHelper<
 
   /**
    * Adds SELECT clauses for grouped fields.
+   * Only selects fields that are actually part of the GROUP BY clause to be SQL Server compatible.
    *
    * @private
    * @param fields - The fields being grouped.
@@ -1856,7 +1862,7 @@ export class QueryBuilderHelper<
   ): void {
     for (const [fieldName, fieldValue] of Object.entries(fields)) {
       if (fieldValue === true) {
-        // Add select for simple field
+        // Add select for simple field - only if it's actually being grouped by
         const alias = parentPath ? `${parentPath}_${fieldName}` : fieldName;
         queryContext.queryBuilder.addSelect(
           `${parentAlias}.${fieldName}`,

@@ -8,6 +8,28 @@ This is the SOLID NestJS Framework - a powerful, modular framework for building 
 
 ## Development Commands
 
+### Port Management & Process Cleanup
+
+Before running development servers, use these utilities to avoid port conflicts:
+
+```bash
+# Clean up specific port (default: 3000)
+.\scripts\cleanup-ports.ps1 -Port 3000
+
+# Safe start with automatic cleanup and timeout
+.\scripts\safe-start-dev.ps1 -Port 3000 -Workspace "apps-examples/simple-crud-app" -Timeout 30
+
+# Clean up ports using bash script
+.\scripts\cleanup-ports.sh 3000
+```
+
+**Important for Claude Code**: Always clean up ports before running `npm run start:dev` to avoid orphaned processes occupying ports.
+
+**Claude Code Workflow**:
+1. Before running any `npm run start:dev` command, first run: `powershell -ExecutionPolicy Bypass -File ".\scripts\cleanup-ports.ps1" -Port [PORT_NUMBER]`
+2. After testing or when done, run: `powershell -ExecutionPolicy Bypass -File ".\scripts\kill-all-node-except-claude.ps1"`
+3. Always use timeout with `npm run start:dev` commands to prevent indefinite hanging: `timeout 30 npm run start:dev`
+
 ### Testing
 
 ```bash

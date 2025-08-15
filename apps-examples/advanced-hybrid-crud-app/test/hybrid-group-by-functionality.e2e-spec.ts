@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
+import { createTestDataSource, cleanupTestData, destroyTestDataSource } from './test-database.config';
 
 describe('Hybrid App GROUP BY Functionality (e2e)', () => {
   let app: INestApplication;
@@ -15,17 +16,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       .overrideProvider(DataSource)
       .useFactory({
         factory: async () => {
-          const { DataSource } = await import('typeorm');
-          const dataSource = new DataSource({
-            type: 'sqlite',
-            database: ':memory:',
-            dropSchema: true,
-            entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
-            synchronize: true,
-            logging: false,
-          });
-          await dataSource.initialize();
-          return dataSource;
+          return await createTestDataSource();
         },
       })
       .compile();
@@ -41,10 +32,22 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
     await app.init();
 
     dataSource = app.get(DataSource);
+    
+    // Clean up data before each test (SQL Server only - SQLite creates fresh DB)
+    if (process.env.DB_TYPE === 'mssql') {
+      await cleanupTestData(dataSource);
+    }
   });
 
   afterEach(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
+  });
+  
+  afterAll(async () => {
+    // Cleanup shared SQL Server connection if exists
+    await destroyTestDataSource();
   });
 
   describe('REST API GROUP BY Tests', () => {

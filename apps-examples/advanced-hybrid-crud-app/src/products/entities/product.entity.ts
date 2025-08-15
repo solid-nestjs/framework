@@ -31,7 +31,10 @@ export class Product {
 
   @ApiProperty({ description: 'The price of the product' })
   @Field(() => Float, { description: 'The price of the product' })
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value)
+  }})
   price: number;
 
   @ApiProperty({ description: 'The stock quantity of the product' })
