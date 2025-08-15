@@ -28,7 +28,8 @@
       "Bash(set DB_PORT=1533)",
       "Bash(set DB_USERNAME=sa)",
       "Bash(set DB_PASSWORD=Lcv3015380039*)",
-      "Bash(set DB_DATABASE=composite_key_graphql_crud)"
+      "Bash(set DB_DATABASE=composite_key_graphql_crud)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": [],
