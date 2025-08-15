@@ -3,7 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
-import { createTestDataSource } from './test-database.config';
+import { createTestDataSource, cleanupTestData, destroyTestDataSource } from './test-database.config';
 
 describe('Multiplicative Relations Filter (e2e)', () => {
   let app: INestApplication;
@@ -15,16 +15,25 @@ describe('Multiplicative Relations Filter (e2e)', () => {
   let invoice1: any;
   let invoice2: any;
 
+  beforeAll(async () => {
+    // Create shared data source once
+    dataSource = await createTestDataSource();
+  });
+
+  afterAll(async () => {
+    // Cleanup shared data source
+    await destroyTestDataSource();
+  });
+
   beforeEach(async () => {
+    // Clean data before each test
+    await cleanupTestData(dataSource);
+    
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(DataSource)
-      .useFactory({
-        factory: async () => {
-          return await createTestDataSource();
-        },
-      })
+      .useValue(dataSource)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -36,8 +45,6 @@ describe('Multiplicative Relations Filter (e2e)', () => {
       }),
     );
     await app.init();
-
-    dataSource = app.get(DataSource);
 
     // Setup test data
     await setupTestData();

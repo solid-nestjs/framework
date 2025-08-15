@@ -16,7 +16,7 @@ import { Invoice } from '../src/invoices/entities/invoice.entity';
 import { InvoiceDetail } from '../src/invoices/entities/invoice-detail.entity';
 import { Client } from '../src/clients/entities/client.entity';
 import { ClientsModule } from '../src/clients/clients.module';
-import { getTestDatabaseConfig } from './test-database.config';
+import { getTestDatabaseConfig, cleanupTestData, destroyTestDataSource } from './test-database.config';
 
 describe('Advanced Hybrid CRUD App (e2e)', () => {
   let app: INestApplication;
@@ -25,7 +25,10 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
   let createdClient: any;
   let createdInvoice: any;
 
-  beforeEach(async () => {
+  let dataSource: DataSource;
+
+  beforeAll(async () => {
+    // Initialize database connection once for all tests
     const testDbConfig = await getTestDatabaseConfig();
     
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -58,10 +61,24 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
     );
 
     await app.init();
+    
+    // Get the DataSource for cleanup
+    dataSource = app.get(DataSource);
   });
 
-  afterEach(async () => {
-    await app.close();
+  beforeEach(async () => {
+    // Clean data before each test (SQL Server only)
+    if (process.env.DB_TYPE === 'mssql') {
+      await cleanupTestData(dataSource);
+    }
+  });
+
+  afterAll(async () => {
+    // Close app and destroy shared connection
+    if (app) {
+      await app.close();
+    }
+    await destroyTestDataSource();
   });
 
   // ==================== REST API TESTS ====================
