@@ -7,12 +7,19 @@
       "Bash(rm:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:docs.nestjs.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(cd:*)",
+      "Bash(npm run start:dev:*)",
+      "Bash(node:*)",
+      "Bash(timeout:*)",
+      "Bash(taskkill:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": [],
     "additionalDirectories": [
       "D:\\d D:\\NodeJS\\solid-nestjs"
-    ]
+    ],
+    "defaultMode": "acceptEdits"
   }
 }

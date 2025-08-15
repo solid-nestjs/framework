@@ -225,5 +225,188 @@ describe('REST API GroupBy Functionality (e2e)', () => {
       expect(response.body.pagination.limit).toBe(2);
       expect(response.body.pagination.pageCount).toBe(3);
     });
+
+    it('should filter products before grouping via REST API', async () => {
+      // Create suppliers
+      const supplier1Response = await request(app.getHttpServer())
+        .post('/suppliers')
+        .send({
+          name: 'Premium Electronics',
+          contactEmail: 'premium@electronics.com'
+        })
+        .expect(201);
+
+      const supplier2Response = await request(app.getHttpServer())
+        .post('/suppliers')
+        .send({
+          name: 'Budget Electronics',
+          contactEmail: 'budget@electronics.com'
+        })
+        .expect(201);
+
+      const supplier1 = supplier1Response.body;
+      const supplier2 = supplier2Response.body;
+
+      // Create products with different price ranges
+      const products = [
+        { name: 'Expensive Laptop', price: 2000, stock: 5, supplierId: supplier1.id },
+        { name: 'Mid Laptop', price: 800, stock: 10, supplierId: supplier1.id },
+        { name: 'Budget Mouse', price: 25, stock: 50, supplierId: supplier2.id },
+        { name: 'Budget Keyboard', price: 40, stock: 30, supplierId: supplier2.id }
+      ];
+
+      for (const product of products) {
+        await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: product.name,
+            description: `Description for ${product.name}`,
+            price: product.price,
+            stock: product.stock,
+            supplier: { id: product.supplierId }
+          })
+          .expect(201);
+      }
+
+      // Test: Group by supplier, filter products with price >= 500
+      const groupByQuery = {
+        fields: { supplier: { name: true } },
+        aggregates: [
+          { field: 'name', function: 'COUNT', alias: 'productCount' },
+          { field: 'price', function: 'MIN', alias: 'minPrice' }
+        ]
+      };
+
+      const whereFilter = { price: { _gte: 500 } };
+
+      const response = await request(app.getHttpServer())
+        .get('/products/grouped')
+        .query('groupBy=' + encodeURIComponent(JSON.stringify(groupByQuery)) +
+               '&where=' + encodeURIComponent(JSON.stringify(whereFilter)))
+        .expect(200);
+
+      // Should only have Premium Electronics group (2 products >= 500)
+      expect(response.body.groups.length).toBe(1);
+      
+      const group = response.body.groups[0];
+      const key = group.key;
+      const aggregates = group.aggregates;
+      
+      expect(key.supplier_name).toBe('Premium Electronics');
+      expect(aggregates.productCount).toBe(2); // Expensive Laptop, Mid Laptop
+      expect(aggregates.minPrice).toBe(800); // Min of 2000, 800
+    });
+
+    it('should order grouped results by supplier name via REST API', async () => {
+      // Create suppliers with names for testing ordering
+      const suppliers = ['Zebra Tech', 'Alpha Corp', 'Beta Inc'];
+      const supplierIds: string[] = [];
+
+      for (const supplierName of suppliers) {
+        const response = await request(app.getHttpServer())
+          .post('/suppliers')
+          .send({
+            name: supplierName,
+            contactEmail: `${supplierName.toLowerCase().replace(' ', '')}@test.com`
+          })
+          .expect(201);
+        supplierIds.push(response.body.id);
+      }
+
+      // Create one product for each supplier
+      for (let i = 0; i < suppliers.length; i++) {
+        await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: `Product ${i + 1}`,
+            description: `Product for ${suppliers[i]}`,
+            price: (i + 1) * 100,
+            stock: 10,
+            supplier: { id: supplierIds[i] }
+          })
+          .expect(201);
+      }
+
+      // Test: Group by supplier, order by supplier name ASC
+      const groupByQuery = {
+        fields: { supplier: { name: true } },
+        aggregates: [
+          { field: 'price', function: 'MAX', alias: 'maxPrice' }
+        ]
+      };
+
+      const orderBy = [{ supplier: { name: 'ASC' } }];
+
+      const response = await request(app.getHttpServer())
+        .get('/products/grouped')
+        .query('groupBy=' + encodeURIComponent(JSON.stringify(groupByQuery)) +
+               '&orderBy=' + encodeURIComponent(JSON.stringify(orderBy)))
+        .expect(200);
+
+      expect(response.body.groups.length).toBe(3);
+      
+      // Verify alphabetical ordering: Alpha Corp, Beta Inc, Zebra Tech
+      const groupNames = response.body.groups.map((group: any) => group.key.supplier_name);
+      expect(groupNames).toEqual(['Alpha Corp', 'Beta Inc', 'Zebra Tech']);
+    });
+
+    it('should combine filtering and ordering via REST API', async () => {
+      // Create supplier
+      const supplierResponse = await request(app.getHttpServer())
+        .post('/suppliers')
+        .send({
+          name: 'Combo Test Supplier',
+          contactEmail: 'combo@test.com'
+        })
+        .expect(201);
+
+      const supplier = supplierResponse.body;
+
+      // Create products with varying stock levels and names for ordering test
+      const products = [
+        { name: 'Product A Low', stock: 5, price: 100 },
+        { name: 'Product Z High', stock: 25, price: 100 },
+        { name: 'Product B Low', stock: 3, price: 100 },
+        { name: 'Product Y High', stock: 20, price: 100 },
+        { name: 'Product M Med', stock: 12, price: 100 }
+      ];
+
+      for (const product of products) {
+        await request(app.getHttpServer())
+          .post('/products')
+          .send({
+            name: product.name,
+            description: 'Combo test product',
+            price: product.price,
+            stock: product.stock,
+            supplier: { id: supplier.id }
+          })
+          .expect(201);
+      }
+
+      // Test: Group by name, filter stock >= 10, order by name DESC
+      const groupByQuery = {
+        fields: { name: true },
+        aggregates: [
+          { field: 'stock', function: 'AVG', alias: 'avgStock' }
+        ]
+      };
+
+      const whereFilter = { stock: { _gte: 10 } };
+      const orderBy = [{ name: 'DESC' }];
+
+      const response = await request(app.getHttpServer())
+        .get('/products/grouped')
+        .query('groupBy=' + encodeURIComponent(JSON.stringify(groupByQuery)) +
+               '&where=' + encodeURIComponent(JSON.stringify(whereFilter)) +
+               '&orderBy=' + encodeURIComponent(JSON.stringify(orderBy)))
+        .expect(200);
+
+      expect(response.body.groups.length).toBe(3); // Products with stock >= 10
+      
+      // Verify DESC ordering: Z, Y, M (excluding A and B which have stock < 10)
+      const groupNames = response.body.groups.map((group: any) => group.key.name);
+      expect(groupNames).toEqual(['Product Z High', 'Product Y High', 'Product M Med']);
+    });
   });
 });

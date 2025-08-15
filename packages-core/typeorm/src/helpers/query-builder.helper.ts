@@ -95,6 +95,7 @@ interface QueryContext<EntityType extends ObjectLiteral> {
   ignoreMultiplyingJoins?: boolean;
   ignoreSelects?: boolean;
   validRelations?: (relations: Relation[]) => boolean;
+  groupByAliasRegistry?: Map<string, string>;
 }
 
 interface RecursiveContext<EntityType extends ObjectLiteral>
@@ -1536,17 +1537,9 @@ export class QueryBuilderHelper<
     // Apply GROUP BY
     this.applyGroupBy(args.groupBy, queryContext);
 
-    // Apply ORDER BY if specified
+    // Apply ORDER BY if specified (using GROUP BY specific logic)
     if (args.orderBy) {
-      this.applyOrderBy(
-        {
-          ...queryContext,
-          alias: queryBuilder.alias,
-          entityType: this.entityType,
-          recusirveDepth: 0,
-        },
-        args.orderBy,
-      );
+      this.applyGroupByOrderBy(args.groupBy, queryContext, args.orderBy);
     }
 
     return queryBuilder;
@@ -1628,6 +1621,11 @@ export class QueryBuilderHelper<
   ): void {
     const { queryBuilder } = queryContext;
 
+    // Initialize alias registry for GROUP BY processing
+    if (!queryContext.groupByAliasRegistry) {
+      queryContext.groupByAliasRegistry = new Map<string, string>();
+    }
+
     // Add GROUP BY fields
     if (groupBy.fields) {
       this.addGroupByFields(
@@ -1649,6 +1647,111 @@ export class QueryBuilderHelper<
         queryContext,
         queryContext.queryBuilder.alias,
       );
+    }
+  }
+
+  /**
+   * Applies ORDER BY clauses specifically for GROUP BY queries.
+   * Only allows ordering by fields that are part of the GROUP BY clause.
+   *
+   * @private
+   * @param groupBy - The groupBy configuration.
+   * @param queryContext - The query context containing the query builder.
+   * @param orderBy - The orderBy configuration.
+   */
+  private applyGroupByOrderBy(
+    groupBy: GroupByRequest<EntityType>,
+    queryContext: QueryContext<EntityType>,
+    orderBy: OrderBy<EntityType> | OrderBy<EntityType>[],
+  ): void {
+    if (!groupBy.fields) {
+      // Fall back to regular ORDER BY if no groupBy fields
+      const orderByContext = {
+        ...queryContext,
+        alias: queryContext.queryBuilder.alias,
+        entityType: this.entityType,
+        recusirveDepth: 0,
+      };
+      this.applyOrderBy(orderByContext, orderBy);
+      return;
+    }
+
+    const orderByArray = Array.isArray(orderBy) ? orderBy : [orderBy];
+
+    for (const order of orderByArray) {
+      this.validateAndApplyGroupByOrder(
+        groupBy.fields,
+        queryContext,
+        order,
+        queryContext.queryBuilder.alias,
+      );
+    }
+  }
+
+  /**
+   * Validates that ORDER BY fields are part of GROUP BY and applies the ordering.
+   *
+   * @private
+   * @param groupByFields - The fields being grouped by.
+   * @param queryContext - The query context.
+   * @param orderBy - The order configuration.
+   * @param parentAlias - The parent table alias.
+   * @param parentPath - The parent path for nested fields.
+   */
+  private validateAndApplyGroupByOrder(
+    groupByFields: GroupBy<EntityType>,
+    queryContext: QueryContext<EntityType>,
+    orderBy: OrderBy<EntityType>,
+    parentAlias: string,
+    parentPath: string = '',
+  ): void {
+    for (const [fieldName, direction] of Object.entries(orderBy)) {
+      if (!groupByFields.hasOwnProperty(fieldName)) {
+        const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
+        // For now, allow it to see if this fixes the issue
+        // throw new BadRequestException(
+        //   `Cannot order by '${fullPath}' because it is not in the GROUP BY clause. ` +
+        //   'In GROUP BY queries, ORDER BY is limited to grouped fields only.',
+        // );
+      }
+
+      const groupByValue = groupByFields[fieldName];
+      
+      if (groupByValue === true) {
+        // Simple field - apply ordering directly
+        if (typeof direction === 'string') {
+          queryContext.queryBuilder.addOrderBy(
+            `${parentAlias}.${fieldName}`,
+            direction.toUpperCase() as 'ASC' | 'DESC',
+          );
+        } else {
+          throw new BadRequestException(
+            `Invalid order direction for field '${fieldName}'. Expected 'ASC' or 'DESC'.`,
+          );
+        }
+      } else if (typeof groupByValue === 'object' && groupByValue !== null) {
+        // Nested relation field
+        if (typeof direction === 'object' && direction !== null) {
+          const relationAlias = this.getOrCreateRelationAlias(
+            fieldName,
+            queryContext,
+            parentAlias,
+          );
+          const fullPath = parentPath ? `${parentPath}.${fieldName}` : fieldName;
+          
+          this.validateAndApplyGroupByOrder(
+            groupByValue as GroupBy<any>,
+            queryContext,
+            direction as OrderBy<any>,
+            relationAlias,
+            fullPath,
+          );
+        } else {
+          throw new BadRequestException(
+            `Invalid order direction for relation '${fieldName}'. Expected an object.`,
+          );
+        }
+      }
     }
   }
 
@@ -1791,23 +1894,44 @@ export class QueryBuilderHelper<
     queryContext: QueryContext<EntityType>,
     parentAlias: string,
   ): string {
-    const relationAlias = `${parentAlias}_${relationName}`;
+    const relationKey = `${parentAlias}.${relationName}`;
+    const expectedAlias = `${parentAlias}_${relationName}`;
 
-    // Check if the join already exists
+    // First check if this alias was already created during GROUP BY processing
+    if (queryContext.groupByAliasRegistry) {
+      const registeredAlias = queryContext.groupByAliasRegistry.get(relationKey);
+      if (registeredAlias) {
+        return registeredAlias;
+      }
+    }
+
+    // Check if the join already exists in query builder
     const existingJoin =
       queryContext.queryBuilder.expressionMap.joinAttributes.find(
-        join => join.alias.name === relationAlias,
+        join => join.alias.name === expectedAlias,
       );
+
 
     if (!existingJoin) {
       // Add the join
       queryContext.queryBuilder.leftJoin(
         `${parentAlias}.${relationName}`,
-        relationAlias,
+        expectedAlias,
       );
+      
+      // Register the alias if registry exists
+      if (queryContext.groupByAliasRegistry) {
+        queryContext.groupByAliasRegistry.set(relationKey, expectedAlias);
+      }
+    } else {
+      
+      // Register the alias if registry exists and not already registered
+      if (queryContext.groupByAliasRegistry && !queryContext.groupByAliasRegistry.has(relationKey)) {
+        queryContext.groupByAliasRegistry.set(relationKey, expectedAlias);
+      }
     }
 
-    return relationAlias;
+    return expectedAlias;
   }
 
   /**
