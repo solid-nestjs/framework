@@ -1,6 +1,7 @@
 import { Type } from '@nestjs/common';
 import { Constructable, DeepPartial, UnionToIntersection } from '../../types';
-import { Context, Entity, FindArgs, IdTypeFrom } from '../misc';
+import { Context, Entity, IdTypeFrom } from '../misc';
+import { FindArgs } from '../inputs';
 import { DataService, CrudService } from '../services';
 import { CrudServiceStructure } from './crud-service-structure.interface';
 import { DataServiceStructure } from './data-service-structure.interface';

@@ -14,7 +14,8 @@
       "Bash(timeout:*)",
       "Bash(taskkill:*)",
       "Bash(find:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": [],

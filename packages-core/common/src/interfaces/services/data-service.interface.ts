@@ -1,11 +1,7 @@
 import { BooleanType, NotNullableIf, If } from '../../types';
-import {
-  Context,
-  IdTypeFrom,
-  Entity,
-  FindArgs,
-  PaginationResult,
-} from '../misc';
+import { Context, IdTypeFrom, Entity } from '../misc';
+import { FindArgs } from '../inputs';
+import { PaginationResult } from '../outputs';
 import { Where } from '../../types/find-args.type';
 
 /**
