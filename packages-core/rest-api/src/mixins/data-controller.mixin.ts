@@ -30,13 +30,14 @@ import {
   applyClassDecorators,
   applyMethodDecorators,
   QueryTransformPipe,
+  GroupByArgs,
 } from '@solid-nestjs/common';
 import {
   DataControllerStructure,
   OperationStructure,
   DataController,
 } from '../interfaces';
-import { DefaultArgs, PaginationResult } from '../classes';
+import { DefaultArgs, PaginationResult, GroupedPaginationResult } from '../classes';
 import { ApiResponses } from '../decorators';
 
 /**
@@ -81,7 +82,7 @@ export function DataControllerFrom<
 ): Type<
   DataController<IdType, EntityType, ServiceType, FindArgsType, ContextType>
 > {
-  const { entityType, serviceType, findArgsType } = controllerStructure;
+  const { entityType, serviceType, findArgsType, groupByArgsType } = controllerStructure;
 
   const ContextDecorator =
     controllerStructure.parameterDecorators?.context ?? CurrentContext;
@@ -153,6 +154,20 @@ export function DataControllerFrom<
     },
   );
 
+  const findAllGroupedSettings = extractOperationSettings(
+    controllerStructure.operations?.findAllGrouped,
+    {
+      disabled: controllerStructure.operations?.findAllGrouped === false || !groupByArgsType,
+      route: 'grouped',
+      summary:
+        'Grouped query of ' + entityType.name.toLowerCase() + 's with aggregations',
+      description:
+        'grouped query with aggregations for ' + entityType.name.toLowerCase() + 's',
+      successCode: HttpStatus.OK,
+      errorCodes: [HttpStatus.BAD_REQUEST],
+    },
+  );
+
   const paramApiConfig = {
     name: 'id',
     description: 'ID of the ' + entityType.name + ' entity',
@@ -162,7 +177,7 @@ export function DataControllerFrom<
   @ApiTags(controllerApiTags)
   @Controller(controllerRoute)
   @applyClassDecorators(controllerDecorators)
-  @ApiExtraModels(argsType, PaginationResult)
+  @ApiExtraModels(argsType, PaginationResult, ...(groupByArgsType ? [groupByArgsType, GroupedPaginationResult] : []))
   class DataControllerClass
     implements
       DataController<IdType, EntityType, ServiceType, FindArgsType, ContextType>
@@ -297,6 +312,43 @@ export function DataControllerFrom<
       return this.service.findAll(context, args, true);
     }
 
+    @Get(findAllGroupedSettings?.route ?? 'grouped')
+    @applyMethodDecorators(findAllGroupedSettings?.decorators ?? [])
+    @ApiOperation({
+      summary: findAllGroupedSettings?.summary,
+      description: findAllGroupedSettings?.description,
+      operationId: findAllGroupedSettings?.operationId,
+    })
+    @ApiQuery({
+      name: 'args',
+      required: false,
+      schema: {
+        $ref: getSchemaPath(groupByArgsType!),
+      },
+    })
+    @HttpCode(findAllGroupedSettings?.successCode ?? HttpStatus.OK)
+    @ApiResponses({
+      type: GroupedPaginationResult,
+      successCodes: findAllGroupedSettings?.successCodes ?? [HttpStatus.OK],
+      errorCodes: findAllGroupedSettings?.errorCodes ?? [HttpStatus.BAD_REQUEST],
+    })
+    async findAllGrouped?(
+      @ContextDecorator() context: ContextType,
+      @Query(
+        QueryTransformPipe,
+        new ValidationPipe({
+          transform: true,
+          expectedType: groupByArgsType!,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          forbidUnknownValues: true,
+        }),
+      )
+      args: GroupByArgs<EntityType>,
+    ): Promise<GroupedPaginationResult> {
+      return await (this.service as any).findAllGrouped(context, args);
+    }
+
     @Get(findOneSettings?.route ?? ':id')
     @applyMethodDecorators(findOneSettings?.decorators ?? [])
     @ApiOperation({
@@ -334,6 +386,9 @@ export function DataControllerFrom<
   }
   if (findAllPaginatedSettings.disabled) {
     delete DataControllerClass.prototype.findAllPaginated;
+  }
+  if (findAllGroupedSettings.disabled || !groupByArgsType) {
+    delete DataControllerClass.prototype.findAllGrouped;
   }
 
   return mixin(DataControllerClass);

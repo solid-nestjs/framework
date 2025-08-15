@@ -6,6 +6,7 @@ import {
 } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
@@ -20,6 +21,7 @@ import {
   BooleanType,
   Entity,
   FindArgs,
+  GroupByArgs,
   getPaginationArgs,
   getPropertyType,
   IdTypeFrom,
@@ -28,12 +30,17 @@ import {
   PaginationResult,
   removeNullish,
   Where,
+  GroupByRequest,
+  GroupedPaginationResult,
+  AggregateFunctionTypes,
+  PaginationRequest,
 } from '@solid-nestjs/common';
 import {
   Context,
   DataService as DataService,
   ExtendedRelationInfo,
   DataRetrievalOptions,
+  GroupByOptions,
   DataServiceStructure,
   getMainAliasFromConfig,
   getRelationsFromConfig,
@@ -257,11 +264,11 @@ export function DataServiceFrom<
       return this.getPagination(context, await queryBuilder.getCount(), args);
     }
 
-    async getPagination(
+    getPagination(
       context: ContextType,
       total: number,
-      args?: FindArgsType,
-    ): Promise<PaginationResult> {
+      args?: { pagination?: PaginationRequest },
+    ): PaginationResult {
       const { take, skip } = getPaginationArgs(args?.pagination ?? {});
 
       let limit = take;
@@ -347,6 +354,69 @@ export function DataServiceFrom<
       const manager = this.getEntityManager(context);
 
       return runInTransaction(context, manager.connection, fn, isolationLevel);
+    }
+
+    async findAllGrouped(
+      context: ContextType,
+      args: GroupByArgs<EntityType>,
+      options?: GroupByOptions<EntityType>,
+    ): Promise<GroupedPaginationResult<EntityType>> {
+      if (!args.groupBy) {
+        throw new BadRequestException(
+          'groupBy configuration is required for grouped queries',
+        );
+      }
+
+      const queryBuilderHelper = this.queryBuilderHelper;
+      const repository = this.getRepository(context);
+      const groupBy = args.groupBy;
+
+      // Build and execute the main grouped query (with pagination already applied in helper)
+      const queryBuilder = queryBuilderHelper.buildGroupedQuery(
+        repository,
+        args,
+        options,
+      );
+      const rawResults = await queryBuilder.getRawMany();
+
+      // Format results
+      const groups = queryBuilderHelper.formatGroupedResults(
+        rawResults,
+        groupBy,
+      );
+
+      // Build pagination result
+      let paginationResult: PaginationResult;
+      if (args.pagination) {
+        // Count total groups efficiently using subconsulta
+        const countQueryBuilder = queryBuilderHelper.getGroupCountQueryBuilder(
+          repository,
+          args,
+          options,
+        );
+
+        const countResult = await countQueryBuilder.getRawOne();
+        const totalGroups = parseInt(countResult?.count || '0', 10);
+
+        // Use standard pagination logic when pagination is requested
+        paginationResult = this.getPagination(context, totalGroups, args);
+      } else {
+        // No pagination requested - return basic pagination info
+        paginationResult = {
+          total: groups.length,
+          count: groups.length,
+          limit: undefined,
+          page: 1,
+          pageCount: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        };
+      }
+
+      return {
+        groups,
+        pagination: paginationResult,
+      };
     }
 
     async audit(

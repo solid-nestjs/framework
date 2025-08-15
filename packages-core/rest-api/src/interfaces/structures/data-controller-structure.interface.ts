@@ -8,6 +8,7 @@ import {
   fillEntityId,
   EntityProviderStructure,
   Constructable,
+  GroupByArgs,
 } from '@solid-nestjs/common';
 
 /**
@@ -53,7 +54,7 @@ export interface ParameterDecorators {
  * Interface defining the available data operations for a controller.
  *
  * Provides configuration for common data retrieval operations like
- * finding all entities, paginated results, and finding specific entities.
+ * finding all entities, paginated results, grouped queries, and finding specific entities.
  *
  * @template IdType - The type of the entity identifier
  * @template EntityType - The entity type that must extend Entity<unknown>
@@ -81,6 +82,8 @@ export interface DataControllerOperations<
   pagination?: OperationStructure | boolean;
   /** Configuration for the find one operation - retrieves a single entity by ID */
   findOne?: OperationStructure | boolean;
+  /** Configuration for the find all grouped operation - retrieves entities grouped by specified fields with aggregations */
+  findAllGrouped?: OperationStructure | boolean;
 }
 
 /**
@@ -112,6 +115,8 @@ export interface DataControllerStructure<
   serviceType: Constructable<ServiceType>;
   /** Optional constructable type for find arguments - defines query parameters and filters */
   findArgsType?: Constructable<FindArgsType>;
+  /** Optional constructable type for group by arguments - defines group by parameters and aggregations */
+  groupByArgsType?: Constructable<GroupByArgs<EntityType>>;
   /** Optional constructable type for request context - provides additional request metadata */
   contextType?: Constructable<ContextType>;
   /** Configuration for which data operations should be available and how they should be configured */
