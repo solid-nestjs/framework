@@ -12,13 +12,14 @@ import {
   IsIn,
   IsArray,
 } from 'class-validator';
+import { IsFlexibleUUID } from '../../../common/validators/is-flexible-uuid.validator';
 
 @InputType()
 export class InvoiceClientDto {
   @ApiProperty({ description: 'client id' })
   @Field(() => ID)
   @IsString()
-  @IsUUID()
+  @IsFlexibleUUID()
   id: string;
 }
 
@@ -28,7 +29,7 @@ export class CreateInvoiceDetailDto {
   @Field(() => ID, { description: 'product id' })
   @IsNotEmpty()
   @IsString()
-  @IsUUID()
+  @IsFlexibleUUID()
   productId: string;
 
   @ApiProperty({ description: 'The quantity of the product' })

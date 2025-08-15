@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module';
+import { createTestDataSource, cleanupTestData, destroyTestDataSource } from './test-database.config';
 
 describe('GraphQL Soft Deletion E2E Tests', () => {
   let app: INestApplication;
@@ -14,17 +15,7 @@ describe('GraphQL Soft Deletion E2E Tests', () => {
       .overrideProvider(DataSource)
       .useFactory({
         factory: async () => {
-          const { DataSource } = await import('typeorm');
-          const dataSource = new DataSource({
-            type: 'sqlite',
-            database: ':memory:',
-            dropSchema: true,
-            entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
-            synchronize: true,
-            logging: false,
-          });
-          await dataSource.initialize();
-          return dataSource;
+          return await createTestDataSource();
         },
       })
       .compile();
@@ -34,7 +25,14 @@ describe('GraphQL Soft Deletion E2E Tests', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
+  });
+  
+  afterAll(async () => {
+    // Cleanup shared SQL Server connection if exists
+    await destroyTestDataSource();
   });
 
   describe('Supplier GraphQL Soft Deletion Operations', () => {

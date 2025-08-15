@@ -1,4 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver } from '@nestjs/apollo';
@@ -11,15 +12,24 @@ import { Product } from './products/entities/product.entity';
 import { Supplier } from './suppliers/entities/supplier.entity';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { SuppliersSeeder, ProductsSeeder } from './seeders';
+import databaseConfig from './config/database.config';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: './database-data/products.sqlite',
-      entities: [Product, Supplier],
-      synchronize: true, // Set to false in production
-      logging: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [databaseConfig],
+    }),
+    TypeOrmModule.forRootAsync({
+      useFactory: async (dbConfig) => {
+        // Ensure SQL Server database exists before TypeORM tries to connect
+        if (dbConfig.type === 'mssql') {
+          const { ensureSqlServerDatabase } = await import('./config/database-initializer.service');
+          await ensureSqlServerDatabase(dbConfig);
+        }
+        return dbConfig;
+      },
+      inject: [databaseConfig.KEY],
     }),
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),

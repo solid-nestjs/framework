@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
+import { createTestDataSource, cleanupTestData, destroyTestDataSource } from './test-database.config';
 
 describe('Multiplicative Relations Filter (e2e)', () => {
   let app: INestApplication;
@@ -21,17 +22,7 @@ describe('Multiplicative Relations Filter (e2e)', () => {
       .overrideProvider(DataSource)
       .useFactory({
         factory: async () => {
-          const { DataSource } = await import('typeorm');
-          const dataSource = new DataSource({
-            type: 'sqlite',
-            database: ':memory:',
-            dropSchema: true,
-            entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
-            synchronize: true,
-            logging: false,
-          });
-          await dataSource.initialize();
-          return dataSource;
+          return await createTestDataSource();
         },
       })
       .compile();
@@ -47,13 +38,25 @@ describe('Multiplicative Relations Filter (e2e)', () => {
     await app.init();
 
     dataSource = app.get(DataSource);
+    
+    // Clean up data before each test (SQL Server only - SQLite creates fresh DB)
+    if (process.env.DB_TYPE === 'mssql') {
+      await cleanupTestData(dataSource);
+    }
 
     // Setup test data
     await setupTestData();
   });
 
   afterEach(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
+  });
+  
+  afterAll(async () => {
+    // Cleanup shared SQL Server connection if exists
+    await destroyTestDataSource();
   });
 
   async function setupTestData() {
@@ -402,9 +405,10 @@ describe('Multiplicative Relations Filter (e2e)', () => {
     });
 
     it('should return empty array when no invoices match multiplicative filter', async () => {
+      const nonExistentProductId = '00000000-0000-0000-0000-000000000000'; // Use valid UUID format
       const filterQuery = `
         query {
-          invoices(where: { details: { productId: "non-existent-product-id" } }) {
+          invoices(where: { details: { productId: "${nonExistentProductId}" } }) {
             id
             invoiceNumber
           }
@@ -416,6 +420,7 @@ describe('Multiplicative Relations Filter (e2e)', () => {
         .send({ query: filterQuery })
         .expect(200);
 
+      expect(response.body.data).toBeDefined();
       expect(response.body.data.invoices).toBeDefined();
       expect(Array.isArray(response.body.data.invoices)).toBe(true);
       expect(response.body.data.invoices.length).toBe(0);
