@@ -15,7 +15,15 @@
       "Bash(taskkill:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(cp:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker run:*)",
+      "Bash(copy .env.sqlserver .env)"
     ],
     "deny": [],
     "ask": [],

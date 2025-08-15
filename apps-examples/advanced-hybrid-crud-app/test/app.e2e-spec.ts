@@ -15,7 +15,8 @@ import { Supplier } from '../src/suppliers/entities/supplier.entity';
 import { Invoice } from '../src/invoices/entities/invoice.entity';
 import { InvoiceDetail } from '../src/invoices/entities/invoice-detail.entity';
 import { Client } from '../src/clients/entities/client.entity';
-import { AppModule } from '../src/app.module';
+import { ClientsModule } from '../src/clients/clients.module';
+import { getTestDatabaseConfig } from './test-database.config';
 
 describe('Advanced Hybrid CRUD App (e2e)', () => {
   let app: INestApplication;
@@ -25,26 +26,25 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
   let createdInvoice: any;
 
   beforeEach(async () => {
+    const testDbConfig = await getTestDatabaseConfig();
+    
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(DataSource)
-      .useFactory({
-        factory: async () => {
-          const { DataSource } = await import('typeorm');
-          const dataSource = new DataSource({
-            type: 'sqlite',
-            database: ':memory:',
-            dropSchema: true,
-            entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
-            synchronize: true,
-            logging: false,
-          });
-          await dataSource.initialize();
-          return dataSource;
-        },
-      })
-      .compile();
+      imports: [
+        TypeOrmModule.forRoot(testDbConfig),
+        GraphQLModule.forRoot({
+          driver: ApolloDriver,
+          autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+          playground: false,
+          introspection: true,
+          sortSchema: true,
+          plugins: [ApolloServerPluginLandingPageLocalDefault()],
+        }),
+        ProductsModule,
+        SuppliersModule,
+        InvoicesModule,
+        ClientsModule,
+      ],
+    }).compile();
 
     app = moduleFixture.createNestApplication();
 

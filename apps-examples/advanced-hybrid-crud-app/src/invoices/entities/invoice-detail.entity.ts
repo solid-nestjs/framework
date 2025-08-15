@@ -35,7 +35,10 @@ export class InvoiceDetail {
   @Field(() => Float, {
     description: 'The unit price of the product at the time of invoice',
   })
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value)
+  }})
   unitPrice: number;
 
   @ApiProperty({
@@ -44,7 +47,10 @@ export class InvoiceDetail {
   @Field(() => Float, {
     description: 'The total amount for this line item (quantity * unitPrice)',
   })
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value)
+  }})
   totalAmount: number;
 
   @ApiProperty({ description: 'Invoice Detail Product', type: () => Product })

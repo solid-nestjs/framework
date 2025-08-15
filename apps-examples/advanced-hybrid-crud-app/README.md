@@ -1,13 +1,14 @@
 # Advanced Hybrid CRUD App - SOLID NestJS Framework Example
 
-This example demonstrates how to build a **hybrid REST + GraphQL CRUD application** using the **SOLID NestJS Framework** with TypeORM, SQLite, Apollo GraphQL, and Swagger documentation. This showcases the ultimate flexibility of having both REST and GraphQL APIs from the same codebase.
+This example demonstrates how to build a **hybrid REST + GraphQL CRUD application** using the **SOLID NestJS Framework** with TypeORM, support for both SQLite and SQL Server databases, Apollo GraphQL, and Swagger documentation. This showcases the ultimate flexibility of having both REST and GraphQL APIs from the same codebase with multiple database support.
 
 ## 🚀 Features
 
 - **🔄 Hybrid API** - Both REST and GraphQL endpoints from single service structure
 - **📡 Complete REST API** - Full RESTful CRUD operations with Swagger docs
 - **🎯 Complete GraphQL API** - Full GraphQL queries and mutations with Playground
-- **💾 Database Integration** - SQLite with TypeORM for data persistence
+- **💾 Multi-Database Support** - SQLite (default) and SQL Server via environment configuration
+- **🐳 Docker Support** - SQL Server containerization for easy development
 - **🔍 Advanced Filtering** - Query parameters (REST) and GraphQL arguments with filtering
 - **📄 Pagination Support** - Built-in pagination with metadata for both APIs
 - **📝 Dual Documentation** - Swagger for REST + GraphQL Playground
@@ -92,8 +93,79 @@ This example demonstrates how to build a **hybrid REST + GraphQL CRUD applicatio
 ## 📦 Installation
 
 ```bash
+# Install dependencies
 npm install
+
+# Copy environment configuration
+cp .env.example .env
 ```
+
+## 🔧 Database Configuration
+
+### Using SQLite (Default)
+
+SQLite is the default database and requires no additional setup:
+
+```bash
+# Use the default .env.development or create your own .env
+cp .env.development .env
+
+# Start the application
+npm run start:dev
+```
+
+### Using SQL Server with Docker
+
+1. Start SQL Server container:
+```bash
+npm run docker:up
+```
+
+2. Configure environment:
+```bash
+# Use SQL Server configuration
+cp .env.sqlserver .env
+
+# Or set environment variables directly
+export DB_TYPE=mssql
+export DB_HOST=localhost
+export DB_PORT=1433
+export DB_USERNAME=sa
+export DB_PASSWORD=YourStrong@Password123
+export DB_DATABASE=advanced_hybrid_crud
+```
+
+3. Start the application:
+```bash
+npm run start:dev
+```
+
+4. View Docker logs:
+```bash
+npm run docker:logs
+```
+
+5. Stop SQL Server container:
+```bash
+npm run docker:down
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_TYPE` | Database type: `sqlite` or `mssql` | `sqlite` |
+| `DB_HOST` | SQL Server host | `localhost` |
+| `DB_PORT` | SQL Server port | `1433` |
+| `DB_USERNAME` | SQL Server username | `sa` |
+| `DB_PASSWORD` | SQL Server password | - |
+| `DB_DATABASE` | SQL Server database name | `advanced_hybrid_crud` |
+| `SQLITE_DATABASE` | SQLite database path | `./database-data/products.sqlite` |
+| `DB_SYNCHRONIZE` | Auto-sync database schema | `true` |
+| `DB_LOGGING` | Enable SQL logging | `true` |
+| `PORT` | Application port | `3000` |
+| `GRAPHQL_PLAYGROUND` | Enable GraphQL Playground | `true` |
+| `SWAGGER_ENABLED` | Enable Swagger documentation | `true` |
 
 ## 🎯 Running the Application
 
@@ -106,6 +178,31 @@ npm run start:prod
 
 # Debug mode
 npm run start:debug
+```
+
+## 🧪 Testing
+
+### Run All Tests
+
+```bash
+# Unit tests
+npm run test
+
+# E2E tests (uses SQLite in-memory by default)
+npm run test:e2e
+
+# E2E tests with SQLite explicitly
+npm run test:e2e:sqlite
+
+# E2E tests with SQL Server (requires Docker)
+npm run docker:up
+npm run test:e2e:sqlserver
+```
+
+### Test Coverage
+
+```bash
+npm run test:cov
 ```
 
 ## 📖 API Documentation
