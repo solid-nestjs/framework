@@ -143,8 +143,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         expect(group).toHaveProperty('key');
         expect(group).toHaveProperty('aggregates');
         
-        const key = JSON.parse(group.key);
-        const aggregates = JSON.parse(group.aggregates);
+        const key = group.key;
+        const aggregates = group.aggregates;
         
         expect(key).toHaveProperty('supplier_name');
         expect(['Electronics Corp', 'Office Solutions']).toContain(key.supplier_name);
@@ -432,8 +432,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         expect(group.key).toBeDefined();
         expect(group.aggregates).toBeDefined();
         
-        const key = JSON.parse(group.key);
-        const aggregates = JSON.parse(group.aggregates);
+        const key = group.key;
+        const aggregates = group.aggregates;
         
         expect(key).toHaveProperty('supplier_name');
         expect(['Tech Innovations', 'Office Supplies Co']).toContain(key.supplier_name);
@@ -533,7 +533,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
 
       // Verify that each group has both name and description in the key
       response.body.data.productsGrouped.groups.forEach((group: any) => {
-        const key = JSON.parse(group.key);
+        const key = group.key;
         expect(key).toHaveProperty('name');
         expect(key).toHaveProperty('description');
       });
@@ -623,12 +623,12 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
 
       // Find Category A group and verify calculations
       const categoryAGroup = response.body.data.productsGrouped.groups.find((group: any) => {
-        const key = JSON.parse(group.key);
+        const key = group.key;
         return key.name === 'Category A';
       });
 
       expect(categoryAGroup).toBeDefined();
-      const categoryAAggregates = JSON.parse(categoryAGroup.aggregates);
+      const categoryAAggregates = categoryAGroup.aggregates;
       
       expect(categoryAAggregates.priceCount).toBe(3);
       expect(categoryAAggregates.priceSum).toBe(600); // 100 + 200 + 300
@@ -895,8 +895,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       expect(graphqlResponse.body.data.productsGrouped.pagination.total).toBe(1);
 
       // Parse and compare aggregates
-      const restAggregates = JSON.parse(restResponse.body.groups[0].aggregates);
-      const graphqlAggregates = JSON.parse(graphqlResponse.body.data.productsGrouped.groups[0].aggregates);
+      const restAggregates = restResponse.body.groups[0].aggregates;
+      const graphqlAggregates = graphqlResponse.body.data.productsGrouped.groups[0].aggregates;
 
       expect(restAggregates.avgPrice).toBe(graphqlAggregates.avgPrice);
       expect(restAggregates.totalStock).toBe(graphqlAggregates.totalStock);

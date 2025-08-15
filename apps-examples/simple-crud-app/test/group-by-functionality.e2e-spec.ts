@@ -137,12 +137,12 @@ describe('REST API GroupBy Functionality (e2e)', () => {
       response.body.groups.forEach((group: any) => {
         expect(group).toHaveProperty('key');
         expect(group).toHaveProperty('aggregates');
-        expect(typeof group.key).toBe('string');
-        expect(typeof group.aggregates).toBe('string');
+        expect(typeof group.key).toBe('object');
+        expect(typeof group.aggregates).toBe('object');
 
-        // Parse JSON strings to verify content
-        const key = JSON.parse(group.key);
-        const aggregates = JSON.parse(group.aggregates);
+        // Verify content directly from objects
+        const key = group.key;
+        const aggregates = group.aggregates;
 
         expect(key).toHaveProperty('supplier_name');
         expect(aggregates).toHaveProperty('totalProducts');

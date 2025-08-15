@@ -4,7 +4,10 @@
       "Bash(npm run test:*)",
       "Bash(npm run build:*)",
       "Bash(Get-Date -Format \"yyyyMMddHHmm\")",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:docs.nestjs.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": [],

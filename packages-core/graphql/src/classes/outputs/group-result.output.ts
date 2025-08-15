@@ -1,4 +1,5 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { ObjectType, Field } from '@nestjs/graphql';
+import { GraphQLJSON } from '../../scalars';
 
 /**
  * GraphQL output type representing a single group result from grouped queries.
@@ -9,8 +10,8 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
  * @example
  * ```graphql
  * type GroupResultOutput {
- *   key: JSONObject!
- *   aggregates: JSONObject!
+ *   key: JSON!
+ *   aggregates: JSON!
  * }
  * ```
  *
@@ -32,20 +33,20 @@ export class GroupResultOutput {
    * @example
    * { category: "Electronics", supplier_name: "TechCorp" }
    */
-  @Field(() => String, {
-    description: 'The grouped key values as JSON string',
+  @Field(() => GraphQLJSON, {
+    description: 'The grouped key values as JSON object',
   })
-  key!: string;
+  key!: Record<string, any>;
 
   /**
-   * The computed aggregate values as a JSON string
+   * The computed aggregate values as a JSON object
    * Keys correspond to the aliases of aggregate functions
    *
    * @example
-   * "{ \"avgPrice\": 1250.50, \"totalProducts\": 15, \"maxPrice\": 2000.00 }"
+   * { "avgPrice": 1250.50, "totalProducts": 15, "maxPrice": 2000.00 }
    */
-  @Field(() => String, {
-    description: 'The computed aggregate values as JSON string',
+  @Field(() => GraphQLJSON, {
+    description: 'The computed aggregate values as JSON object',
   })
-  aggregates!: string;
+  aggregates!: Record<string, any>;
 }

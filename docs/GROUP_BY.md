@@ -243,14 +243,16 @@ query {
 
 ## Response Format
 
+The GROUP BY feature returns results with `key` and `aggregates` as JSON objects (not strings), providing direct access to grouped data without requiring JSON parsing.
+
 ### REST API Response
 
 ```json
 {
   "groups": [
     {
-      "key": "{\"supplier_name\":\"Electronics Corp\"}",
-      "aggregates": "{\"avgPrice\":850.50,\"totalStock\":25}"
+      "key": {"supplier_name": "Electronics Corp"},
+      "aggregates": {"avgPrice": 850.50, "totalStock": 25}
     }
   ],
   "pagination": {
@@ -271,8 +273,8 @@ query {
     "productsGrouped": {
       "groups": [
         {
-          "key": "{\"supplier_name\":\"Electronics Corp\"}",
-          "aggregates": "{\"avgPrice\":850.50,\"totalStock\":25}"
+          "key": {"supplier_name": "Electronics Corp"},
+          "aggregates": {"avgPrice": 850.50, "totalStock": 25}
         }
       ],
       "pagination": {
@@ -286,6 +288,10 @@ query {
   }
 }
 ```
+
+### JSON Scalar Implementation
+
+The framework uses a custom `GraphQLJSON` scalar type to handle complex object serialization/deserialization automatically. This eliminates the need for manual JSON string parsing and provides a cleaner developer experience.
 
 ## Best Practices
 

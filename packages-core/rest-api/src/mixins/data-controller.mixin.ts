@@ -346,16 +346,7 @@ export function DataControllerFrom<
       )
       args: GroupByArgs<EntityType>,
     ): Promise<GroupedPaginationResult> {
-      const result = await (this.service as any).findAllGrouped(context, args);
-      
-      // Convert to REST API output format
-      return {
-        groups: result.groups.map(group => ({
-          key: typeof group.key === 'string' ? group.key : JSON.stringify(group.key),
-          aggregates: typeof group.aggregates === 'string' ? group.aggregates : JSON.stringify(group.aggregates),
-        })),
-        pagination: result.pagination,
-      };
+      return await (this.service as any).findAllGrouped(context, args);
     }
 
     @Get(findOneSettings?.route ?? ':id')

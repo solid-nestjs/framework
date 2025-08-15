@@ -16,14 +16,14 @@ import { PaginationResult } from './pagination-result.interface';
  */
 export interface GroupResult<T = any> {
   /**
-   * The grouped key values (can be object or JSON string for GraphQL compatibility)
+   * The grouped key values as an object
    */
-  key: Record<string, any> | string;
+  key: Record<string, any>;
 
   /**
-   * The computed aggregate values (can be object or JSON string for GraphQL compatibility)
+   * The computed aggregate values as an object
    */
-  aggregates: Record<string, any> | string;
+  aggregates: Record<string, any>;
 }
 
 /**

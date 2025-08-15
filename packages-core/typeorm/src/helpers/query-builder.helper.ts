@@ -1873,8 +1873,8 @@ export class QueryBuilderHelper<
       }
 
       return {
-        key: JSON.stringify(key),
-        aggregates: JSON.stringify(aggregates),
+        key: key,
+        aggregates: aggregates,
       };
     });
   }

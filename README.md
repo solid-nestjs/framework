@@ -307,6 +307,19 @@ The framework provides powerful GROUP BY capabilities with comprehensive aggrega
 GET /products/grouped?groupBy={"fields":{"supplier":{"name":true}},"aggregates":[{"field":"price","function":"AVG","alias":"avgPrice"},{"field":"stock","function":"SUM","alias":"totalStock"}]}
 ```
 
+**Response:**
+```json
+{
+  "groups": [
+    {
+      "key": {"supplier_name": "TechCorp"},
+      "aggregates": {"avgPrice": 1250.50, "totalStock": 45}
+    }
+  ],
+  "pagination": {"total": 1, "count": 1, "page": 1}
+}
+```
+
 #### GraphQL Example
 
 ```graphql
@@ -331,6 +344,25 @@ query {
   }
 }
 ```
+
+**Response:**
+```json
+{
+  "data": {
+    "productsGrouped": {
+      "groups": [
+        {
+          "key": {"supplier_name": "TechCorp"},
+          "aggregates": {"avgPrice": 1250.50, "totalStock": 45}
+        }
+      ],
+      "pagination": {"total": 1, "count": 1, "page": 1}
+    }
+  }
+}
+```
+
+> **Note:** GROUP BY results return `key` and `aggregates` as JSON objects (not strings), providing direct access to grouped data without requiring JSON parsing.
 
 For complete GROUP BY documentation, see [docs/GROUP_BY.md](docs/GROUP_BY.md).
 

@@ -7,20 +7,20 @@ import { PaginationResult } from './pagination-result';
 
 /**
  * Represents a group result for REST API responses.
- * Contains the grouped key and aggregated values as JSON strings for easy REST consumption.
+ * Contains the grouped key and aggregated values as objects for better REST consumption.
  */
 export class GroupResultRest {
   @ApiProperty({
-    description: 'The group key as a JSON string',
-    example: '{"category": "Electronics"}',
+    description: 'The group key as an object',
+    example: { category: "Electronics" },
   })
-  key!: string;
+  key!: Record<string, any>;
 
   @ApiProperty({
-    description: 'The aggregated values as a JSON string',
-    example: '{"count": 5, "avgPrice": 299.99}',
+    description: 'The aggregated values as an object',
+    example: { count: 5, avgPrice: 299.99 },
   })
-  aggregates!: string;
+  aggregates!: Record<string, any>;
 }
 
 /**
@@ -28,7 +28,7 @@ export class GroupResultRest {
  *
  * @implements {CommonGroupedPaginationResult}
  *
- * @property {GroupResultRest[]} groups - Array of grouped results with keys and aggregates as JSON strings.
+ * @property {GroupResultRest[]} groups - Array of grouped results with keys and aggregates as objects.
  * @property {PaginationResult} pagination - Pagination metadata for the grouped results.
  */
 export class GroupedPaginationResult

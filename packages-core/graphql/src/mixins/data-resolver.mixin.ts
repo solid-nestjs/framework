@@ -240,16 +240,7 @@ export function DataResolverFrom<
       )
       args: GroupByArgs<EntityType>,
     ): Promise<GroupedPaginationResultOutput> {
-      const result = await (this.service as any).findAllGrouped(context, args);
-      
-      // Convert to GraphQL output format
-      return {
-        groups: result.groups.map(group => ({
-          key: typeof group.key === 'string' ? group.key : JSON.stringify(group.key),
-          aggregates: typeof group.aggregates === 'string' ? group.aggregates : JSON.stringify(group.aggregates),
-        })),
-        pagination: result.pagination,
-      };
+      return await (this.service as any).findAllGrouped(context, args);
     }
   }
 

@@ -204,6 +204,8 @@ _This roadmap is subject to change based on community feedback and development p
   - Nested field grouping (e.g., group by `supplier.name`)
   - Pagination integration for grouped results
   - Type-safe DTOs with unified decorators for both protocols
+  - **Custom JSON Scalar Implementation** - Results return as JSON objects instead of strings for better developer experience
+  - **Hybrid DTO Support** - Unified DTOs that work with both REST (`@ApiProperty`) and GraphQL (`@Field`) decorators
   - Comprehensive E2E test coverage for all scenarios
   - Full documentation and examples
 
@@ -217,3 +219,4 @@ _This roadmap is subject to change based on community feedback and development p
   - Improved TypeScript type safety across all packages
   - Better documentation and examples
   - Comprehensive test coverage improvements
+  - **GraphQL Scalar Auto-Discovery** - NestJS automatically discovers custom scalars from `@Field()` decorators, eliminating need for explicit resolver registration
