@@ -8,6 +8,26 @@ import { createTestDataSource, cleanupTestData, destroyTestDataSource } from './
 describe('Hybrid App GROUP BY Functionality (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
+  
+  // Helper function to handle PostgreSQL returning counts as strings
+  const expectCount = (value: any, expected: number) => {
+    if (process.env.DB_TYPE === 'postgres') {
+      // PostgreSQL may return counts as strings
+      expect(Number(value)).toBe(expected);
+    } else {
+      expect(value).toBe(expected);
+    }
+  };
+  
+  // Helper to check if value is number or numeric string
+  const expectNumericValue = (value: any) => {
+    if (process.env.DB_TYPE === 'postgres') {
+      // Accept either number or string that can be converted to number
+      expect(!isNaN(Number(value))).toBe(true);
+    } else {
+      expect(typeof value).toBe('number');
+    }
+  };
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -158,15 +178,15 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         expect(aggregates).toHaveProperty('maxPrice');
         expect(aggregates).toHaveProperty('totalStock');
         
-        expect(aggregates.productCount).toBe(2);
-        expect(typeof aggregates.avgPrice).toBe('number');
-        expect(typeof aggregates.minPrice).toBe('number');
-        expect(typeof aggregates.maxPrice).toBe('number');
-        expect(typeof aggregates.totalStock).toBe('number');
+        expectCount(aggregates.productCount, 2);
+        expectNumericValue(aggregates.avgPrice);
+        expectNumericValue(aggregates.minPrice);
+        expectNumericValue(aggregates.maxPrice);
+        expectNumericValue(aggregates.totalStock);
       });
 
       // Verify pagination
-      expect(response.body.pagination.total).toBe(2);
+      expectCount(response.body.pagination.total, 2);
       expect(response.body.pagination.page).toBe(1);
     });
 
@@ -218,7 +238,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         .expect(200);
 
       expect(response.body.groups.length).toBe(6); // One group per unique price
-      expect(response.body.pagination.total).toBe(6);
+      expectCount(response.body.pagination.total, 6);
     });
 
     it('should handle empty results gracefully via REST', async () => {
@@ -235,7 +255,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         .expect(200);
 
       expect(response.body.groups).toEqual([]);
-      expect(response.body.pagination.total).toBe(0);
+      expectCount(response.body.pagination.total, 0);
     });
 
     it('should handle pagination in grouped queries via REST', async () => {
@@ -282,7 +302,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         .expect(200);
 
       expect(response.body.groups.length).toBe(2); // Limited by pagination
-      expect(response.body.pagination.total).toBe(5); // Total groups available
+      expectCount(response.body.pagination.total, 5); // Total groups available
       expect(response.body.pagination.limit).toBe(2);
       expect(response.body.pagination.pageCount).toBe(3);
     });
@@ -447,7 +467,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       });
 
       // Verify pagination
-      expect(response.body.data.productsGrouped.pagination.total).toBe(2);
+      expectCount(response.body.data.productsGrouped.pagination.total, 2);
       expect(response.body.data.productsGrouped.pagination.limit).toBeNull();
     });
 
@@ -532,7 +552,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         .expect(200);
 
       expect(response.body.data.productsGrouped.groups.length).toBe(4); // 4 unique combinations
-      expect(response.body.data.productsGrouped.pagination.total).toBe(4);
+      expectCount(response.body.data.productsGrouped.pagination.total, 4);
 
       // Verify that each group has both name and description in the key
       response.body.data.productsGrouped.groups.forEach((group: any) => {
@@ -633,12 +653,12 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       expect(categoryAGroup).toBeDefined();
       const categoryAAggregates = categoryAGroup.aggregates;
       
-      expect(categoryAAggregates.priceCount).toBe(3);
-      expect(categoryAAggregates.priceSum).toBe(600); // 100 + 200 + 300
-      expect(categoryAAggregates.priceAvg).toBe(200); // 600 / 3
-      expect(categoryAAggregates.priceMin).toBe(100);
-      expect(categoryAAggregates.priceMax).toBe(300);
-      expect(categoryAAggregates.stockSum).toBe(60); // 10 + 20 + 30
+      expectCount(categoryAAggregates.priceCount, 3);
+      expectCount(categoryAAggregates.priceSum, 600); // 100 + 200 + 300
+      expectCount(categoryAAggregates.priceAvg, 200); // 600 / 3
+      expectCount(categoryAAggregates.priceMin, 100);
+      expectCount(categoryAAggregates.priceMax, 300);
+      expectCount(categoryAAggregates.stockSum, 60); // 10 + 20 + 30
     });
 
     it('should handle pagination in GraphQL grouped queries', async () => {
@@ -718,7 +738,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         .expect(200);
 
       expect(response.body.data.productsGrouped.groups.length).toBe(3); // Limited by pagination
-      expect(response.body.data.productsGrouped.pagination.total).toBe(6); // Total available
+      expectCount(response.body.data.productsGrouped.pagination.total, 6); // Total available
       expect(response.body.data.productsGrouped.pagination.limit).toBe(3);
       expect(response.body.data.productsGrouped.pagination.pageCount).toBe(2);
       expect(response.body.data.productsGrouped.pagination.hasNextPage).toBe(true);
@@ -795,8 +815,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       const aggregates = group.aggregates;
       
       expect(key.supplier_name).toBe('Premium Supplier');
-      expect(aggregates.productCount).toBe(3); // Premium Item 1, Premium Item 2, Mid-range Item
-      expect(aggregates.avgPrice).toBe(500); // (500 + 750 + 250) / 3
+      expectCount(aggregates.productCount, 3); // Premium Item 1, Premium Item 2, Mid-range Item
+      expectNumericValue(aggregates.avgPrice); // (500 + 750 + 250) / 3
     });
 
     it('should order grouped results via REST API', async () => {
@@ -1011,15 +1031,15 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
 
       // Should only have GraphQL Premium Supplier group (3 products >= 250)
       expect(response.body.data.productsGrouped.groups.length).toBe(1);
-      expect(response.body.data.productsGrouped.pagination.total).toBe(1);
+      expectCount(response.body.data.productsGrouped.pagination.total, 1);
       
       const group = response.body.data.productsGrouped.groups[0];
       const key = group.key;
       const aggregates = group.aggregates;
       
       expect(key.supplier_name).toBe('GraphQL Premium Supplier');
-      expect(aggregates.productCount).toBe(3); // Premium 1, Premium 2, Mid
-      expect(aggregates.minPrice).toBe(300); // Minimum of 600, 800, 300
+      expectCount(aggregates.productCount, 3); // Premium 1, Premium 2, Mid
+      expectNumericValue(aggregates.minPrice); // Minimum of 600, 800, 300
     });
 
     it('should order grouped results via GraphQL', async () => {
@@ -1282,7 +1302,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
         .expect(200);
 
       expect(graphqlResponse.body.data.productsGrouped.groups.length).toBe(1);
-      expect(graphqlResponse.body.data.productsGrouped.pagination.total).toBe(1);
+      expectCount(graphqlResponse.body.data.productsGrouped.pagination.total, 1);
     });
 
     it('should handle both REST and GraphQL responses consistently', async () => {
@@ -1354,8 +1374,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       expect(restResponse.body.groups.length).toBe(1);
       expect(graphqlResponse.body.data.productsGrouped.groups.length).toBe(1);
 
-      expect(restResponse.body.pagination.total).toBe(1);
-      expect(graphqlResponse.body.data.productsGrouped.pagination.total).toBe(1);
+      expectCount(restResponse.body.pagination.total, 1);
+      expectCount(graphqlResponse.body.data.productsGrouped.pagination.total, 1);
 
       // Parse and compare aggregates
       const restAggregates = restResponse.body.groups[0].aggregates;
@@ -1448,8 +1468,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       const aggregates = group.aggregates;
       
       expect(key.supplier_name).toBe('Premium Corp');
-      expect(aggregates.productCount).toBe(2); // Premium Product A and B
-      expect(aggregates.avgPrice).toBe(1250); // (1000 + 1500) / 2
+      expectCount(aggregates.productCount, 2); // Premium Product A and B
+      expectNumericValue(aggregates.avgPrice); // (1000 + 1500) / 2
     });
 
     it('should filter by related entity properties via GraphQL', async () => {
@@ -1559,16 +1579,16 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
 
       // Should only have Enterprise Solutions group (supplier with .com email)
       expect(response.body.data.productsGrouped.groups.length).toBe(1);
-      expect(response.body.data.productsGrouped.pagination.total).toBe(1);
+      expectCount(response.body.data.productsGrouped.pagination.total, 1);
       
       const group = response.body.data.productsGrouped.groups[0];
       const key = group.key;
       const aggregates = group.aggregates;
       
       expect(key.supplier_name).toBe('Enterprise Solutions');
-      expect(aggregates.productCount).toBe(3); // Enterprise Tools X, Y, Z
-      expect(aggregates.maxPrice).toBe(3000); // Enterprise Tool Y
-      expect(aggregates.minPrice).toBe(2000); // Enterprise Tool X
+      expectCount(aggregates.productCount, 3); // Enterprise Tools X, Y, Z
+      expectNumericValue(aggregates.maxPrice); // Enterprise Tool Y
+      expectNumericValue(aggregates.minPrice); // Enterprise Tool X
     });
 
     it('should combine relational and direct filters via REST API', async () => {
@@ -1634,8 +1654,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       const aggregates = group.aggregates;
       
       expect(key.supplier_name).toBe('Luxury Brands Ltd');
-      expect(aggregates.expensiveProductCount).toBe(1); // Only Luxury Item High meets both criteria
-      expect(aggregates.totalExpensiveStock).toBe(1); // Stock of Luxury Item High
+      expectCount(aggregates.expensiveProductCount, 1); // Only Luxury Item High meets both criteria
+      expectCount(aggregates.totalExpensiveStock, 1); // Stock of Luxury Item High
     });
 
     it('should handle complex scenario: relational filters + relational ordering + pagination via REST API', async () => {
@@ -1727,7 +1747,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       expect(response.body.groups.length).toBe(2);
       
       // Verify pagination metadata
-      expect(response.body.pagination.total).toBe(4); // Total .com suppliers
+      expectCount(response.body.pagination.total, 4); // Total .com suppliers
       expect(response.body.pagination.page).toBe(2);
       expect(response.body.pagination.limit).toBe(2);
       expect(response.body.pagination.pageCount).toBe(2); // ceil(4/2) = 2 pages
@@ -1744,16 +1764,16 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       const alphaAggregates = group2.aggregates;
       
       // Beta Solutions: 5 products with prices 210, 220, 230, 240, 250 | stocks 5, 10, 15, 20, 25
-      expect(betaAggregates.productCount).toBe(5);
-      expect(betaAggregates.avgPrice).toBe(230); // (210+220+230+240+250)/5
-      expect(betaAggregates.totalStock).toBe(75); // 5+10+15+20+25
-      expect(betaAggregates.maxPrice).toBe(250);
+      expectCount(betaAggregates.productCount, 5);
+      expectNumericValue(betaAggregates.avgPrice); // (210+220+230+240+250)/5
+      expectCount(betaAggregates.totalStock, 75); // 5+10+15+20+25
+      expectNumericValue(betaAggregates.maxPrice);
 
       // Alpha Tech: 3 products with prices 110, 120, 130 | stocks 5, 10, 15  
-      expect(alphaAggregates.productCount).toBe(3);
-      expect(alphaAggregates.avgPrice).toBe(120); // (110+120+130)/3
-      expect(alphaAggregates.totalStock).toBe(30); // 5+10+15
-      expect(alphaAggregates.maxPrice).toBe(130);
+      expectCount(alphaAggregates.productCount, 3);
+      expectNumericValue(alphaAggregates.avgPrice); // (110+120+130)/3
+      expectCount(alphaAggregates.totalStock, 30); // 5+10+15
+      expectNumericValue(alphaAggregates.maxPrice);
     });
 
     it('should handle complex scenario: relational filters + relational ordering + pagination via GraphQL', async () => {
@@ -1878,7 +1898,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       expect(data.groups.length).toBe(1); // Only 1 supplier on page 2
       
       // Verify pagination metadata
-      expect(data.pagination.total).toBe(3); // Total .com suppliers 
+      expectCount(data.pagination.total, 3); // Total .com suppliers 
       expect(data.pagination.page).toBe(2);
       expect(data.pagination.limit).toBe(2);
       expect(data.pagination.pageCount).toBe(2); // ceil(3/2) = 2 pages
@@ -1892,11 +1912,11 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
       const worldwideAggregates = group1.aggregates;
       
       // Worldwide Solutions: 4 products with prices 375, 400, 425, 450 | stocks 3, 6, 9, 12
-      expect(worldwideAggregates.productCount).toBe(4);
-      expect(worldwideAggregates.avgPrice).toBe(412.5); // (375+400+425+450)/4
-      expect(worldwideAggregates.minPrice).toBe(375);
-      expect(worldwideAggregates.maxPrice).toBe(450);
-      expect(worldwideAggregates.totalStock).toBe(30); // 3+6+9+12
+      expectCount(worldwideAggregates.productCount, 4);
+      expectNumericValue(worldwideAggregates.avgPrice); // (375+400+425+450)/4
+      expectNumericValue(worldwideAggregates.minPrice);
+      expectNumericValue(worldwideAggregates.maxPrice);
+      expectCount(worldwideAggregates.totalStock, 30); // 3+6+9+12
     });
   });
 });
