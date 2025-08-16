@@ -10,6 +10,38 @@ import { Client } from '../src/clients/entities/client.entity';
 let sharedDataSource: DataSource | null = null;
 let isSchemaInitialized = false;
 
+// Helper function to ensure MySQL database exists for tests
+const ensureMysqlTestDatabase = async (dbName: string): Promise<void> => {
+  const masterConfig = {
+    type: 'mysql' as const,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306', 10),
+    username: process.env.DB_USERNAME || 'root',
+    password: process.env.DB_PASSWORD,
+    database: 'mysql', // Connect to mysql database to create test database
+    charset: 'utf8mb4',
+  };
+
+  try {
+    const masterDataSource = new DataSource(masterConfig);
+    await masterDataSource.initialize();
+    
+    // Check if database exists
+    const result = await masterDataSource.query(
+      `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${dbName}'`
+    );
+
+    if (result.length === 0) {
+      // Create database
+      await masterDataSource.query(`CREATE DATABASE \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    }
+    
+    await masterDataSource.destroy();
+  } catch (error) {
+    console.warn('Warning: Could not ensure MySQL test database exists:', error.message);
+  }
+};
+
 // Helper function to ensure PostgreSQL database exists for tests
 const ensurePostgresTestDatabase = async (dbName: string): Promise<void> => {
   const masterConfig = {
@@ -143,6 +175,28 @@ export const getTestDatabaseConfig = async (): Promise<TypeOrmModuleOptions> => 
         connectTimeoutMS: 5000,
       };
       
+    case 'mysql':
+      // Use a test database name for MySQL tests
+      const mysqlDbName = 'advanced_hybrid_crud_test';
+      
+      // Ensure database exists before creating config
+      await ensureMysqlTestDatabase(mysqlDbName);
+      
+      return {
+        type: 'mysql',
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306', 10),
+        username: process.env.DB_USERNAME || 'root',
+        password: process.env.DB_PASSWORD,
+        database: mysqlDbName,
+        entities,
+        synchronize: !isSchemaInitialized, // Only sync schema once
+        dropSchema: false, // Never drop schema, just clean data
+        logging: false,
+        charset: 'utf8mb4',
+        timezone: '+00:00',
+      };
+      
     case 'sqlite':
     default:
       return {
@@ -159,8 +213,8 @@ export const getTestDatabaseConfig = async (): Promise<TypeOrmModuleOptions> => 
 export const createTestDataSource = async (): Promise<DataSource> => {
   const dbType = process.env.DB_TYPE || 'sqlite';
   
-  // For SQL Server and PostgreSQL, reuse the same DataSource for all tests
-  if (dbType === 'mssql' || dbType === 'postgres') {
+  // For SQL Server, PostgreSQL, and MySQL, reuse the same DataSource for all tests
+  if (dbType === 'mssql' || dbType === 'postgres' || dbType === 'mysql') {
     if (!sharedDataSource || !sharedDataSource.isInitialized) {
       const config = await getTestDatabaseConfig();
       sharedDataSource = new DataSource(config as any);
@@ -187,8 +241,8 @@ export const cleanupTestData = async (dataSource?: DataSource): Promise<void> =>
     return;
   }
   
-  // Only clean data for SQL Server and PostgreSQL - SQLite uses fresh in-memory DB for each test
-  if (ds.options.type !== 'mssql' && ds.options.type !== 'postgres') {
+  // Only clean data for SQL Server, PostgreSQL, and MySQL - SQLite uses fresh in-memory DB for each test
+  if (ds.options.type !== 'mssql' && ds.options.type !== 'postgres' && ds.options.type !== 'mysql') {
     return;
   }
 
@@ -219,6 +273,31 @@ export const cleanupTestData = async (dataSource?: DataSource): Promise<void> =>
       } finally {
         // Re-enable triggers
         await queryRunner.query('SET session_replication_role = DEFAULT;');
+      }
+    } else if (ds.options.type === 'mysql') {
+      // MySQL-specific cleanup
+      try {
+        // Disable foreign key checks temporarily
+        await queryRunner.query('SET FOREIGN_KEY_CHECKS = 0;');
+        
+        const tables = await queryRunner.query(`
+          SELECT TABLE_NAME 
+          FROM INFORMATION_SCHEMA.TABLES 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_TYPE = 'BASE TABLE'
+          AND TABLE_NAME NOT LIKE 'typeorm_%'
+          ORDER BY TABLE_NAME
+        `);
+        
+        if (tables.length > 0) {
+          // Truncate all tables at once
+          for (const table of tables) {
+            await queryRunner.query(`TRUNCATE TABLE \`${table.TABLE_NAME}\``);
+          }
+        }
+      } finally {
+        // Re-enable foreign key checks
+        await queryRunner.query('SET FOREIGN_KEY_CHECKS = 1;');
       }
     } else if (ds.options.type === 'mssql') {
       // SQL Server-specific cleanup

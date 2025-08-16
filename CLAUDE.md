@@ -121,11 +121,49 @@ npm run start:dev -w apps-examples/simple-hybrid-crud-app
 # Advanced CRUD with soft deletion and bulk operations
 npm run start:dev -w apps-examples/advanced-crud-app
 
-# Advanced hybrid with GraphQL soft deletion
+# Advanced hybrid with comprehensive database support (SQLite + SQL Server + PostgreSQL + MySQL)
 npm run start:dev -w apps-examples/advanced-hybrid-crud-app
 
 # Composite key GraphQL example
 npm run start:dev -w apps-examples/composite-key-graphql-app
+```
+
+### Database Support in Examples
+
+The **advanced-hybrid-crud-app** showcases comprehensive multi-database support:
+
+```bash
+# SQLite (default - no setup required)
+cd apps-examples/advanced-hybrid-crud-app
+npm run start:dev
+
+# SQL Server with Docker
+cd apps-examples/advanced-hybrid-crud-app
+docker-compose up -d sqlserver
+# Update .env: DB_TYPE=mssql
+npm run start:dev
+
+# PostgreSQL with Docker
+cd apps-examples/advanced-hybrid-crud-app
+docker-compose up -d postgres
+# Update .env: DB_TYPE=postgres
+npm run start:dev
+
+# MySQL with Docker
+cd apps-examples/advanced-hybrid-crud-app
+docker-compose up -d mysql
+# Update .env: DB_TYPE=mysql
+npm run start:dev
+```
+
+### Database Testing Commands
+
+```bash
+# Test all databases (from advanced-hybrid-crud-app directory)
+npm run test:e2e:sqlite     # ✅ 102/102 tests pass
+npm run test:e2e:sqlserver  # ✅ 97/102 tests pass (5 bulk tests skipped)
+npm run test:e2e:postgres   # ✅ 97/102 tests pass (5 bulk tests skipped)
+npm run test:e2e:mysql      # ✅ 97/102 tests pass (5 bulk tests skipped)
 ```
 
 ## Architecture

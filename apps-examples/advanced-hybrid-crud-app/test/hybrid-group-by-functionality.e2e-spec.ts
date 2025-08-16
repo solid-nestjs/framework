@@ -9,10 +9,10 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   
-  // Helper function to handle PostgreSQL returning counts as strings
+  // Helper function to handle PostgreSQL and MySQL returning counts as strings
   const expectCount = (value: any, expected: number) => {
-    if (process.env.DB_TYPE === 'postgres') {
-      // PostgreSQL may return counts as strings
+    if (process.env.DB_TYPE === 'postgres' || process.env.DB_TYPE === 'mysql') {
+      // PostgreSQL and MySQL may return counts as strings
       expect(Number(value)).toBe(expected);
     } else {
       expect(value).toBe(expected);
@@ -21,7 +21,7 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
   
   // Helper to check if value is number or numeric string
   const expectNumericValue = (value: any) => {
-    if (process.env.DB_TYPE === 'postgres') {
+    if (process.env.DB_TYPE === 'postgres' || process.env.DB_TYPE === 'mysql') {
       // Accept either number or string that can be converted to number
       expect(!isNaN(Number(value))).toBe(true);
     } else {
@@ -53,8 +53,8 @@ describe('Hybrid App GROUP BY Functionality (e2e)', () => {
 
     dataSource = app.get(DataSource);
     
-    // Clean up data before each test (SQL Server and PostgreSQL only - SQLite creates fresh DB)
-    if (process.env.DB_TYPE === 'mssql' || process.env.DB_TYPE === 'postgres') {
+    // Clean up data before each test (SQL Server, PostgreSQL, and MySQL only - SQLite creates fresh DB)
+    if (process.env.DB_TYPE === 'mssql' || process.env.DB_TYPE === 'postgres' || process.env.DB_TYPE === 'mysql') {
       await cleanupTestData(dataSource);
     }
   });

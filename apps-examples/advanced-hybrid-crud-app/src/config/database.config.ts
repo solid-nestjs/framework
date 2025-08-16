@@ -3,12 +3,67 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlServerConnectionOptions';
 import { SqliteConnectionOptions } from 'typeorm/driver/sqlite/SqliteConnectionOptions';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectionOptions';
 import { DataSource } from 'typeorm';
 import { Product } from '../products/entities/product.entity';
 import { Supplier } from '../suppliers/entities/supplier.entity';
 import { Invoice } from '../invoices/entities/invoice.entity';
 import { InvoiceDetail } from '../invoices/entities/invoice-detail.entity';
 import { Client } from '../clients/entities/client.entity';
+
+// Helper function to ensure MySQL database exists
+async function ensureMysqlDatabase(config: any): Promise<void> {
+  const dbName = config.database;
+  // Create connection to mysql database first
+  const masterConfig = {
+    ...config,
+    database: 'mysql', // Connect to mysql database first
+    entities: [], // No entities needed for database creation
+    synchronize: false,
+    migrationsRun: false,
+    logging: true,
+  };
+
+  let masterDataSource: DataSource;
+  const maxRetries = 5;
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      masterDataSource = new DataSource(masterConfig as any);
+      await masterDataSource.initialize();
+
+      // Check if database exists
+      const result = await masterDataSource.query(
+        `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${dbName}'`,
+      );
+
+      if (result.length === 0) {
+        // Create the database
+        await masterDataSource.query(`CREATE DATABASE \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      }
+
+      return;
+    } catch (error) {
+      retries++;
+
+      if (retries >= maxRetries) {
+        return; // Don't throw, let TypeORM handle it
+      }
+
+      const waitTime = Math.min(1000 * Math.pow(2, retries), 10000);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    } finally {
+      if (masterDataSource?.isInitialized) {
+        try {
+          await masterDataSource.destroy();
+        } catch (destroyError) {
+          // Warning: Error closing master connection
+        }
+      }
+    }
+  }
+}
 
 // Helper function to ensure SQL Server database exists
 async function ensureSqlServerDatabase(config: any): Promise<void> {
@@ -159,6 +214,19 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
         },
       } as PostgresConnectionOptions;
 
+    case 'mysql':
+      return {
+        ...commonConfig,
+        type: 'mysql',
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306', 10),
+        username: process.env.DB_USERNAME || 'root',
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE || 'advanced_hybrid_crud',
+        charset: 'utf8mb4',
+        timezone: '+00:00',
+      } as MysqlConnectionOptions;
+
     case 'sqlite':
     default:
       return {
@@ -215,6 +283,19 @@ export const getDatabaseConfig = (
           database: `${process.env.DB_DATABASE || 'advanced_hybrid_crud'}_test_${Date.now()}`,
           ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
         } as PostgresConnectionOptions;
+
+      case 'mysql':
+        return {
+          ...commonConfig,
+          type: 'mysql',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '3306', 10),
+          username: process.env.DB_USERNAME || 'root',
+          password: process.env.DB_PASSWORD,
+          database: `${process.env.DB_DATABASE || 'advanced_hybrid_crud'}_test_${Date.now()}`,
+          charset: 'utf8mb4',
+          timezone: '+00:00',
+        } as MysqlConnectionOptions;
 
       case 'sqlite':
       default:
