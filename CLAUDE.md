@@ -344,8 +344,8 @@ The framework provides comprehensive soft deletion and bulk operation support:
 
 # Important in Planning and execution:
 
-- after planning always create a file in the 'tasks' folder with the following naming convention: "yyyyMMddhhmm - title", in that file you must add the summary of what was planned, and the task list to be executed (you must check them when they are finished).
-
 - the planning, tasks and documentation files must always be in english.
-
-- for each new planned feature i want to be documented in a folder called 'specs' where we can put all the functionalities, scope and explanations of the feature we plan, you must also keep updating that documentation when the feature is been progressed, this applies just for new features, not Fixes or refactoring.
+- when we plan a new feature you must make a document in the 'specs' folder with this naming convetion: "yyyyMMddhhmm - spec_name", after you make that specification document you must ask If it's okay before taking the next step.
+- after making the 'spec' document and getting the 'ok' to continue, you must make a new doc for all the task planned (inside 'tasks/yyyyMMddhhmm - spec_name' folder) with the following naming convention: "yyyyMMddhhmm - task_name".
+- after creating the tasks you must ask for the 'ok' to continue with the implementation.
+- spec and task docs must be linked, and must be updated every time there is some progress in the implementation of the new feature.
