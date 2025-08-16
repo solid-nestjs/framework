@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.8](https://github.com/solid-nestjs/framework/compare/v0.2.7...v0.2.8) (2025-08-16)
+
+### Features
+
+- Implement seeders for all example applications ([c85fb7c](https://github.com/solid-nestjs/framework/commit/c85fb7cab4ba2f6989e60c3b6618f8542d96e369))
+
 ## [0.2.7](https://github.com/solid-nestjs/framework/compare/v0.2.6...v0.2.7) (2025-08-01)
 
 **Note:** Version bump only for package simple-graphql-crud-app

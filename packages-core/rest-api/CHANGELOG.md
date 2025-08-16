@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.8](https://github.com/solid-nestjs/framework/compare/v0.2.7...v0.2.8) (2025-08-16)
+
+### Features
+
+- group-by supported ([#19](https://github.com/solid-nestjs/framework/issues/19)) ([844185b](https://github.com/solid-nestjs/framework/commit/844185bc602c37d160417dffc463ccedef1922ad))
+
 ## [0.2.6](https://github.com/solid-nestjs/framework/compare/v0.2.5...v0.2.6) (2025-06-18)
 
 ### Bug Fixes
