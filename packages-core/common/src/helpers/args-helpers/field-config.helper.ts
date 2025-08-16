@@ -71,7 +71,7 @@ export function parseFieldConfig(config: FieldConfig): ParsedFieldConfig {
     return { type: config };
   }
   
-  if (typeof config === 'object') {
+  if (typeof config === 'object' && config !== null) {
     return { ...config };
   }
   
@@ -89,7 +89,7 @@ export function parseOrderByConfig(config: OrderByFieldConfig): Omit<ParsedField
     return {};
   }
   
-  if (typeof config === 'object') {
+  if (typeof config === 'object' && config !== null) {
     return { ...config };
   }
   
@@ -111,7 +111,7 @@ export function parseGroupByConfig(config: GroupByFieldConfig): ParsedFieldConfi
     return { type: config };
   }
   
-  if (typeof config === 'object') {
+  if (typeof config === 'object' && config !== null) {
     return { ...config };
   }
   

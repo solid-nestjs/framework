@@ -235,17 +235,47 @@ export function isEnum(type: any): boolean {
     return false;
   }
   
-  // Check if it has both string keys and values (typical enum structure)
   const values = Object.values(type);
   const keys = Object.keys(type);
+  
+  // Should have at least one key-value pair
+  if (keys.length === 0) {
+    return false;
+  }
   
   // Enums typically have string or number values
   const hasValidValues = values.every(v => 
     typeof v === 'string' || typeof v === 'number'
   );
   
-  // Should have at least one key-value pair
-  return keys.length > 0 && hasValidValues;
+  if (!hasValidValues) {
+    return false;
+  }
+  
+  // For numeric enums, TypeScript generates reverse mapping
+  // Check if this looks like a TypeScript enum structure
+  const numericValues = values.filter(v => typeof v === 'number');
+  if (numericValues.length > 0) {
+    // Should have reverse mappings for numeric enums
+    const hasReverseMappings = numericValues.every(numVal => 
+      keys.some(key => type[numVal] === key)
+    );
+    return hasReverseMappings;
+  }
+  
+  // For string enums, check that all values are strings and keys match a pattern
+  // Also verify this isn't just a plain object by checking key structure
+  const stringValues = values.filter(v => typeof v === 'string');
+  if (stringValues.length === values.length && stringValues.length > 0) {
+    // Additional check: enum keys are typically uppercase or camelCase constants
+    // This helps distinguish from regular objects like { key: 'value' }
+    return keys.some(key => 
+      key === key.toUpperCase() || // CONSTANT_CASE
+      /^[A-Z][A-Z_0-9]*$/.test(key) // SCREAMING_SNAKE_CASE
+    );
+  }
+  
+  return false;
 }
 
 /**

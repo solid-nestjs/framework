@@ -137,24 +137,46 @@ export function extractFindArgsMetadata(findArgsType: Type<any>): FindArgsMetada
   // Get all property names from the class prototype
   const propertyNames = Object.getOwnPropertyNames(findArgsType.prototype);
   
-  // Also check for properties defined via decorators/metadata
+  // Get all metadata keys to find properties with design:type metadata
   const metadataKeys = Reflect.getMetadataKeys(findArgsType.prototype) || [];
-  const additionalProperties = metadataKeys
-    .filter(key => typeof key === 'string' && key.startsWith('design:type:'))
-    .map(key => (key as string).replace('design:type:', ''));
+  const typeMetadataKeys = metadataKeys
+    .filter(key => typeof key === 'string' && key.startsWith('design:type'))
+    .map(key => (key as string));
 
-  // Combine and deduplicate property names
-  const allPropertyNames = Array.from(new Set([...propertyNames, ...additionalProperties]))
-    .filter(name => name !== 'constructor');
+  // Find property names from metadata keys
+  const metadataPropertyNames: string[] = [];
+  for (const key of typeMetadataKeys) {
+    if (key === 'design:type') continue; // Skip class-level metadata
+    // Get all properties that have design:type metadata
+    const allMetadataKeys = Reflect.getMetadataKeys(findArgsType.prototype);
+    for (const metaKey of allMetadataKeys) {
+      if (typeof metaKey === 'symbol') continue;
+      const parts = metaKey.split(':');
+      if (parts[0] === 'design' && parts[1] === 'type' && parts[2]) {
+        metadataPropertyNames.push(parts[2]);
+      }
+    }
+  }
+
+  // Get properties that have design:type metadata directly
+  const instance = new findArgsType();
+  const instanceKeys = Object.keys(instance);
+  
+  // Combine all sources of property names
+  const allPropertyNames = Array.from(new Set([
+    ...propertyNames,
+    ...metadataPropertyNames,
+    ...instanceKeys
+  ])).filter(name => name !== 'constructor');
 
   // Extract metadata for each property
   for (const propertyName of allPropertyNames) {
     const type = Reflect.getMetadata('design:type', findArgsType.prototype, propertyName);
     
-    if (type) {
+    if (type || instanceKeys.includes(propertyName)) {
       properties.push({
         name: propertyName,
-        type,
+        type: type || Object, // Default to Object if no type metadata
         isOptional: true, // Assume optional for GroupBy context
         description: `Property ${propertyName} from ${className}`
       });
