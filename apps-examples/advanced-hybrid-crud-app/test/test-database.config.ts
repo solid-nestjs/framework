@@ -10,6 +10,38 @@ import { Client } from '../src/clients/entities/client.entity';
 let sharedDataSource: DataSource | null = null;
 let isSchemaInitialized = false;
 
+// Helper function to ensure PostgreSQL database exists for tests
+const ensurePostgresTestDatabase = async (dbName: string): Promise<void> => {
+  const masterConfig = {
+    type: 'postgres' as const,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD,
+    database: 'postgres', // Connect to postgres database to create test database
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  };
+
+  try {
+    const masterDataSource = new DataSource(masterConfig);
+    await masterDataSource.initialize();
+    
+    // Check if database exists
+    const result = await masterDataSource.query(
+      `SELECT 1 FROM pg_database WHERE datname = '${dbName}'`
+    );
+
+    if (result.length === 0) {
+      // Create database
+      await masterDataSource.query(`CREATE DATABASE ${dbName}`);
+    }
+    
+    await masterDataSource.destroy();
+  } catch (error) {
+    console.warn('Warning: Could not ensure PostgreSQL test database exists:', error.message);
+  }
+};
+
 // Helper function to ensure SQL Server database exists for tests
 const ensureTestDatabase = async (dbName: string): Promise<void> => {
   const masterConfig = {
@@ -88,6 +120,29 @@ export const getTestDatabaseConfig = async (): Promise<TypeOrmModuleOptions> => 
         requestTimeout: 10000,
       };
       
+    case 'postgres':
+      // Use a test database name for PostgreSQL tests
+      const pgDbName = 'advanced_hybrid_crud_test';
+      
+      // Ensure database exists before creating config
+      await ensurePostgresTestDatabase(pgDbName);
+      
+      return {
+        type: 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+        username: process.env.DB_USERNAME || 'postgres',
+        password: process.env.DB_PASSWORD,
+        database: pgDbName,
+        entities,
+        synchronize: !isSchemaInitialized, // Only sync schema once
+        dropSchema: false, // Never drop schema, just clean data
+        logging: false,
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+        poolSize: 10,
+        connectTimeoutMS: 5000,
+      };
+      
     case 'sqlite':
     default:
       return {
@@ -104,8 +159,8 @@ export const getTestDatabaseConfig = async (): Promise<TypeOrmModuleOptions> => 
 export const createTestDataSource = async (): Promise<DataSource> => {
   const dbType = process.env.DB_TYPE || 'sqlite';
   
-  // For SQL Server, reuse the same DataSource for all tests
-  if (dbType === 'mssql') {
+  // For SQL Server and PostgreSQL, reuse the same DataSource for all tests
+  if (dbType === 'mssql' || dbType === 'postgres') {
     if (!sharedDataSource || !sharedDataSource.isInitialized) {
       const config = await getTestDatabaseConfig();
       sharedDataSource = new DataSource(config as any);
@@ -124,7 +179,7 @@ export const createTestDataSource = async (): Promise<DataSource> => {
   return dataSource;
 };
 
-// Efficient data cleanup for SQL Server (keeps schema intact)
+// Efficient data cleanup for SQL Server and PostgreSQL (keeps schema intact)
 export const cleanupTestData = async (dataSource?: DataSource): Promise<void> => {
   const ds = dataSource || sharedDataSource;
   
@@ -132,8 +187,8 @@ export const cleanupTestData = async (dataSource?: DataSource): Promise<void> =>
     return;
   }
   
-  // Only clean data for SQL Server - SQLite uses fresh in-memory DB for each test
-  if (ds.options.type !== 'mssql') {
+  // Only clean data for SQL Server and PostgreSQL - SQLite uses fresh in-memory DB for each test
+  if (ds.options.type !== 'mssql' && ds.options.type !== 'postgres') {
     return;
   }
 
@@ -141,41 +196,67 @@ export const cleanupTestData = async (dataSource?: DataSource): Promise<void> =>
   await queryRunner.connect();
   
   try {
-    // Get all table names except system tables
-    const tables = await queryRunner.query(`
-      SELECT TABLE_NAME 
-      FROM INFORMATION_SCHEMA.TABLES 
-      WHERE TABLE_TYPE = 'BASE TABLE' 
-      AND TABLE_CATALOG = DB_NAME()
-      AND TABLE_NAME NOT LIKE 'typeorm_%'
-      ORDER BY TABLE_NAME
-    `);
-    
-    if (tables.length > 0) {
-      // Get table names in reverse order for proper deletion (respecting FK constraints)
-      const tableNames = tables.map(t => t.TABLE_NAME);
-      
+    if (ds.options.type === 'postgres') {
+      // PostgreSQL-specific cleanup
       try {
-        // Disable all foreign key constraints
-        await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"');
+        // First, disable triggers temporarily
+        await queryRunner.query('SET session_replication_role = replica;');
         
-        // Delete data from all tables
-        for (const tableName of tableNames) {
-          await queryRunner.query(`DELETE FROM [${tableName}]`);
+        const tables = await queryRunner.query(`
+          SELECT tablename 
+          FROM pg_tables 
+          WHERE schemaname = 'public' 
+          AND tablename NOT LIKE 'typeorm_%'
+          ORDER BY tablename
+        `);
+        
+        if (tables.length > 0) {
+          const tableNames = tables.map(t => `"${t.tablename}"`).join(', ');
           
-          // Reset identity if table has one
-          const hasIdentity = await queryRunner.query(`
-            SELECT 1 FROM sys.identity_columns 
-            WHERE OBJECT_NAME(object_id) = '${tableName}'
-          `);
-          
-          if (hasIdentity.length > 0) {
-            await queryRunner.query(`DBCC CHECKIDENT ('[${tableName}]', RESEED, 0)`);
-          }
+          // Truncate all tables at once with CASCADE to handle foreign keys
+          await queryRunner.query(`TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE`);
         }
       } finally {
-        // Always re-enable foreign key constraints
-        await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? CHECK CONSTRAINT all"');
+        // Re-enable triggers
+        await queryRunner.query('SET session_replication_role = DEFAULT;');
+      }
+    } else if (ds.options.type === 'mssql') {
+      // SQL Server-specific cleanup
+      const tables = await queryRunner.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_TYPE = 'BASE TABLE' 
+        AND TABLE_CATALOG = DB_NAME()
+        AND TABLE_NAME NOT LIKE 'typeorm_%'
+        ORDER BY TABLE_NAME
+      `);
+      
+      if (tables.length > 0) {
+        // Get table names in reverse order for proper deletion (respecting FK constraints)
+        const tableNames = tables.map(t => t.TABLE_NAME);
+        
+        try {
+          // Disable all foreign key constraints
+          await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"');
+          
+          // Delete data from all tables
+          for (const tableName of tableNames) {
+            await queryRunner.query(`DELETE FROM [${tableName}]`);
+            
+            // Reset identity if table has one
+            const hasIdentity = await queryRunner.query(`
+              SELECT 1 FROM sys.identity_columns 
+              WHERE OBJECT_NAME(object_id) = '${tableName}'
+            `);
+            
+            if (hasIdentity.length > 0) {
+              await queryRunner.query(`DBCC CHECKIDENT ('[${tableName}]', RESEED, 0)`);
+            }
+          }
+        } finally {
+          // Always re-enable foreign key constraints
+          await queryRunner.query('EXEC sp_MSforeachtable "ALTER TABLE ? CHECK CONSTRAINT all"');
+        }
       }
     }
   } catch (error) {

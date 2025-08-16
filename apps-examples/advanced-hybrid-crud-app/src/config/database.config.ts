@@ -2,6 +2,7 @@ import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlServerConnectionOptions';
 import { SqliteConnectionOptions } from 'typeorm/driver/sqlite/SqliteConnectionOptions';
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { DataSource } from 'typeorm';
 import { Product } from '../products/entities/product.entity';
 import { Supplier } from '../suppliers/entities/supplier.entity';
@@ -139,6 +140,25 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
         },
       } as SqlServerConnectionOptions;
 
+    case 'postgres':
+      return {
+        ...commonConfig,
+        type: 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+        username: process.env.DB_USERNAME || 'postgres',
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE || 'advanced_hybrid_crud',
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+        poolSize: 10,
+        connectTimeoutMS: 30000,
+        // Important: Quote identifiers for PostgreSQL to handle camelCase properly
+        extra: {
+          // This ensures TypeORM quotes identifiers in PostgreSQL
+          options: '-c search_path=public',
+        },
+      } as PostgresConnectionOptions;
+
     case 'sqlite':
     default:
       return {
@@ -183,6 +203,18 @@ export const getDatabaseConfig = (
             trustServerCertificate: true,
           },
         } as SqlServerConnectionOptions;
+
+      case 'postgres':
+        return {
+          ...commonConfig,
+          type: 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5432', 10),
+          username: process.env.DB_USERNAME || 'postgres',
+          password: process.env.DB_PASSWORD,
+          database: `${process.env.DB_DATABASE || 'advanced_hybrid_crud'}_test_${Date.now()}`,
+          ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+        } as PostgresConnectionOptions;
 
       case 'sqlite':
       default:
