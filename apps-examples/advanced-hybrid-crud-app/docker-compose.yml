@@ -20,6 +20,30 @@ services:
       - app-network
     restart: unless-stopped
 
+  postgres:
+    image: postgres:15-alpine
+    container_name: advanced_hybrid_crud_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourStrong@Password123
+      - POSTGRES_DB=advanced_hybrid_crud
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app-network
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
 networks:
   app-network:
     driver: bridge
