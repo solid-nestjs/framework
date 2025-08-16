@@ -1,4 +1,4 @@
-import { Type, mixin } from '@nestjs/common';
+import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, InputType } from '@nestjs/graphql';
 import { IsOptional, IsBoolean } from 'class-validator';
@@ -116,5 +116,5 @@ export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Ty
     applyDecoratorToProperty(IsBoolean(), EnhancedClass, fieldName);
   });
 
-  return mixin(EnhancedClass);
+  return EnhancedClass;
 }

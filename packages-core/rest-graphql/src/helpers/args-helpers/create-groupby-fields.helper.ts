@@ -1,4 +1,4 @@
-import { Type, mixin } from '@nestjs/common';
+import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, InputType } from '@nestjs/graphql';
 import { IsOptional, IsBoolean, ValidateNested } from 'class-validator';
@@ -132,5 +132,5 @@ export function createGroupByFields<T>(
     }
   }
 
-  return mixin(BaseClass as Type<GroupBy<T>>);
+  return BaseClass as Type<GroupBy<T>>;
 }

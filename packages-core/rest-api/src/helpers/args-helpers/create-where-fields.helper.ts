@@ -1,4 +1,4 @@
-import { Type, mixin } from '@nestjs/common';
+import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, ValidateNested, IsArray } from 'class-validator';
 import { Type as TransformerType } from 'class-transformer';
@@ -144,7 +144,7 @@ export function createWhereFields<T>(
   // Add logical operators (_and, _or) for complex queries
   addLogicalOperators(BaseClass, classOptions.name);
 
-  return mixin(BaseClass as Type<Where<T>>);
+  return BaseClass as Type<Where<T>>;
 }
 
 /**

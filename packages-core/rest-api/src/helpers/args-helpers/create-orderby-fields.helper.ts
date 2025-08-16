@@ -1,4 +1,4 @@
-import { Type, mixin } from '@nestjs/common';
+import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsEnum } from 'class-validator';
 import { OrderBy, OrderByTypes } from '@solid-nestjs/common';
@@ -100,5 +100,5 @@ export function createOrderByFields<T>(
     }
   }
 
-  return mixin(BaseClass as Type<OrderBy<T>>);
+  return BaseClass as Type<OrderBy<T>>;
 }

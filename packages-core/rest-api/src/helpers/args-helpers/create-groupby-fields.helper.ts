@@ -1,4 +1,4 @@
-import { Type, mixin } from '@nestjs/common';
+import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsBoolean, ValidateNested } from 'class-validator';
 import { Type as TransformerType } from 'class-transformer';
@@ -109,5 +109,5 @@ export function createGroupByFields<T>(
     }
   }
 
-  return mixin(BaseClass as Type<GroupBy<T>>);
+  return BaseClass as Type<GroupBy<T>>;
 }

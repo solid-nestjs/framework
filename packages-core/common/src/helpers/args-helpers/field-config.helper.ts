@@ -6,17 +6,25 @@ import { FieldConfig, ParsedFieldConfig } from './type-inference.helper';
  */
 export type WhereFieldsConfig<T> = {
   [K in keyof T]?: FieldConfig;
+} & {
+  // Allow relation fields that are not part of T
+  [relationName: string]: FieldConfig;
 };
 
 export type OrderByFieldConfig = 
   | true 
+  | Type<any>                      // For relation OrderBy classes
   | {
       description?: string;
       required?: boolean;
+      type?: Type<any>;             // Allow explicit type
     };
 
 export type OrderByFieldsConfig<T> = {
   [K in keyof T]?: OrderByFieldConfig;
+} & {
+  // Allow relation fields that are not part of T
+  [relationName: string]: OrderByFieldConfig;
 };
 
 export type GroupByFieldConfig = 
@@ -30,6 +38,9 @@ export type GroupByFieldConfig =
 
 export type GroupByFieldsConfig<T> = {
   [K in keyof T]?: GroupByFieldConfig;
+} & {
+  // Allow relation fields that are not part of T
+  [relationName: string]: GroupByFieldConfig;
 };
 
 /**
@@ -84,9 +95,13 @@ export function parseFieldConfig(config: FieldConfig): ParsedFieldConfig {
  * @param config - Raw OrderBy field configuration
  * @returns Parsed configuration
  */
-export function parseOrderByConfig(config: OrderByFieldConfig): Omit<ParsedFieldConfig, 'type'> {
+export function parseOrderByConfig(config: OrderByFieldConfig): ParsedFieldConfig {
   if (config === true) {
     return {};
+  }
+  
+  if (typeof config === 'function') {
+    return { type: config };
   }
   
   if (typeof config === 'object' && config !== null) {
@@ -163,7 +178,7 @@ export function validateFieldConfig(config: any, fieldName: string): void {
   
   if (typeof config === 'object') {
     // Validate object configuration
-    const validKeys = ['type', 'description', 'required', 'example', 'deprecated', 'enum', 'enumName'];
+    const validKeys = ['type', 'description', 'required', 'example', 'deprecated', 'enum', 'enumName', 'isRelation'];
     const configKeys = Object.keys(config);
     
     for (const key of configKeys) {

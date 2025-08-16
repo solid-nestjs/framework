@@ -15,6 +15,7 @@ export type FieldConfig =
       deprecated?: boolean;
       enum?: any;                  // For enum fields
       enumName?: string;           // Custom name for the enum
+      isRelation?: boolean;        // Mark as relation field
     };
 
 /**
@@ -28,6 +29,7 @@ export interface ParsedFieldConfig {
   deprecated?: boolean;
   enum?: any;
   enumName?: string;
+  isRelation?: boolean;
 }
 
 /**
@@ -60,10 +62,23 @@ export function inferFilterType(
 ): Type<any> {
   // If explicit type is provided in config, use it
   if (typeof config === 'function') {
+    // Check if it's a relation type and return it directly
+    if (isRelationType(config)) {
+      return config;
+    }
     return config;
   }
   if (typeof config === 'object' && config?.type) {
+    // Check if it's a relation type and return it directly
+    if (isRelationType(config.type)) {
+      return config.type;
+    }
     return config.type;
+  }
+  
+  // If explicitly marked as relation, return the type as-is without inference
+  if (typeof config === 'object' && config?.isRelation) {
+    return config.type || FilterTypeRegistry.getStringFilter();
   }
   
   // Check for explicit enum configuration
@@ -102,6 +117,31 @@ export function inferFilterType(
   // For complex types or unknown types, fallback to StringFilter
   console.warn(`Unknown type ${type.name} for property ${propertyName}. Using StringFilter as fallback.`);
   return FilterTypeRegistry.getStringFilter();
+}
+
+/**
+ * Checks if a given type appears to be a relation type (Where/OrderBy/GroupBy class)
+ * by examining the class name patterns commonly used in the framework
+ * 
+ * @param type - The type to check
+ * @returns True if it appears to be a relation type
+ */
+export function isRelationType(type: Type<any>): boolean {
+  if (!type || !type.name) {
+    return false;
+  }
+  
+  const className = type.name;
+  
+  // Check for common relation type patterns
+  return (
+    className.includes('Where') ||
+    className.includes('OrderBy') ||
+    className.includes('GroupBy') ||
+    className.includes('FindArgs') ||
+    // Add other patterns as needed
+    className.endsWith('Fields')
+  );
 }
 
 /**

@@ -13,6 +13,10 @@ export {
   StringFilter,
   DateFilter,
   NumberFilter,
+  createWhereFields,
+  createOrderByFields,
+  createGroupByFields,
+  GroupByArgsFrom,
 } from '@solid-nestjs/rest-graphql';
 
 //Crud Controller

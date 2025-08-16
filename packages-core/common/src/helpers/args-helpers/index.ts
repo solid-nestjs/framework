@@ -16,6 +16,7 @@ export {
   isEnum,
   getEnumInfo,
   shouldTreatAsEnum,
+  isRelationType,
   type FieldConfig,
   type ParsedFieldConfig
 } from './type-inference.helper';
