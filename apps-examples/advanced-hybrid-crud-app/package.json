@@ -21,6 +21,7 @@
     "test:e2e:sqlite": "cross-env DB_TYPE=sqlite jest --config ./test/jest-e2e.json",
     "test:e2e:sqlserver": "cross-env DB_TYPE=mssql jest --config ./test/jest-e2e.json",
     "test:e2e:postgres": "cross-env DB_TYPE=postgres jest --config ./test/jest-e2e.json",
+    "test:e2e:mysql": "cross-env DB_TYPE=mysql jest --config ./test/jest-e2e.json",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
@@ -43,6 +44,7 @@
     "graphql": "^16.11.0",
     "mssql": "^11.0.1",
     "multer": "^2.0.1",
+    "mysql2": "^3.14.3",
     "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
