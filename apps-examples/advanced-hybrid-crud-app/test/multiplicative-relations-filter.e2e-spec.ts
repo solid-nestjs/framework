@@ -39,8 +39,8 @@ describe('Multiplicative Relations Filter (e2e)', () => {
 
     dataSource = app.get(DataSource);
     
-    // Clean up data before each test (SQL Server and PostgreSQL only - SQLite creates fresh DB)
-    if (process.env.DB_TYPE === 'mssql' || process.env.DB_TYPE === 'postgres') {
+    // Clean up data before each test (SQL Server, PostgreSQL, and MySQL only - SQLite creates fresh DB)
+    if (process.env.DB_TYPE === 'mssql' || process.env.DB_TYPE === 'postgres' || process.env.DB_TYPE === 'mysql') {
       await cleanupTestData(dataSource);
     }
 

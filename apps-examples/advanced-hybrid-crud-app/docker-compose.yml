@@ -41,8 +41,32 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  mysql:
+    image: mysql:8.0
+    container_name: advanced_hybrid_crud_mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=YourStrong@Password123
+      - MYSQL_DATABASE=advanced_hybrid_crud
+      - MYSQL_USER=mysql_user
+      - MYSQL_PASSWORD=YourStrong@Password123
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pYourStrong@Password123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app-network
+    restart: unless-stopped
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
 volumes:
   postgres_data:
+  mysql_data:
 
 networks:
   app-network:
