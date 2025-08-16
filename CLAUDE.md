@@ -26,6 +26,7 @@ Before running development servers, use these utilities to avoid port conflicts:
 **Important for Claude Code**: Always clean up ports before running `npm run start:dev` to avoid orphaned processes occupying ports.
 
 **Claude Code Workflow**:
+
 1. Before running any `npm run start:dev` command, first run: `powershell -ExecutionPolicy Bypass -File ".\scripts\cleanup-ports.ps1" -Port [PORT_NUMBER]`
 2. After testing or when done, run: `powershell -ExecutionPolicy Bypass -File ".\scripts\kill-all-node-except-claude.ps1"`
 3. Always use timeout with `npm run start:dev` commands to prevent indefinite hanging: `timeout 30 npm run start:dev`
@@ -347,4 +348,4 @@ The framework provides comprehensive soft deletion and bulk operation support:
 
 - the planning, tasks and documentation files must always be in english.
 
-- for each new planned feature i want to be documented in a folder called planed-features where we can put all the functionalities, scope and explanations of the feature we plan, you must also keep updating that documentation when the feature is been progressed, this applies just for new features, not Fixes or refactoring.
+- for each new planned feature i want to be documented in a folder called 'specs' where we can put all the functionalities, scope and explanations of the feature we plan, you must also keep updating that documentation when the feature is been progressed, this applies just for new features, not Fixes or refactoring.
