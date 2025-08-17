@@ -12,7 +12,9 @@ import {
   addPropertyToClass,
   generateBaseClass,
   type GroupByArgsFromConfig,
-  type ClassOptions
+  type ClassOptions,
+  type GroupByArgs,
+  type FindArgs
 } from '@solid-nestjs/common';
 
 /**
@@ -29,7 +31,7 @@ export interface GroupByArgsFromConfigWithOptions extends Omit<GroupByArgsFromCo
  * This function extends the base GroupByArgsFrom functionality to include
  * proper decorators for both Swagger and GraphQL.
  * 
- * @template T - The FindArgs type
+ * @template T - The entity type (optional, for type inference)
  * @param config - Configuration with FindArgs type, fields, and optional class options
  * @returns A dynamically generated GroupBy class with REST and GraphQL decorators
  * 
@@ -63,7 +65,7 @@ export interface GroupByArgsFromConfigWithOptions extends Omit<GroupByArgsFromCo
  * });
  * ```
  */
-export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Type<any> {
+export function GroupByArgsFrom<T = any>(config: GroupByArgsFromConfigWithOptions): Type<GroupByArgs<T> & FindArgs<T>> {
   // Determine the fields type to use
   const fieldsType = config.groupByFieldsType || config.groupByFields;
   
@@ -117,7 +119,7 @@ export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Ty
     applyDecoratorToProperty(ValidateNested(), GroupByArgsClass, 'groupBy');
     applyDecoratorToProperty(TransformType(() => fieldsType), GroupByArgsClass, 'groupBy');
     
-    return GroupByArgsClass;
+    return GroupByArgsClass as Type<GroupByArgs<T> & FindArgs<T>>;
   }
   
   // Fall back to original implementation for string array
@@ -192,5 +194,5 @@ export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Ty
     applyDecoratorToProperty(IsBoolean(), EnhancedClass, fieldName);
   });
 
-  return EnhancedClass;
+  return EnhancedClass as Type<GroupByArgs<T> & FindArgs<T>>;
 }
