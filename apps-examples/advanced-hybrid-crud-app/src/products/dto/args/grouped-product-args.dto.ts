@@ -1,125 +1,37 @@
-import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
-import { IsOptional, ValidateNested } from 'class-validator';
-import { GroupByArgs } from '@solid-nestjs/common';
-import { GroupByRequestInput } from '@solid-nestjs/rest-graphql';
+import { ArgsType } from '@nestjs/graphql';
+import { GroupByArgsFrom, createGroupByFields } from '@solid-nestjs/typeorm-hybrid-crud';
 import { FindProductArgs } from './find-product-args.dto';
 import { Product } from '../../entities/product.entity';
+import { Supplier } from '../../../suppliers/entities/supplier.entity';
 
 /**
- * Unified GroupBy fields for Supplier (works with both REST and GraphQL)
+ * GroupBy fields for Supplier using helper
  */
-@InputType('SupplierGroupByFields')
-export class SupplierGroupByFields {
-  @ApiProperty({ required: false, description: 'Group by supplier name' })
-  @Field(() => Boolean, {
-    nullable: true,
-    description: 'Group by supplier name',
-  })
-  @IsOptional()
-  name?: boolean;
-
-  @ApiProperty({
-    required: false,
-    description: 'Group by supplier contact email',
-  })
-  @Field(() => Boolean, {
-    nullable: true,
-    description: 'Group by supplier contact email',
-  })
-  @IsOptional()
-  contactEmail?: boolean;
-}
+export const SupplierGroupByFields = createGroupByFields(Supplier, {
+  name: true,
+  contactEmail: true,
+});
 
 /**
- * Unified GroupBy fields for Product (works with both REST and GraphQL)
+ * GroupBy fields for Product using helper
  */
-@InputType('ProductGroupByFields')
-export class ProductGroupByFields {
-  @ApiProperty({ required: false, description: 'Group by product name' })
-  @Field(() => Boolean, {
-    nullable: true,
-    description: 'Group by product name',
-  })
-  @IsOptional()
-  name?: boolean;
-
-  @ApiProperty({ required: false, description: 'Group by product description' })
-  @Field(() => Boolean, {
-    nullable: true,
-    description: 'Group by product description',
-  })
-  @IsOptional()
-  description?: boolean;
-
-  @ApiProperty({ required: false, description: 'Group by product price' })
-  @Field(() => Boolean, {
-    nullable: true,
-    description: 'Group by product price',
-  })
-  @IsOptional()
-  price?: boolean;
-
-  @ApiProperty({ required: false, description: 'Group by product stock' })
-  @Field(() => Boolean, {
-    nullable: true,
-    description: 'Group by product stock',
-  })
-  @IsOptional()
-  stock?: boolean;
-
-  @ApiProperty({
-    type: SupplierGroupByFields,
-    required: false,
-    description: 'Group by supplier fields',
-  })
-  @Field(() => SupplierGroupByFields, {
-    nullable: true,
-    description: 'Group by supplier fields',
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => SupplierGroupByFields)
-  supplier?: SupplierGroupByFields;
-}
+export const ProductGroupByFields = createGroupByFields(Product, {
+  name: true,
+  description: true,
+  price: true,
+  stock: true,
+  supplier: SupplierGroupByFields,
+});
 
 /**
- * Unified Product-specific GroupBy request (works with both REST and GraphQL)
- */
-@InputType('ProductGroupByInput')
-export class ProductGroupByRequest extends GroupByRequestInput {
-  @ApiProperty({
-    type: ProductGroupByFields,
-    required: false,
-    description: 'Fields to group by',
-  })
-  @Field(() => ProductGroupByFields, {
-    nullable: true,
-    description: 'Fields to group by',
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ProductGroupByFields)
-  fields?: ProductGroupByFields;
-}
-
-/**
- * Unified GroupBy arguments for products (works with both REST and GraphQL)
+ * Unified GroupBy arguments for products using GroupByArgsFrom mixin
  */
 @ArgsType()
-export class GroupedProductArgs
-  extends FindProductArgs
-  implements GroupByArgs<Product>
-{
-  @ApiProperty({
-    type: ProductGroupByRequest,
-    description: 'GroupBy configuration for products',
-  })
-  @Field(() => ProductGroupByRequest, {
-    description: 'GroupBy configuration for products',
-  })
-  @ValidateNested()
-  @Type(() => ProductGroupByRequest)
-  groupBy!: ProductGroupByRequest;
-}
+export class GroupedProductArgs extends GroupByArgsFrom({
+  findArgsType: FindProductArgs,
+  groupByFieldsType: ProductGroupByFields,
+  options: { 
+    name: 'GroupedProductArgs',
+    description: 'Arguments for grouping products'
+  }
+}) {}

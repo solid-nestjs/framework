@@ -1,7 +1,8 @@
 import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, IsBoolean } from 'class-validator';
+import { IsOptional, IsBoolean, ValidateNested } from 'class-validator';
+import { Type as TransformType } from 'class-transformer';
 import {
   GroupByArgsFrom as BaseGroupByArgsFrom,
   getGroupByArgsMetadata,
@@ -17,7 +18,9 @@ import {
 /**
  * Extended configuration for REST-GraphQL GroupByArgsFrom that includes class options
  */
-export interface GroupByArgsFromConfigWithOptions extends GroupByArgsFromConfig {
+export interface GroupByArgsFromConfigWithOptions extends Omit<GroupByArgsFromConfig, 'groupByFields'> {
+  groupByFields?: string[] | Type<any>;
+  groupByFieldsType?: Type<any>;
   options?: ClassOptions;
 }
 
@@ -39,6 +42,7 @@ export interface GroupByArgsFromConfigWithOptions extends GroupByArgsFromConfig 
  *   orderByType: ProductOrderBy
  * }) {}
  * 
+ * // Using field names
  * const ProductGroupByFromArgs = GroupByArgsFrom({
  *   findArgsType: FindProductArgs,
  *   groupByFields: ['category', 'supplier', 'status'],
@@ -47,11 +51,83 @@ export interface GroupByArgsFromConfigWithOptions extends GroupByArgsFromConfig 
  *     description: 'Group by fields for Product queries'
  *   }
  * });
+ * 
+ * // Using generated fields class
+ * const ProductGroupByFields = createGroupByFields(Product, {...});
+ * const ProductGroupByFromArgs = GroupByArgsFrom({
+ *   findArgsType: FindProductArgs,
+ *   groupByFieldsType: ProductGroupByFields,
+ *   options: {
+ *     description: 'Group by fields for Product queries'
+ *   }
+ * });
  * ```
  */
 export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Type<any> {
+  // Determine the fields type to use
+  const fieldsType = config.groupByFieldsType || config.groupByFields;
+  
+  // If a class type is provided, use it directly
+  if (fieldsType && typeof fieldsType === 'function') {
+    // Get the FindArgs class
+    const FindArgsClass = config.findArgsType;
+    
+    // Create the GroupByArgs class that extends FindArgs and includes the groupBy field
+    const className = config.options?.name || `${FindArgsClass.name}GroupBy`;
+    
+    // Create dynamic class that extends FindArgs
+    const GroupByArgsClass = class extends FindArgsClass {
+      groupBy!: any;
+    };
+    
+    // Set class name
+    Object.defineProperty(GroupByArgsClass, 'name', {
+      value: className,
+      configurable: true
+    });
+    
+    // Add the groupBy property with the fields type
+    addPropertyToClass(GroupByArgsClass, 'groupBy', {
+      type: fieldsType,
+      isOptional: false,
+      description: config.options?.description || 'GroupBy configuration'
+    });
+    
+    // Apply Swagger decorator
+    applyDecoratorToProperty(
+      ApiProperty({
+        type: fieldsType,
+        required: true,
+        description: config.options?.description || 'GroupBy configuration'
+      }),
+      GroupByArgsClass,
+      'groupBy'
+    );
+    
+    // Apply GraphQL decorator
+    applyDecoratorToProperty(
+      Field(() => fieldsType, {
+        description: config.options?.description || 'GroupBy configuration'
+      }),
+      GroupByArgsClass,
+      'groupBy'
+    );
+    
+    // Apply validation decorators
+    applyDecoratorToProperty(ValidateNested(), GroupByArgsClass, 'groupBy');
+    applyDecoratorToProperty(TransformType(() => fieldsType), GroupByArgsClass, 'groupBy');
+    
+    return GroupByArgsClass;
+  }
+  
+  // Fall back to original implementation for string array
+  const baseConfig = {
+    ...config,
+    groupByFields: config.groupByFields as string[]
+  };
+  
   // Create base class using common GroupByArgsFrom
-  const BaseGroupByClass = BaseGroupByArgsFrom(config);
+  const BaseGroupByClass = BaseGroupByArgsFrom(baseConfig);
   const metadata = getGroupByArgsMetadata(BaseGroupByClass);
   
   if (!metadata) {
@@ -79,7 +155,7 @@ export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Ty
   }
 
   // Add fields with decorators
-  config.groupByFields.forEach(fieldName => {
+  (config.groupByFields as string[]).forEach(fieldName => {
     const fieldMetadata = getGroupByFieldMetadata(BaseGroupByClass, fieldName);
     
     // Add property to class
