@@ -10,6 +10,7 @@ import {
   generateBaseClass,
   addPropertyToClass,
   applyDecoratorToProperty,
+  applyDecoratorToClass,
   type GroupByFieldsConfig,
   type ClassOptions
 } from '@solid-nestjs/common';
@@ -69,6 +70,15 @@ export function createGroupByFields<T>(
     metadata: classOptions.metadata
   });
 
+  // Apply class-level decorators (no class decorators for REST, but keeping structure consistent)
+  const classDecorators: ClassDecorator[] = [
+    ...classOptions.decorators
+  ];
+
+  for (const decorator of classDecorators) {
+    applyDecoratorToClass(decorator, BaseClass);
+  }
+
   // Add fields dynamically
   for (const [fieldName, fieldConfig] of Object.entries(config) as Array<[string, any]>) {
     try {
@@ -97,11 +107,16 @@ export function createGroupByFields<T>(
       // Apply validation decorators
       applyDecoratorToProperty(IsOptional(), BaseClass, fieldName);
       
+      // Apply Type decorator for ALL fields for class-transformer to work
+      applyDecoratorToProperty(TransformerType(() => fieldType), BaseClass, fieldName);
+      
+      // Apply appropriate validators based on field type
       if (fieldType === Boolean) {
+        // For boolean fields, apply IsBoolean validator
         applyDecoratorToProperty(IsBoolean(), BaseClass, fieldName);
       } else {
+        // For nested objects (relations), apply ValidateNested
         applyDecoratorToProperty(ValidateNested(), BaseClass, fieldName);
-        applyDecoratorToProperty(TransformerType(() => fieldType), BaseClass, fieldName);
       }
 
     } catch (error) {

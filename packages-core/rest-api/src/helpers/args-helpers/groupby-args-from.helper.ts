@@ -1,22 +1,35 @@
-import { Type, mixin } from '@nestjs/common';
+import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsBoolean } from 'class-validator';
+import { IsOptional, IsBoolean, ValidateNested } from 'class-validator';
+import { Type as TransformType } from 'class-transformer';
+import { AggregateFieldInput } from '../../classes/inputs';
 import {
   GroupByArgsFrom as BaseGroupByArgsFrom,
   getGroupByArgsMetadata,
   getGroupByFieldMetadata,
   applyDecoratorToProperty,
+  applyDecoratorToClass,
   addPropertyToClass,
   generateBaseClass,
   type GroupByArgsFromConfig,
-  type ClassOptions
+  type ClassOptions,
+  type GroupByArgs,
+  type FindArgs
 } from '@solid-nestjs/common';
 
 /**
  * Extended configuration for REST API GroupByArgsFrom that includes class options
  */
-export interface GroupByArgsFromConfigWithOptions extends GroupByArgsFromConfig {
-  options?: ClassOptions;
+export interface GroupByArgsFromConfigWithOptions extends Omit<GroupByArgsFromConfig, 'groupByFields'> {
+  groupByFields?: string[] | Type<any>;
+  groupByFieldsType?: Type<any>;
+  options?: ClassOptions & {
+    /**
+     * Custom name for the GroupBy input type
+     * @example 'ProductGroupByInput' instead of default 'GroupedProductArgsRequest'
+     */
+    groupByInputTypeName?: string;
+  };
 }
 
 /**
@@ -24,7 +37,7 @@ export interface GroupByArgsFromConfigWithOptions extends GroupByArgsFromConfig 
  * This function extends the base GroupByArgsFrom functionality to include
  * proper Swagger decorators for REST APIs.
  * 
- * @template T - The FindArgs type
+ * @template T - The entity type (optional, for type inference)
  * @param config - Configuration with FindArgs type, fields, and optional class options
  * @returns A dynamically generated GroupBy class with REST API decorators
  * 
@@ -37,6 +50,7 @@ export interface GroupByArgsFromConfigWithOptions extends GroupByArgsFromConfig 
  *   orderByType: ProductOrderBy
  * }) {}
  * 
+ * // Using field names
  * const ProductGroupByFromArgs = GroupByArgsFrom({
  *   findArgsType: FindProductArgs,
  *   groupByFields: ['category', 'supplier', 'status'],
@@ -45,11 +59,81 @@ export interface GroupByArgsFromConfigWithOptions extends GroupByArgsFromConfig 
  *     description: 'Group by fields for Product queries'
  *   }
  * });
+ * 
+ * // Using generated fields class
+ * const ProductGroupByFields = createGroupByFields(Product, {...});
+ * const ProductGroupByFromArgs = GroupByArgsFrom({
+ *   findArgsType: FindProductArgs,
+ *   groupByFieldsType: ProductGroupByFields,
+ *   options: {
+ *     description: 'Group by fields for Product queries'
+ *   }
+ * });
  * ```
  */
-export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Type<any> {
+export function GroupByArgsFrom<T = any>(config: GroupByArgsFromConfigWithOptions): Type<GroupByArgs<T> & FindArgs<T>> {
+  // Determine the fields type to use
+  const fieldsType = config.groupByFieldsType || config.groupByFields;
+  
+  // If a class type is provided, use static class decoration pattern
+  if (fieldsType && typeof fieldsType === 'function') {
+    // Get the FindArgs class
+    const FindArgsClass = config.findArgsType;
+    const className = config.options?.name || `${FindArgsClass.name}GroupBy`;
+    
+    // Create a GroupByRequest class using plain class (no decorators for REST)
+    class GroupByRequestClass {
+      @ApiProperty({
+        type: fieldsType,
+        required: false,
+        description: 'Fields to group by'
+      })
+      @IsOptional()
+      @ValidateNested()
+      @TransformType(() => fieldsType)
+      fields?: any;
+      
+      @ApiProperty({
+        type: [AggregateFieldInput],
+        required: false,
+        description: 'Aggregate functions to apply',
+        example: [{ field: 'price', function: 'AVG', alias: 'avgPrice' }]
+      })
+      @IsOptional()
+      @ValidateNested({ each: true })
+      @TransformType(() => AggregateFieldInput)
+      aggregates?: AggregateFieldInput[];
+    }
+    
+    // Create the main GroupByArgs class
+    class GroupByArgsClass extends FindArgsClass {
+      @ApiProperty({
+        type: GroupByRequestClass,
+        required: true,
+        description: config.options?.description || 'GroupBy configuration'
+      })
+      @ValidateNested()
+      @TransformType(() => GroupByRequestClass)
+      groupBy!: any;
+    }
+    
+    // Set class name
+    Object.defineProperty(GroupByArgsClass, 'name', {
+      value: className,
+      configurable: true
+    });
+    
+    return GroupByArgsClass as Type<GroupByArgs<T> & FindArgs<T>>;
+  }
+  
+  // Fall back to original implementation for string array
+  const baseConfig = {
+    ...config,
+    groupByFields: config.groupByFields as string[]
+  };
+  
   // Create base class using common GroupByArgsFrom
-  const BaseGroupByClass = BaseGroupByArgsFrom(config);
+  const BaseGroupByClass = BaseGroupByArgsFrom(baseConfig);
   const metadata = getGroupByArgsMetadata(BaseGroupByClass);
   
   if (!metadata) {
@@ -62,8 +146,18 @@ export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Ty
     metadata: metadata
   });
 
+  // Apply class-level decorators (no class decorators for REST, but keeping structure consistent)
+  const classOptions = config.options || {};
+  const classDecorators: ClassDecorator[] = [
+    ...(classOptions.decorators || [])
+  ];
+
+  for (const decorator of classDecorators) {
+    applyDecoratorToClass(decorator, EnhancedClass);
+  }
+
   // Add fields with decorators
-  config.groupByFields.forEach(fieldName => {
+  (config.groupByFields as string[]).forEach(fieldName => {
     const fieldMetadata = getGroupByFieldMetadata(BaseGroupByClass, fieldName);
     
     // Add property to class
@@ -90,5 +184,5 @@ export function GroupByArgsFrom<T>(config: GroupByArgsFromConfigWithOptions): Ty
     applyDecoratorToProperty(IsBoolean(), EnhancedClass, fieldName);
   });
 
-  return mixin(EnhancedClass);
+  return EnhancedClass as Type<GroupByArgs<T> & FindArgs<T>>;
 }
