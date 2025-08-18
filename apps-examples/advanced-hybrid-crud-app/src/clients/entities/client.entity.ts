@@ -7,14 +7,7 @@ import {
   SolidDeletedAt,
   SolidOneToMany,
 } from '@solid-nestjs/common';
-
-// Import adapters to register them
-import '@solid-nestjs/common/dist/adapters';
-import '@solid-nestjs/typeorm/dist/adapters';
-import '@solid-nestjs/rest-api/dist/adapters';
-import '@solid-nestjs/graphql/dist/adapters';
 import { Invoice } from '../../invoices/entities/invoice.entity';
-import { Field } from '@nestjs/graphql';
 
 @SolidEntity()
 export class Client {
@@ -74,9 +67,7 @@ export class Client {
 
   @SolidOneToMany(() => Invoice, invoice => invoice.client, {
     description: 'Client invoices',
-    skip: ['graphql'],
   })
-  @Field(() => [Invoice], { description: 'Client invoices', nullable: true })
   invoices?: Invoice[];
 
   @SolidCreatedAt()
