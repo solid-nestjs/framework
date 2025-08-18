@@ -1,6 +1,7 @@
 import { Type } from '@nestjs/common';
 import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, IsEnum } from 'class-validator';
+import { IsOptional, IsEnum, ValidateNested } from 'class-validator';
+import { Type as TransformerType } from 'class-transformer';
 import { OrderBy, OrderByTypes } from '@solid-nestjs/common';
 import {
   parseOrderByConfig,
@@ -9,6 +10,8 @@ import {
   generateBaseClass,
   addPropertyToClass,
   applyDecoratorToProperty,
+  applyDecoratorToClass,
+  isRelationType,
   type OrderByFieldsConfig,
   type ClassOptions
 } from '@solid-nestjs/common';
@@ -69,7 +72,7 @@ export function createOrderByFields<T>(
   });
 
   // Apply class-level decorators
-  const classDecorators = [
+  const classDecorators: ClassDecorator[] = [
     InputType(classOptions.name, {
       isAbstract: classOptions.isAbstract,
       description: classOptions.description
@@ -78,7 +81,7 @@ export function createOrderByFields<T>(
   ];
 
   for (const decorator of classDecorators) {
-    decorator(BaseClass);
+    applyDecoratorToClass(decorator, BaseClass);
   }
 
   // Add fields dynamically
@@ -86,26 +89,57 @@ export function createOrderByFields<T>(
     try {
       const parsedConfig = parseOrderByConfig(fieldConfig as any);
 
-      // Add property to class
-      addPropertyToClass(BaseClass, fieldName, {
-        type: String, // OrderByTypes is an enum, use String for reflection
-        isOptional: true,
-        description: parsedConfig.description,
-      });
+      // Check if this is a relation type
+      const isRelation = parsedConfig.type && isRelationType(parsedConfig.type);
 
-      // Apply GraphQL decorator
-      applyDecoratorToProperty(
-        Field(() => OrderByTypes, {
-          nullable: true,
-          description: parsedConfig.description || `Order by ${fieldName}`
-        }),
-        BaseClass,
-        fieldName
-      );
+      if (isRelation) {
+        // Handle relation fields
+        const relationType = parsedConfig.type!;
+        
+        // Add property to class
+        addPropertyToClass(BaseClass, fieldName, {
+          type: relationType,
+          isOptional: true,
+          description: parsedConfig.description,
+        });
 
-      // Apply validation decorators
-      applyDecoratorToProperty(IsOptional(), BaseClass, fieldName);
-      applyDecoratorToProperty(IsEnum(OrderByTypes), BaseClass, fieldName);
+        // Apply GraphQL decorator
+        applyDecoratorToProperty(
+          Field(() => relationType, {
+            nullable: true,
+            description: parsedConfig.description || `Order by ${fieldName}`
+          }),
+          BaseClass,
+          fieldName
+        );
+
+        // Apply validation decorators
+        applyDecoratorToProperty(IsOptional(), BaseClass, fieldName);
+        applyDecoratorToProperty(ValidateNested(), BaseClass, fieldName);
+        applyDecoratorToProperty(TransformerType(() => relationType), BaseClass, fieldName);
+      } else {
+        // Handle primitive fields (existing logic)
+        // Add property to class
+        addPropertyToClass(BaseClass, fieldName, {
+          type: String, // OrderByTypes is an enum, use String for reflection
+          isOptional: true,
+          description: parsedConfig.description,
+        });
+
+        // Apply GraphQL decorator
+        applyDecoratorToProperty(
+          Field(() => OrderByTypes, {
+            nullable: true,
+            description: parsedConfig.description || `Order by ${fieldName}`
+          }),
+          BaseClass,
+          fieldName
+        );
+
+        // Apply validation decorators
+        applyDecoratorToProperty(IsOptional(), BaseClass, fieldName);
+        applyDecoratorToProperty(IsEnum(OrderByTypes), BaseClass, fieldName);
+      }
 
     } catch (error) {
       throw new Error(`Error processing field '${fieldName}': ${error instanceof Error ? error.message : String(error)}`);

@@ -1,79 +1,57 @@
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import { ArgsType } from '@nestjs/graphql';
 import {
   FindArgsFrom,
-  NumberFilter,
-  OrderBy,
-  OrderByTypes,
-  StringFilter,
-  Where,
+  createWhereFields,
+  createOrderByFields,
 } from '@solid-nestjs/typeorm-graphql-crud';
-import { IsOptional, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
 import { Supplier } from '../../entities/supplier.entity';
 import { Product } from '../../../products/entities/product.entity';
 
 // Simplified Product Where to avoid circular reference
-@InputType({ isAbstract: true })
-class ProductWhereForSupplier implements Partial<Where<Product>> {
-  @Field(() => StringFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => StringFilter)
-  name?: StringFilter;
+const ProductWhereForSupplier = createWhereFields(
+  Product,
+  {
+    name: true, // Auto-infers StringFilter
+    description: true, // Auto-infers StringFilter
+    price: true, // Auto-infers NumberFilter
+    stock: true, // Auto-infers NumberFilter
+    // Explicitly NOT including supplier field to avoid circular reference
+  },
+  {
+    name: 'ProductWhereForSupplier',
+    description: 'Product filtering options for Supplier queries (avoiding circular reference)',
+  },
+);
 
-  @Field(() => StringFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => StringFilter)
-  description?: StringFilter;
+// Generated WHERE fields using helper
+const SupplierWhere = createWhereFields(
+  Supplier,
+  {
+    name: true, // Auto-infers StringFilter + applies all decorators
+    contactEmail: true, // Auto-infers StringFilter + applies all decorators
+    products: ProductWhereForSupplier, // Use the simplified Product Where class
+  },
+  {
+    name: 'FindSupplierWhere',
+    description: 'WHERE conditions for Supplier queries',
+  },
+);
 
-  @Field(() => NumberFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => NumberFilter)
-  price?: NumberFilter;
-
-  @Field(() => NumberFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => NumberFilter)
-  stock?: NumberFilter;
-
-  // Explicitly NOT including supplier field to avoid circular reference
-}
-
-@InputType({ isAbstract: true })
-class FindSupplierWhere implements Where<Supplier> {
-  @Field(() => StringFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => StringFilter)
-  name?: StringFilter;
-
-  @Field(() => StringFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => StringFilter)
-  contactEmail?: StringFilter;
-
-  @Field(() => ProductWhereForSupplier, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ProductWhereForSupplier)
-  products?: ProductWhereForSupplier;
-}
-
-@InputType({ isAbstract: true })
-class FindSupplierOrderBy implements OrderBy<Supplier> {
-  @Field(() => OrderByTypes, { nullable: true })
-  name?: OrderByTypes | undefined;
-
-  @Field(() => OrderByTypes, { nullable: true })
-  contactEmail?: OrderByTypes | undefined;
-}
+// Generated ORDER BY fields using helper
+const SupplierOrderBy = createOrderByFields(
+  Supplier,
+  {
+    name: true, // Enables ordering + applies all decorators
+    contactEmail: true, // Enables ordering + applies all decorators
+  },
+  {
+    name: 'FindSupplierOrderBy',
+    description: 'ORDER BY options for Supplier queries',
+  },
+);
 
 @ArgsType()
 export class FindSupplierArgs extends FindArgsFrom<Supplier>({
-  whereType: FindSupplierWhere,
-  orderByType: FindSupplierOrderBy,
+  whereType: SupplierWhere,
+  orderByType: SupplierOrderBy,
 }) {}

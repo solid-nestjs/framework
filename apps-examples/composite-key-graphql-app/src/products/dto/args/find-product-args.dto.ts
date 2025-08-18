@@ -1,77 +1,51 @@
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import { ArgsType } from '@nestjs/graphql';
 import {
   FindArgsFrom,
-  getOrderByClass,
   getWhereClass,
-  NumberFilter,
-  OrderBy,
-  OrderByTypes,
-  StringFilter,
-  Where,
+  getOrderByClass,
+  createWhereFields,
+  createOrderByFields,
 } from '@solid-nestjs/typeorm-graphql-crud';
-import { IsOptional, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
 import { FindSupplierArgs } from '../../../suppliers/dto';
-import { Supplier } from '../../../suppliers/entities/supplier.entity';
 import { Product } from '../../entities/product.entity';
 
 const SupplierWhere = getWhereClass(FindSupplierArgs);
-
-@InputType({ isAbstract: true })
-class FindProductWhere implements Where<Product> {
-  @Field(() => StringFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => StringFilter)
-  name?: StringFilter;
-
-  @Field(() => StringFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => StringFilter)
-  description?: StringFilter;
-
-  @Field(() => NumberFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => NumberFilter)
-  price?: NumberFilter;
-
-  @Field(() => NumberFilter, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => NumberFilter)
-  stock?: NumberFilter;
-
-  @Field(() => SupplierWhere, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => SupplierWhere)
-  supplier?: Where<Supplier> | undefined;
-}
-
 const SupplierOrderBy = getOrderByClass(FindSupplierArgs);
 
-@InputType({ isAbstract: true })
-class FindProductOrderBy implements OrderBy<Product> {
-  @Field(() => OrderByTypes, { nullable: true })
-  description?: OrderByTypes | undefined;
+// Generated WHERE fields using helper
+const ProductWhere = createWhereFields(
+  Product,
+  {
+    name: true, // Auto-infers StringFilter + applies all decorators
+    description: true, // Auto-infers StringFilter + applies all decorators
+    price: true, // Auto-infers NumberFilter + applies all decorators
+    stock: true, // Auto-infers NumberFilter + applies all decorators
+    supplier: SupplierWhere, // Use existing Where class for relations
+  },
+  {
+    name: 'FindProductWhere',
+    description: 'WHERE conditions for Product queries',
+  },
+);
 
-  @Field(() => OrderByTypes, { nullable: true })
-  name?: OrderByTypes | undefined;
-
-  @Field(() => OrderByTypes, { nullable: true })
-  price?: OrderByTypes | undefined;
-
-  @Field(() => OrderByTypes, { nullable: true })
-  stock?: OrderByTypes | undefined;
-
-  @Field(() => SupplierOrderBy, { nullable: true })
-  supplier?: OrderBy<Supplier> | undefined;
-}
+// Generated ORDER BY fields using helper for all fields
+const ProductOrderBy = createOrderByFields(
+  Product,
+  {
+    name: true, // Enables ordering + applies all decorators
+    description: true, // Enables ordering + applies all decorators
+    price: true, // Enables ordering + applies all decorators
+    stock: true, // Enables ordering + applies all decorators
+    supplier: SupplierOrderBy, // Use existing OrderBy class for relations
+  },
+  {
+    name: 'FindProductOrderBy',
+    description: 'ORDER BY options for Product queries',
+  },
+);
 
 @ArgsType()
 export class FindProductArgs extends FindArgsFrom<Product>({
-  whereType: FindProductWhere,
-  orderByType: FindProductOrderBy,
+  whereType: ProductWhere,
+  orderByType: ProductOrderBy,
 }) {}
