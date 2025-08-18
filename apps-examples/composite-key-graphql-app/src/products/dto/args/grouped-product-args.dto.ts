@@ -1,74 +1,49 @@
-import { Type } from 'class-transformer';
-import { IsOptional, ValidateNested } from 'class-validator';
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
-import { GroupByArgs } from '@solid-nestjs/common';
-import { GroupByRequestInput } from '@solid-nestjs/graphql';
+import { ArgsType } from '@nestjs/graphql';
+import {
+  GroupByArgsFrom,
+  createGroupByFields,
+} from '@solid-nestjs/typeorm-graphql-crud';
 import { FindProductArgs } from './find-product-args.dto';
 import { Product } from '../../entities/product.entity';
+import { Supplier } from '../../../suppliers/entities/supplier.entity';
 
-/**
- * GroupBy fields for Supplier (simplified to avoid circular references)
- */
-@InputType('SupplierGroupByFields')
-class SupplierGroupByFields {
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  name?: boolean;
+// Generated GroupBy fields for Supplier (simplified to avoid circular references)
+const SupplierGroupByFields = createGroupByFields(
+  Supplier,
+  {
+    name: true, // Enable grouping + applies all decorators
+    contactEmail: true, // Enable grouping + applies all decorators
+    // Explicitly NOT including products field to avoid circular reference
+  },
+  {
+    name: 'SupplierGroupByFields',
+    description: 'Supplier grouping options for Product queries (avoiding circular reference)',
+  },
+);
 
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  contactEmail?: boolean;
-}
+// Generated GroupBy fields for Product using helper
+const ProductGroupByFields = createGroupByFields(
+  Product,
+  {
+    name: true, // Enable grouping + applies all decorators
+    description: true, // Enable grouping + applies all decorators
+    price: true, // Enable grouping + applies all decorators
+    stock: true, // Enable grouping + applies all decorators
+    supplier: SupplierGroupByFields, // Use the simplified Supplier GroupBy class
+  },
+  {
+    name: 'ProductGroupByFields',
+    description: 'Product grouping options for queries',
+  },
+);
 
-/**
- * GroupBy fields for Product
- */
-@InputType('ProductGroupByFields')
-class ProductGroupByFields {
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  name?: boolean;
-
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  description?: boolean;
-
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  price?: boolean;
-
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  stock?: boolean;
-
-  @Field(() => SupplierGroupByFields, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => SupplierGroupByFields)
-  supplier?: SupplierGroupByFields;
-}
-
-/**
- * Product-specific GroupBy request extending the base GroupByRequestInput
- */
-@InputType('ProductGroupByInput')
-export class ProductGroupByRequest extends GroupByRequestInput {
-  @Field(() => ProductGroupByFields, { nullable: true })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ProductGroupByFields)
-  fields?: ProductGroupByFields;
-}
-
+// Use GroupByArgsFrom mixin with the generated ProductGroupByFields
 @ArgsType()
-export class GroupedProductArgs
-  extends FindProductArgs
-  implements GroupByArgs<Product>
-{
-  @Field(() => ProductGroupByRequest, {
+export class GroupedProductArgs extends GroupByArgsFrom<Product>({
+  findArgsType: FindProductArgs,
+  groupByFieldsType: ProductGroupByFields,
+  options: {
+    name: 'GroupedProductArgs',
     description: 'GroupBy configuration for products',
-  })
-  @ValidateNested()
-  @Type(() => ProductGroupByRequest)
-  groupBy!: ProductGroupByRequest;
-}
+  },
+}) {}
