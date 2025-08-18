@@ -5,3 +5,4 @@ export * from './enums';
 export * from './scalars';
 export * from './utils';
 export * from './helpers';
+export * from './adapters';
