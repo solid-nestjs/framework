@@ -5,20 +5,12 @@ import {
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { FindProductArgs } from './find-product-args.dto';
 import { Product } from '../../entities/product.entity';
-import { Supplier } from '../../../suppliers/entities/supplier.entity';
-
-/**
- * GroupBy fields for Supplier using helper
- */
-const SupplierGroupByFields = createGroupByFields(Supplier, {
-  name: true,
-  contactEmail: true,
-});
+import { SupplierGroupByFields } from '../../../suppliers/dto/args/grouped-supplier-args.dto';
 
 /**
  * GroupBy fields for Product using helper
  */
-const ProductGroupByFields = createGroupByFields(Product, {
+export const ProductGroupByFields = createGroupByFields(Product, {
   name: true,
   description: true,
   price: true,

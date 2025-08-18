@@ -4,7 +4,7 @@ import { FindSupplierArgs } from './find-supplier-args.dto';
 import { Supplier } from '../../entities/supplier.entity';
 
 // Generated GROUP BY fields using helper
-const SupplierGroupByFields = createGroupByFields(Supplier, {
+export const SupplierGroupByFields = createGroupByFields(Supplier, {
   name: {
     description: 'Group by supplier name'
   },
