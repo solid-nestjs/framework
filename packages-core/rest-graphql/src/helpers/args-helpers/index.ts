@@ -8,4 +8,4 @@
 export { createWhereFields } from './create-where-fields.helper';
 export { createOrderByFields } from './create-orderby-fields.helper';
 export { createGroupByFields } from './create-groupby-fields.helper';
-export { GroupByArgsFrom, type GroupByArgsFromConfigWithOptions } from './groupby-args-from.helper';
+export { GroupByArgsFrom, type GroupByArgsFromConfigWithOptions } from '../../mixins/groupby-args.mixin';

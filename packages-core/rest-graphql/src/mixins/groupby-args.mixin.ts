@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Field, InputType, ArgsType } from '@nestjs/graphql';
 import { IsOptional, IsBoolean, ValidateNested } from 'class-validator';
 import { Type as TransformType } from 'class-transformer';
-import { AggregateFieldInput } from '../../classes/inputs';
+import { AggregateFieldInput } from '../classes/inputs';
 import {
   GroupByArgsFrom as BaseGroupByArgsFrom,
   getGroupByArgsMetadata,
@@ -24,7 +24,13 @@ import {
 export interface GroupByArgsFromConfigWithOptions extends Omit<GroupByArgsFromConfig, 'groupByFields'> {
   groupByFields?: string[] | Type<any>;
   groupByFieldsType?: Type<any>;
-  options?: ClassOptions;
+  options?: ClassOptions & {
+    /**
+     * Custom name for the GroupBy input type in GraphQL schema
+     * @example 'ProductGroupByInput' instead of default 'GroupedProductArgsRequest'
+     */
+    groupByInputTypeName?: string;
+  };
 }
 
 /**
@@ -76,8 +82,11 @@ export function GroupByArgsFrom<T = any>(config: GroupByArgsFromConfigWithOption
     const FindArgsClass = config.findArgsType;
     const className = config.options?.name || `${FindArgsClass.name}GroupBy`;
     
+    // Use custom GraphQL type name if provided, otherwise use default pattern
+    const groupByInputTypeName = config.options?.groupByInputTypeName || `${className}Request`;
+    
     // Create a GroupByRequest class using static decoration
-    @InputType(`${className}Request`, {
+    @InputType(groupByInputTypeName, {
       description: 'GroupBy request with fields and aggregates'
     })
     class GroupByRequestClass {

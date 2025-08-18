@@ -1,4 +1,5 @@
 export * from './find-args.mixin';
+export * from './groupby-args.mixin';
 export * from './data-resolver.mixin';
 export * from './data-resolver-extended.mixin';
 export * from './crud-resolver.mixin';
