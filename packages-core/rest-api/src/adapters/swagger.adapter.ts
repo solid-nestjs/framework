@@ -36,11 +36,29 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
       console.warn('[SolidNestJS] Failed to load Swagger decorators:', error);
     }
   }
+
+  private loadSwaggerSync(): void {
+    if (this.swaggerLoaded) return;
+    
+    try {
+      const swagger = require('@nestjs/swagger');
+      
+      // Assign decorators
+      ApiProperty = swagger.ApiProperty;
+      ApiPropertyOptional = swagger.ApiPropertyOptional;
+      ApiHideProperty = swagger.ApiHideProperty;
+      ApiResponseProperty = swagger.ApiResponseProperty;
+      
+      this.swaggerLoaded = true;
+    } catch (error) {
+      console.warn('[SolidNestJS] Failed to load Swagger decorators synchronously:', error);
+    }
+  }
   
   apply(target: any, propertyKey: string | symbol, metadata: FieldMetadata): void {
-    // Load Swagger if not already loaded
+    // Load Swagger if not already loaded synchronously
     if (!this.swaggerLoaded) {
-      this.loadSwagger();
+      this.loadSwaggerSync();
       if (!this.swaggerLoaded) return;
     }
     

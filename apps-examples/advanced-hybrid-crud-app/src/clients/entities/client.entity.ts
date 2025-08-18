@@ -1,82 +1,90 @@
 import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  OneToMany,
-  CreateDateColumn,
-  UpdateDateColumn,
-  DeleteDateColumn,
-} from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
-import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { Invoice } from '../../invoices/entities/invoice.entity';
+  SolidEntity,
+  SolidField,
+  SolidId,
+  SolidCreatedAt,
+  SolidUpdatedAt,
+  SolidDeletedAt,
+  SolidOneToMany,
+} from '@solid-nestjs/common';
 
-@ObjectType()
-@Entity()
+// Import adapters to register them
+import '@solid-nestjs/common/dist/adapters';
+import '@solid-nestjs/typeorm/dist/adapters';
+import '@solid-nestjs/rest-api/dist/adapters';
+import '@solid-nestjs/graphql/dist/adapters';
+import { Invoice } from '../../invoices/entities/invoice.entity';
+import { Field } from '@nestjs/graphql';
+
+@SolidEntity()
 export class Client {
-  @ApiProperty({ description: 'The unique identifier of the client' })
-  @Field(() => ID, { description: 'The unique identifier of the client' })
-  @PrimaryGeneratedColumn('uuid')
+  @SolidId({
+    generated: 'uuid',
+    description: 'The unique identifier of the client',
+  })
   id: string;
 
-  @ApiProperty({ description: 'The first name of the client' })
-  @Field({ description: 'The first name of the client' })
-  @Column()
+  @SolidField({
+    maxLength: 100,
+    description: 'The first name of the client',
+  })
   firstName: string;
 
-  @ApiProperty({ description: 'The last name of the client' })
-  @Field({ description: 'The last name of the client' })
-  @Column()
+  @SolidField({
+    maxLength: 100,
+    description: 'The last name of the client',
+  })
   lastName: string;
 
-  @ApiProperty({ description: 'The email address of the client' })
-  @Field({ description: 'The email address of the client' })
-  @Column({ unique: true })
+  @SolidField({
+    maxLength: 255,
+    unique: true,
+    email: true,
+    description: 'The email address of the client',
+  })
   email: string;
 
-  @ApiProperty({ description: 'The phone number of the client' })
-  @Field({ description: 'The phone number of the client', nullable: true })
-  @Column({ nullable: true })
+  @SolidField({
+    maxLength: 20,
+    nullable: true,
+    description: 'The phone number of the client',
+  })
   phone?: string;
 
-  @ApiProperty({ description: 'The address of the client' })
-  @Field({ description: 'The address of the client', nullable: true })
-  @Column({ nullable: true })
+  @SolidField({
+    maxLength: 500,
+    nullable: true,
+    description: 'The address of the client',
+  })
   address?: string;
 
-  @ApiProperty({ description: 'The city of the client' })
-  @Field({ description: 'The city of the client', nullable: true })
-  @Column({ nullable: true })
+  @SolidField({
+    maxLength: 100,
+    nullable: true,
+    description: 'The city of the client',
+  })
   city?: string;
 
-  @ApiProperty({ description: 'The country of the client' })
-  @Field({ description: 'The country of the client', nullable: true })
-  @Column({ nullable: true })
+  @SolidField({
+    maxLength: 100,
+    nullable: true,
+    description: 'The country of the client',
+  })
   country?: string;
 
-  @ApiProperty({ description: 'Client invoices', type: () => [Invoice] })
+  @SolidOneToMany(() => Invoice, invoice => invoice.client, {
+    description: 'Client invoices',
+    skip: ['graphql'],
+  })
   @Field(() => [Invoice], { description: 'Client invoices', nullable: true })
-  @OneToMany(() => Invoice, invoice => invoice.client)
   invoices?: Invoice[];
 
-  @ApiProperty({ description: 'The date when the product was created' })
-  @Field({ description: 'The date when the product was created' })
-  @CreateDateColumn()
+  @SolidCreatedAt()
   createdAt!: Date;
 
-  @ApiProperty({ description: 'The date when the product was last updated' })
-  @Field({ description: 'The date when the product was last updated' })
-  @UpdateDateColumn()
+  @SolidUpdatedAt()
   updatedAt!: Date;
 
-  @ApiProperty({
-    description: 'The date when the product was deleted (soft delete)',
-    required: false,
-  })
-  @Field({
-    description: 'The date when the product was deleted (soft delete)',
-    nullable: true,
-  })
-  @DeleteDateColumn()
+  @SolidDeletedAt()
   deletedAt?: Date;
 }

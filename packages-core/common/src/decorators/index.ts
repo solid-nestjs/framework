@@ -6,3 +6,4 @@ export * from './solid-id.decorator';
 export * from './solid-entity.decorator';
 export * from './solid-input.decorator';
 export * from './solid-timestamp.decorator';
+export * from './solid-relation.decorator';

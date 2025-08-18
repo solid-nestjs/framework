@@ -59,11 +59,40 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
       console.warn('[SolidNestJS] Failed to load TypeORM decorators:', error);
     }
   }
+
+  private loadTypeORMSync(): void {
+    if (this.typeormLoaded) return;
+    
+    try {
+      const typeorm = require('typeorm');
+      
+      // Assign decorators
+      Entity = typeorm.Entity;
+      Column = typeorm.Column;
+      PrimaryColumn = typeorm.PrimaryColumn;
+      PrimaryGeneratedColumn = typeorm.PrimaryGeneratedColumn;
+      CreateDateColumn = typeorm.CreateDateColumn;
+      UpdateDateColumn = typeorm.UpdateDateColumn;
+      DeleteDateColumn = typeorm.DeleteDateColumn;
+      ManyToOne = typeorm.ManyToOne;
+      OneToMany = typeorm.OneToMany;
+      ManyToMany = typeorm.ManyToMany;
+      OneToOne = typeorm.OneToOne;
+      JoinColumn = typeorm.JoinColumn;
+      JoinTable = typeorm.JoinTable;
+      Index = typeorm.Index;
+      Unique = typeorm.Unique;
+      
+      this.typeormLoaded = true;
+    } catch (error) {
+      console.warn('[SolidNestJS] Failed to load TypeORM decorators synchronously:', error);
+    }
+  }
   
   apply(target: any, propertyKey: string | symbol, metadata: FieldMetadata): void {
-    // Load TypeORM if not already loaded
+    // Load TypeORM if not already loaded synchronously
     if (!this.typeormLoaded) {
-      this.loadTypeORM();
+      this.loadTypeORMSync();
       if (!this.typeormLoaded) return;
     }
     
@@ -95,6 +124,12 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
   }
   
   applyClassDecorator(target: Function, type: 'entity' | 'input', options: any): void {
+    // Load TypeORM if not already loaded synchronously
+    if (!this.typeormLoaded) {
+      this.loadTypeORMSync();
+      if (!this.typeormLoaded) return;
+    }
+    
     if (type !== 'entity' || !Entity) return;
     
     const entityOptions: any = {
@@ -157,8 +192,9 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
     adapterOptions: any
   ): void {
     const relationType = options.relation || adapterOptions?.relation;
-    const relationTarget = options.target || type;
+    const relationTarget = options.target || adapterOptions?.target || type;
     const inverseProperty = options.inverseSide || adapterOptions?.inverseSide;
+    
     
     if (!relationTarget || typeof relationTarget !== 'function') {
       console.warn(`[SolidNestJS] Invalid relation target for ${target.constructor.name}.${String(propertyKey)}`);
@@ -183,7 +219,7 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
       case 'one-to-many':
         if (OneToMany) {
           OneToMany(
-            () => relationTarget,
+            relationTarget, // Use relationTarget directly (it's already a function)
             inverseProperty,
             adapterOptions?.relationOptions || {}
           )(target, propertyKey);
