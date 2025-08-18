@@ -1,10 +1,19 @@
 import { Type } from '@nestjs/common';
 import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, ValidateNested, IsArray } from 'class-validator';
+import {
+  IsOptional,
+  ValidateNested,
+  IsArray,
+  IsString,
+  IsNumber,
+  IsDate,
+  IsBoolean,
+} from 'class-validator';
 import { Type as TransformerType } from 'class-transformer';
 import { Where } from '@solid-nestjs/common';
 import {
   inferFilterType,
+  inferPlainType,
   FilterTypeRegistry,
   parseFieldConfig,
   parseClassOptions,
@@ -13,6 +22,7 @@ import {
   generateBaseClass,
   addPropertyToClass,
   applyDecoratorToProperty,
+  applyDecoratorToClass,
   shouldTreatAsEnum,
   getEnumInfo,
   type WhereFieldsConfig,
@@ -88,60 +98,120 @@ export function createWhereFields<T>(
   });
 
   // Apply class-level decorators
-  const classDecorators = [
+  const classDecorators: ClassDecorator[] = [
     InputType(classOptions.name, {
       isAbstract: classOptions.isAbstract,
-      description: classOptions.description
+      description: classOptions.description,
     }),
-    ...classOptions.decorators
+    ...classOptions.decorators,
   ];
 
   for (const decorator of classDecorators) {
-    decorator(BaseClass);
+    applyDecoratorToClass(decorator, BaseClass);
   }
 
   // Add fields dynamically
-  for (const [fieldName, fieldConfig] of Object.entries(config) as Array<[string, any]>) {
+  for (const [fieldName, fieldConfig] of Object.entries(config) as Array<
+    [string, any]
+  >) {
     try {
       validateFieldConfig(fieldConfig, fieldName);
       const parsedConfig = parseFieldConfig(fieldConfig as any);
-      const filterType = inferFilterType(entity, fieldName, parsedConfig);
 
-      // Check if field should be treated as enum
-      const isEnumField = shouldTreatAsEnum(entity, fieldName, parsedConfig);
-      let enumObject = parsedConfig.enum;
-      let enumInfo;
+      // Determine if this is a plain field or a filter field
+      const isPlainField = parsedConfig.isPlain === true;
 
-      if (isEnumField && enumObject) {
-        enumInfo = getEnumInfo(enumObject);
+      if (isPlainField) {
+        // CASE 1: Plain types (String, Number, Date, Boolean)
+        const plainType =
+          parsedConfig.type || inferPlainType(entity, fieldName);
+
+        // Add property to class
+        addPropertyToClass(BaseClass, fieldName, {
+          type: plainType,
+          isOptional: true,
+          description: parsedConfig.description,
+          example: parsedConfig.example,
+          deprecated: parsedConfig.deprecated,
+        });
+
+        // Apply GraphQL decorator
+        applyDecoratorToProperty(
+          Field(() => plainType, {
+            nullable: true,
+            description: parsedConfig.description || `Filter by ${fieldName}`,
+            deprecationReason: parsedConfig.deprecated
+              ? 'This field is deprecated'
+              : undefined,
+          }),
+          BaseClass,
+          fieldName,
+        );
+
+        // Apply validation decorators for plain types
+        applyDecoratorToProperty(IsOptional(), BaseClass, fieldName);
+
+        if (plainType === String) {
+          applyDecoratorToProperty(IsString(), BaseClass, fieldName);
+        } else if (plainType === Number) {
+          applyDecoratorToProperty(IsNumber(), BaseClass, fieldName);
+        } else if (plainType === Date) {
+          applyDecoratorToProperty(IsDate(), BaseClass, fieldName);
+        } else if (plainType === Boolean) {
+          applyDecoratorToProperty(IsBoolean(), BaseClass, fieldName);
+        }
+      } else {
+        // CASE 2: Filter types (StringFilter, NumberFilter, DateFilter) - existing logic
+        const filterType = inferFilterType(entity, fieldName, parsedConfig);
+
+        // Check if field should be treated as enum
+        const isEnumField = shouldTreatAsEnum(entity, fieldName, parsedConfig);
+        let enumObject = parsedConfig.enum;
+        let enumInfo;
+
+        if (isEnumField && enumObject) {
+          enumInfo = getEnumInfo(enumObject);
+        }
+
+        // If a specific type is provided, use it for API decorators, otherwise use the inferred filter type
+        const apiType = parsedConfig.type || filterType;
+
+        // Add property to class
+        addPropertyToClass(BaseClass, fieldName, {
+          type: filterType,
+          isOptional: true,
+          description: parsedConfig.description,
+          example: parsedConfig.example || enumInfo?.example,
+          deprecated: parsedConfig.deprecated,
+        });
+
+        // Apply GraphQL decorator
+        const graphqlOptions: any = {
+          nullable: true,
+          description:
+            parsedConfig.description ||
+            `Filter by ${fieldName}` +
+              (enumInfo ? ` (${enumInfo.description})` : ''),
+          deprecationReason: parsedConfig.deprecated
+            ? 'This field is deprecated'
+            : undefined,
+        };
+
+        applyDecoratorToProperty(
+          Field(() => apiType, graphqlOptions),
+          BaseClass,
+          fieldName,
+        );
+
+        // Apply validation decorators for filter types
+        applyDecoratorToProperty(IsOptional(), BaseClass, fieldName);
+        applyDecoratorToProperty(ValidateNested(), BaseClass, fieldName);
+        applyDecoratorToProperty(
+          TransformerType(() => filterType),
+          BaseClass,
+          fieldName,
+        );
       }
-
-      // Add property to class
-      addPropertyToClass(BaseClass, fieldName, {
-        type: filterType,
-        isOptional: true,
-        description: parsedConfig.description,
-        example: parsedConfig.example || (enumInfo?.example),
-        deprecated: parsedConfig.deprecated
-      });
-
-      // Apply GraphQL decorator
-      const graphqlOptions: any = {
-        nullable: true,
-        description: parsedConfig.description || `Filter by ${fieldName}` + (enumInfo ? ` (${enumInfo.description})` : ''),
-        deprecationReason: parsedConfig.deprecated ? 'This field is deprecated' : undefined
-      };
-
-      applyDecoratorToProperty(
-        Field(() => filterType, graphqlOptions),
-        BaseClass,
-        fieldName
-      );
-
-      // Apply validation decorators
-      applyDecoratorToProperty(IsOptional(), BaseClass, fieldName);
-      applyDecoratorToProperty(ValidateNested(), BaseClass, fieldName);
-      applyDecoratorToProperty(TransformerType(() => filterType), BaseClass, fieldName);
 
     } catch (error) {
       throw new Error(`Error processing field '${fieldName}': ${error instanceof Error ? error.message : String(error)}`);
