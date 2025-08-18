@@ -1,51 +1,107 @@
-import { ArgsType } from '@nestjs/graphql';
+import { IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { ArgsType, Field, InputType } from '@nestjs/graphql';
 import {
   FindArgsFrom,
-  createWhereFields,
-  createOrderByFields,
+  NumberFilter,
+  OrderBy,
+  OrderByTypes,
+  StringFilter,
+  Where,
+  DateFilter,
   getWhereClass,
-  getOrderByClass,
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { Invoice } from '../../entities/invoice.entity';
 import { FindClientArgs } from '../../../clients/dto';
 import { FindInvoiceDetailArgs } from './find-invoice-detail-args.dto';
 
-// Get relation classes
 const ClientWhere = getWhereClass(FindClientArgs);
-const ClientOrderBy = getOrderByClass(FindClientArgs);
 const InvoiceDetailWhere = getWhereClass(FindInvoiceDetailArgs);
-const InvoiceDetailOrderBy = getOrderByClass(FindInvoiceDetailArgs);
 
-// Generated WHERE fields using helper with relations
-const InvoiceWhere = createWhereFields(Invoice, {
-  id: true, // Auto-infers NumberFilter + applies all decorators
-  invoiceNumber: true, // Auto-infers StringFilter + applies all decorators
-  totalAmount: true, // Auto-infers NumberFilter + applies all decorators
-  status: true, // Auto-infers StringFilter + applies all decorators
-  invoiceDate: true, // Auto-infers DateFilter + applies all decorators
-  client: ClientWhere, // Use existing Where class for relations
-  details: InvoiceDetailWhere, // Use existing Where class for relations
-}, {
-  name: 'InvoiceWhere',
-  description: 'WHERE conditions for Invoice queries'
-});
+@InputType({ isAbstract: true })
+class FindInvoiceWhere implements Where<Invoice> {
+  @Field(() => NumberFilter, { nullable: true })
+  @ApiProperty({ type: () => NumberFilter, required: false })
+  @Type(() => NumberFilter)
+  @IsOptional()
+  @ValidateNested()
+  id?: NumberFilter | undefined;
 
-// Generated ORDER BY fields using helper with relations
-const InvoiceOrderBy = createOrderByFields(Invoice, {
-  id: true, // Enables ordering + applies all decorators
-  invoiceNumber: true, // Enables ordering + applies all decorators
-  totalAmount: true, // Enables ordering + applies all decorators
-  status: true, // Enables ordering + applies all decorators
-  invoiceDate: true, // Enables ordering + applies all decorators
-  client: ClientOrderBy, // Use existing OrderBy class for relations
-  details: InvoiceDetailOrderBy, // Use existing OrderBy class for relations
-}, {
-  name: 'InvoiceOrderBy',
-  description: 'ORDER BY options for Invoice queries'
-});
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ type: () => String, required: false })
+  @IsOptional()
+  invoiceNumber?: string | string[] | StringFilter | undefined;
+
+  @Field(() => NumberFilter, { nullable: true })
+  @ApiProperty({ type: () => NumberFilter, required: false })
+  @Type(() => NumberFilter)
+  @IsOptional()
+  @ValidateNested()
+  totalAmount?: NumberFilter | undefined;
+
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ type: () => String, required: false })
+  @IsOptional()
+  status?: string | string[] | StringFilter | undefined;
+
+  @Field(() => DateFilter, { nullable: true })
+  @ApiProperty({ type: () => DateFilter, required: false })
+  @Type(() => DateFilter)
+  @IsOptional()
+  @ValidateNested()
+  invoiceDate?: DateFilter | undefined;
+
+  @Field(() => ClientWhere, { nullable: true })
+  @ApiProperty({ type: () => ClientWhere, required: false })
+  @Type(() => ClientWhere)
+  @IsOptional()
+  @ValidateNested()
+  client?: InstanceType<typeof ClientWhere> | undefined;
+
+  @Field(() => InvoiceDetailWhere, { nullable: true })
+  @ApiProperty({ type: () => InvoiceDetailWhere, required: false })
+  @Type(() => InvoiceDetailWhere)
+  @IsOptional()
+  @ValidateNested()
+  details?: InstanceType<typeof InvoiceDetailWhere> | undefined;
+}
+
+@InputType({ isAbstract: true })
+class FindInvoiceOrderBy implements OrderBy<Invoice> {
+  @Field(() => OrderByTypes, { nullable: true })
+  @ApiProperty({ enum: OrderByTypes, required: false })
+  @IsOptional()
+  @IsEnum(OrderByTypes)
+  id?: OrderByTypes | undefined;
+
+  @Field(() => OrderByTypes, { nullable: true })
+  @ApiProperty({ enum: OrderByTypes, required: false })
+  @IsOptional()
+  @IsEnum(OrderByTypes)
+  invoiceNumber?: OrderByTypes | undefined;
+
+  @Field(() => OrderByTypes, { nullable: true })
+  @ApiProperty({ enum: OrderByTypes, required: false })
+  @IsOptional()
+  @IsEnum(OrderByTypes)
+  totalAmount?: OrderByTypes | undefined;
+
+  @Field(() => OrderByTypes, { nullable: true })
+  @ApiProperty({ enum: OrderByTypes, required: false })
+  @IsOptional()
+  @IsEnum(OrderByTypes)
+  status?: OrderByTypes | undefined;
+
+  @Field(() => OrderByTypes, { nullable: true })
+  @ApiProperty({ enum: OrderByTypes, required: false })
+  @IsOptional()
+  @IsEnum(OrderByTypes)
+  invoiceDate?: OrderByTypes | undefined;
+}
 
 @ArgsType()
 export class FindInvoiceArgs extends FindArgsFrom<Invoice>({
-  whereType: InvoiceWhere,
-  orderByType: InvoiceOrderBy,
+  whereType: FindInvoiceWhere,
+  orderByType: FindInvoiceOrderBy,
 }) {}
