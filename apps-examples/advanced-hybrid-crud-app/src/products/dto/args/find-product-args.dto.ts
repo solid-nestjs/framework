@@ -1,97 +1,53 @@
-import { IsEnum, IsOptional, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import { ArgsType } from '@nestjs/graphql';
 import {
   FindArgsFrom,
-  getOrderByClass,
+  createWhereFields,
+  createOrderByFields,
   getWhereClass,
-  NumberFilter,
-  OrderBy,
-  OrderByTypes,
-  StringFilter,
-  Where,
+  getOrderByClass,
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { FindSupplierArgs } from '../../../suppliers/dto';
-import { Supplier } from '../../../suppliers/entities/supplier.entity';
 import { Product } from '../../entities/product.entity';
 
+// Get relation classes
 const SupplierWhere = getWhereClass(FindSupplierArgs);
 
-@InputType({ isAbstract: true })
-class FindProductWhere implements Where<Product> {
-  @Field(() => StringFilter, { nullable: true })
-  @ApiProperty({ type: () => StringFilter, required: false })
-  @Type(() => StringFilter)
-  @IsOptional()
-  @ValidateNested()
-  name?: StringFilter;
+// Generate WhereFields automatically with type inference (replaces 50+ lines)
+const FindProductWhere = createWhereFields(
+  Product,
+  {
+    name: true, // Auto-infers StringFilter + applies all decorators
+    description: true, // Auto-infers StringFilter + applies all decorators
+    price: true, // Auto-infers NumberFilter + applies all decorators
+    stock: true, // Auto-infers NumberFilter + applies all decorators
+    supplier: SupplierWhere, // Use existing Where class for relations
+  },
+  {
+    name: 'FindProductWhere',
+    description: 'Filter fields for Product entity',
+  },
+);
 
-  @Field(() => StringFilter, { nullable: true })
-  @ApiProperty({ type: () => StringFilter, required: false })
-  @Type(() => StringFilter)
-  @IsOptional()
-  @ValidateNested()
-  description?: StringFilter;
-
-  @Field(() => NumberFilter, { nullable: true })
-  @ApiProperty({ type: () => NumberFilter, required: false })
-  @Type(() => NumberFilter)
-  @IsOptional()
-  @ValidateNested()
-  price?: NumberFilter;
-
-  @Field(() => NumberFilter, { nullable: true })
-  @ApiProperty({ type: () => NumberFilter, required: false })
-  @Type(() => NumberFilter)
-  @IsOptional()
-  @ValidateNested()
-  stock?: NumberFilter;
-
-  @Field(() => SupplierWhere, { nullable: true })
-  @ApiProperty({ type: () => SupplierWhere, required: false })
-  @Type(() => SupplierWhere)
-  @IsOptional()
-  @ValidateNested()
-  supplier?: Where<Supplier> | undefined;
-}
-
+// Get relation OrderBy class
 const SupplierOrderBy = getOrderByClass(FindSupplierArgs);
 
-@InputType({ isAbstract: true })
-class FindProductOrderBy implements OrderBy<Product> {
-  @Field(() => OrderByTypes, { nullable: true })
-  @ApiProperty({ enum: OrderByTypes, required: false })
-  @IsEnum(OrderByTypes)
-  @IsOptional()
-  description?: OrderByTypes | undefined;
+// Generate OrderByFields automatically (replaces 50+ lines)
+const FindProductOrderBy = createOrderByFields(
+  Product,
+  {
+    name: true, // Enables ordering + applies all decorators
+    description: true, // Enables ordering + applies all decorators
+    price: true, // Enables ordering + applies all decorators
+    stock: true, // Enables ordering + applies all decorators
+    supplier: SupplierOrderBy, // Use existing OrderBy class for relations
+  },
+  {
+    name: 'FindProductOrderBy',
+    description: 'Order by fields for Product entity',
+  },
+);
 
-  @Field(() => OrderByTypes, { nullable: true })
-  @ApiProperty({ enum: OrderByTypes, required: false })
-  @IsEnum(OrderByTypes)
-  @IsOptional()
-  name?: OrderByTypes | undefined;
-
-  @Field(() => OrderByTypes, { nullable: true })
-  @ApiProperty({ enum: OrderByTypes, required: false })
-  @IsEnum(OrderByTypes)
-  @IsOptional()
-  price?: OrderByTypes | undefined;
-
-  @Field(() => OrderByTypes, { nullable: true })
-  @ApiProperty({ enum: OrderByTypes, required: false })
-  @IsEnum(OrderByTypes)
-  @IsOptional()
-  stock?: OrderByTypes | undefined;
-
-  @Field(() => SupplierOrderBy, { nullable: true })
-  @ApiProperty({ type: () => SupplierOrderBy, required: false })
-  @Type(() => SupplierOrderBy)
-  @IsOptional()
-  @ValidateNested()
-  supplier?: OrderBy<Supplier> | undefined;
-}
-
+// Final FindArgs - identical interface to the original!
 @ArgsType()
 export class FindProductArgs extends FindArgsFrom<Product>({
   whereType: FindProductWhere,

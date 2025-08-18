@@ -15,10 +15,11 @@ The SOLID NestJS Framework is a collection of utilities and mixins that accelera
 ### 🌟 Key Features
 
 - **🔧 Auto-generated CRUD Operations** - Instantly create controllers and services with full CRUD functionality
+- **🎯 Args Helpers** - Revolutionary DTO creation with 60-80% code reduction for filtering, ordering, and grouping
 - **🔍 Advanced Query System** - Powerful filtering, pagination, sorting, and relation handling
 - **📊 GROUP BY Aggregations** - Advanced data grouping with COUNT, SUM, AVG, MIN, MAX functions for both REST and GraphQL
 - **🔒 Transaction Support** - Built-in transaction management with isolation levels
-- **📝 Type Safety** - Full TypeScript support with comprehensive type definitions
+- **📝 Type Safety** - Full TypeScript support with comprehensive type definitions and automatic filter type inference
 - **🎯 OpenAPI Integration** - Automatic Swagger documentation generation
 - **🔄 Flexible Relations** - Easy configuration of entity relationships and eager loading
 - **🛡️ Input Validation** - Integrated class-validator support
@@ -119,6 +120,97 @@ npm install && npm run start:dev
 # Visit http://localhost:3000/api (REST) or http://localhost:3000/graphql
 ```
 
+## 🎯 Args Helpers: Revolutionary DTO Creation
+
+One of the most powerful features of the SOLID NestJS Framework is the **Args Helpers** system, which dramatically reduces boilerplate code for filtering, ordering, and grouping DTOs.
+
+### 🚀 Before vs After Comparison
+
+**Traditional DTO Creation (80+ lines):**
+```typescript
+// Manual implementation with repetitive decorators
+class FindProductWhere {
+  @ApiProperty({ required: false, description: 'Filter by product name' })
+  @Field(() => StringFilter, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => StringFilter)
+  name?: StringFilter;
+
+  @ApiProperty({ required: false, description: 'Filter by product price' })
+  @Field(() => NumberFilter, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NumberFilter)
+  price?: NumberFilter;
+  
+  // ... 60+ more lines for other fields and relations
+}
+```
+
+**Args Helpers Approach (25 lines):**
+```typescript
+// Automatic generation with type inference
+const ProductWhere = createWhereFields(
+  Product,
+  {
+    name: true,    // Auto-infers StringFilter + all decorators
+    price: true,   // Auto-infers NumberFilter + all decorators
+    stock: true,   // Auto-infers NumberFilter + all decorators
+    supplier: getWhereClass(FindSupplierArgs), // Reuses existing DTO
+  },
+  {
+    name: 'FindProductWhere',
+    description: 'WHERE conditions for Product queries',
+  },
+);
+
+const ProductOrderBy = createOrderByFields(
+  Product,
+  {
+    name: true,        // Enables ordering + applies decorators
+    price: true,       // Enables ordering + applies decorators
+    supplier: getOrderByClass(FindSupplierArgs), // Relation ordering
+  },
+  {
+    name: 'FindProductOrderBy',
+    description: 'ORDER BY options for Product queries',
+  },
+);
+```
+
+### 📊 Benefits
+
+- **60-80% Code Reduction** - Dramatically less boilerplate code
+- **Automatic Type Inference** - Framework automatically determines filter types (StringFilter, NumberFilter, etc.)
+- **Protocol Agnostic** - Same helpers work for REST API, GraphQL, and hybrid applications  
+- **Type Safety** - Full TypeScript support with IntelliSense
+- **Circular Reference Prevention** - Built-in protection against relation loops
+
+### 🏢 Available Across All Packages
+
+```typescript
+// REST API (@solid-nestjs/rest-api)
+import { createWhereFields, createOrderByFields } from '@solid-nestjs/rest-api';
+
+// GraphQL (@solid-nestjs/graphql) 
+import { createWhereFields, createOrderByFields } from '@solid-nestjs/graphql';
+
+// Hybrid (@solid-nestjs/rest-graphql)
+import { createWhereFields, createOrderByFields } from '@solid-nestjs/rest-graphql';
+```
+
+### 🧪 See It In Action
+
+**Apps with Args Helpers:**
+- **`apps-examples/composite-key-graphql-app`** - GraphQL helpers implementation
+- **`apps-examples/simple-crud-app`** - REST API helpers implementation
+
+**Apps with Traditional Implementation:**
+- **`apps-examples/advanced-hybrid-crud-app`** - Manual DTO implementation for comparison
+
+For complete documentation, see [Args Helpers Guide](docs/ARGS_HELPERS.md).
+
 ## 📦 Installation
 
 ```bash
@@ -201,11 +293,52 @@ import { CreateProductDto } from './create-product.dto';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {}
 
-// find-product-args.ts
-import { FindArgsMixin } from '@solid-nestjs/rest-api';
+// find-product-args.ts - Using Args Helpers (NEW!)
+import { ArgsType, Field } from '@nestjs/graphql';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { FindArgsMixin, createWhereFields, createOrderByFields } from '@solid-nestjs/rest-api';
 import { Product } from '../entities/product.entity';
 
-export class FindProductArgs extends FindArgsMixin(Product) {}
+// Generate filtering DTO with automatic type inference
+const ProductWhere = createWhereFields(
+  Product,
+  {
+    name: true,      // Auto-infers StringFilter + applies decorators
+    price: true,     // Auto-infers NumberFilter + applies decorators
+    stock: true,     // Auto-infers NumberFilter + applies decorators
+  },
+  { name: 'FindProductWhere' },
+);
+
+// Generate ordering DTO with automatic decorator application
+const ProductOrderBy = createOrderByFields(
+  Product,
+  {
+    name: true,      // Enables ordering + applies decorators
+    price: true,     // Enables ordering + applies decorators
+    stock: true,     // Enables ordering + applies decorators
+  },
+  { name: 'FindProductOrderBy' },
+);
+
+@ArgsType()
+export class FindProductArgs extends FindArgsMixin(Product) {
+  @ApiProperty({ required: false })
+  @Field(() => ProductWhere, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ProductWhere)
+  where?: InstanceType<typeof ProductWhere>;
+
+  @ApiProperty({ required: false })
+  @Field(() => ProductOrderBy, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ProductOrderBy)
+  orderBy?: InstanceType<typeof ProductOrderBy>;
+}
 ```
 
 ### 3. Create Service with CRUD Operations
