@@ -1,17 +1,25 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-import { GroupByArgs } from '@solid-nestjs/common';
-import { FindProductArgs } from './find-product-args.dto';
-import { ProductGroupByRequest } from '../inputs';
+import {
+  createGroupByFields,
+  GroupByArgsFrom,
+} from '@solid-nestjs/typeorm-crud';
 import { Product } from '../../entities/product.entity';
+import { Supplier } from '../../../suppliers/entities/supplier.entity';
+import { FindProductArgs } from './find-product-args.dto';
 
-export class GroupedProductArgs extends FindProductArgs implements GroupByArgs<Product> {
-  @ApiProperty({ 
-    type: ProductGroupByRequest, 
-    description: 'GroupBy configuration for products' 
-  })
-  @ValidateNested()
-  @Type(() => ProductGroupByRequest)
-  groupBy!: ProductGroupByRequest;
-}
+const SupplierGroupByFields = createGroupByFields(Supplier, {
+  name: true,
+  contactEmail: true,
+});
+
+const ProductGroupByFields = createGroupByFields(Product, {
+  name: true,
+  description: true,
+  price: true,
+  stock: true,
+  supplier: SupplierGroupByFields,
+});
+
+export class GroupedProductArgs extends GroupByArgsFrom({
+  findArgsType: FindProductArgs,
+  groupByFields: ProductGroupByFields,
+}) {}

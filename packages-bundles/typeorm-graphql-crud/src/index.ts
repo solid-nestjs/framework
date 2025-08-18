@@ -13,6 +13,16 @@ export {
   NumberFilter,
 } from '@solid-nestjs/graphql';
 
+//Grouping
+export { GroupByRequestInput, GroupByArgsFrom } from '@solid-nestjs/graphql';
+
+//Args Helpers
+export {
+  createWhereFields,
+  createOrderByFields,
+  createGroupByFields,
+} from '@solid-nestjs/graphql';
+
 //Crud Resolver
 export {
   DataResolverFrom,

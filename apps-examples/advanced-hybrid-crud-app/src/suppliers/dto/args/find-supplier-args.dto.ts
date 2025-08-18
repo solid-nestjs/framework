@@ -1,50 +1,31 @@
-import { IsEnum, IsOptional, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import { ArgsType } from '@nestjs/graphql';
 import {
   FindArgsFrom,
-  OrderBy,
-  OrderByTypes,
-  StringFilter,
-  Where,
+  createWhereFields,
+  createOrderByFields,
 } from '@solid-nestjs/typeorm-hybrid-crud';
 import { Supplier } from '../../entities/supplier.entity';
 
-@InputType({ isAbstract: true })
-class FindSupplierWhere implements Where<Supplier> {
-  @Field(() => StringFilter)
-  @ApiProperty({ type: () => StringFilter, required: false })
-  @Type(() => StringFilter)
-  @IsOptional()
-  @ValidateNested()
-  name: StringFilter;
+// Generated WHERE fields using helper - auto-infers StringFilter for string fields
+const SupplierWhere = createWhereFields(Supplier, {
+  name: true, // Auto-infers StringFilter + applies all decorators
+  contactEmail: true, // Auto-infers StringFilter + applies all decorators
+}, {
+  name: 'SupplierWhere',
+  description: 'WHERE conditions for Supplier queries'
+});
 
-  @Field(() => StringFilter)
-  @ApiProperty({ type: () => StringFilter, required: false })
-  @Type(() => StringFilter)
-  @IsOptional()
-  @ValidateNested()
-  contactEmail: StringFilter;
-}
-
-@InputType({ isAbstract: true })
-class FindSupplierOrderBy implements OrderBy<Supplier> {
-  @Field(() => OrderByTypes, { nullable: true })
-  @ApiProperty({ enum: OrderByTypes, required: false })
-  @IsEnum(OrderByTypes)
-  @IsOptional()
-  name?: OrderByTypes | undefined;
-
-  @Field(() => OrderByTypes, { nullable: true })
-  @ApiProperty({ enum: OrderByTypes, required: false })
-  @IsEnum(OrderByTypes)
-  @IsOptional()
-  contactEmail?: OrderByTypes | undefined;
-}
+// Generated ORDER BY fields using helper - auto-infers OrderByTypes enum
+const SupplierOrderBy = createOrderByFields(Supplier, {
+  name: true, // Enables ordering + applies all decorators
+  contactEmail: true, // Enables ordering + applies all decorators
+}, {
+  name: 'SupplierOrderBy',
+  description: 'ORDER BY options for Supplier queries'
+});
 
 @ArgsType()
 export class FindSupplierArgs extends FindArgsFrom<Supplier>({
-  whereType: FindSupplierWhere,
-  orderByType: FindSupplierOrderBy,
+  whereType: SupplierWhere,
+  orderByType: SupplierOrderBy,
 }) {}

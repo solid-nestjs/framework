@@ -30,6 +30,7 @@ Before running development servers, use these utilities to avoid port conflicts:
 1. Before running any `npm run start:dev` command, first run: `powershell -ExecutionPolicy Bypass -File ".\scripts\cleanup-ports.ps1" -Port [PORT_NUMBER]`
 2. After testing or when done, run: `powershell -ExecutionPolicy Bypass -File ".\scripts\kill-all-node-except-claude.ps1"`
 3. Always use timeout with `npm run start:dev` commands to prevent indefinite hanging: `timeout 30 npm run start:dev`
+4. **CRITICAL**: When making changes to core packages (`packages-core/*`), always run `npm run build` to compile the packages before testing in example apps (`apps-examples/*`)
 
 ### Testing
 
@@ -189,6 +190,25 @@ This is a monorepo with multiple packages organized as:
 
 - **`apps-examples/`** - Example applications demonstrating framework usage
 
+### Package Dependency Restrictions
+
+**CRITICAL**: The core packages must maintain strict dependency separation to preserve modular architecture:
+
+| Package | ❌ PROHIBITED Dependencies | ✅ ALLOWED Dependencies |
+|---------|---------------------------|------------------------|
+| `packages-core/common` | `@nestjs/swagger`, `@nestjs/graphql`, `typeorm` | Only `@nestjs/common`, `@nestjs/core` |
+| `packages-core/rest-api` | `@nestjs/graphql`, `typeorm` | `@nestjs/swagger`, `@solid-nestjs/common` |
+| `packages-core/graphql` | `@nestjs/swagger`, `typeorm` | `@nestjs/graphql`, `@solid-nestjs/common` |
+| `packages-core/rest-graphql` | `typeorm` | `@nestjs/swagger`, `@nestjs/graphql`, other core packages |
+| `packages-core/typeorm` | `@nestjs/swagger`, `@nestjs/graphql` | `typeorm`, `@nestjs/typeorm`, `@solid-nestjs/common` |
+
+**Rules**:
+1. The `common` package must remain technology-agnostic and contain only shared utilities
+2. Specialized packages (`rest-api`, `graphql`, `typeorm`) must not cross-reference each other's technologies
+3. Only `rest-graphql` may combine REST and GraphQL technologies, but never TypeORM
+4. Bundle packages in `packages-bundles/` may combine any core packages as needed
+5. Always verify dependency compliance before adding new imports or dependencies
+
 ### Design Patterns
 
 1. **Mixin-Based Architecture**: Uses TypeScript mixins for composable functionality
@@ -287,23 +307,43 @@ The framework provides comprehensive soft deletion and bulk operation support:
 
 ## Testing Patterns
 
-### Service Tests
+**CRITICAL**: Different testing strategies for different parts of the monorepo:
 
-- Use `TestingModule` with repository mocking
-- Test lifecycle hooks and custom methods
-- Mock context objects for transaction testing
+### Core Packages Testing
 
-### Controller Tests
+**Unit Tests for Core Packages** (`packages-core/*`):
+- Place unit tests in `src/` alongside source code using `*.spec.ts` suffix
+- Test individual functions, classes, and helpers in isolation
+- Use Jest with `rootDir: "src"` configuration
+- Focus on testing reusable framework components and utilities
+- Mock external dependencies and test pure logic
 
-- Test HTTP endpoints with supertest for E2E tests
-- Mock service methods for unit tests
-- Test authentication and authorization flows
+### Example Applications Testing
 
-### E2E Tests
+**E2E Tests Only for Example Apps** (`apps-examples/*`):
+- Example applications should ONLY have E2E tests in `test/` folder
+- Use `*.e2e-spec.ts` suffix for E2E test files
+- Test complete user workflows and integration scenarios
+- Use `jest-e2e.config.js` configuration separate from unit tests
+- Focus on demonstrating framework functionality end-to-end
+- **NEVER** add unit tests to example applications
 
-- Each example app has E2E tests in `test/` folder
-- Use `jest-e2e.config.js` configuration
-- Test complete CRUD workflows including soft deletion
+### Test File Organization
+
+- **Core Packages**: `packages-core/*/src/**/*.spec.ts` (unit tests)
+- **Example Apps**: `apps-examples/*/test/*.e2e-spec.ts` (E2E tests only)
+- **Test Utilities**: Place in respective `test/` folders with `.helper.ts` or `.util.ts`
+
+### Testing Commands
+
+- **Core Unit Tests**: `npm run test -w packages-core/[package-name]`
+- **Example E2E Tests**: `npm run test:e2e -w apps-examples/[app-name]`
+- **All Tests**: `npm run test:workspaces` (runs all unit and E2E tests)
+
+### What to Test Where
+
+- **Unit Test in Core**: Helpers, mixins, utilities, validators, decorators
+- **E2E Test in Apps**: Complete CRUD workflows, API endpoints, GraphQL queries, database operations
 
 ## Common Workflows
 
@@ -344,8 +384,8 @@ The framework provides comprehensive soft deletion and bulk operation support:
 
 # Important in Planning and execution:
 
-- after planning always create a file in the 'tasks' folder with the following naming convention: "yyyyMMddhhmm - title", in that file you must add the summary of what was planned, and the task list to be executed (you must check them when they are finished).
-
 - the planning, tasks and documentation files must always be in english.
-
-- for each new planned feature i want to be documented in a folder called 'specs' where we can put all the functionalities, scope and explanations of the feature we plan, you must also keep updating that documentation when the feature is been progressed, this applies just for new features, not Fixes or refactoring.
+- when we plan a new feature you must make a document in the 'specs' folder with this naming convetion: "yyyyMMddhhmm - spec_name", after you make that specification document you must ask If it's okay before taking the next step.
+- after making the 'spec' document and getting the 'ok' to continue, you must make a new doc for all the task planned (inside 'tasks/yyyyMMddhhmm - spec_name' folder) with the following naming convention: "yyyyMMddhhmm - task_name".
+- after creating the tasks you must ask for the 'ok' to continue with the implementation.
+- spec and task docs must be linked, and must be updated every time there is some progress in the implementation of the new feature.

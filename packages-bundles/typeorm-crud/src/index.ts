@@ -13,6 +13,16 @@ export {
   NumberFilter,
 } from '@solid-nestjs/rest-api';
 
+//Grouping
+export { GroupByRequestInput, GroupByArgsFrom } from '@solid-nestjs/rest-api';
+
+//Args Helpers
+export {
+  createWhereFields,
+  createOrderByFields,
+  createGroupByFields,
+} from '@solid-nestjs/rest-api';
+
 //Crud Controller
 export {
   DataControllerFrom,
