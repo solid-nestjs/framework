@@ -102,12 +102,29 @@ export function addPropertyToClass(
 ): void {
   const { type, isOptional = true } = options;
   
-  // Define the property on the prototype
+  // Define property with getter/setter that creates enumerable instance property on first access
   Object.defineProperty(targetClass.prototype, propertyName, {
-    writable: true,
+    get() {
+      // If the property doesn't exist on the instance, return undefined
+      if (!this.hasOwnProperty(propertyName)) {
+        return undefined;
+      }
+      // Return the descriptor's value
+      const descriptor = Object.getOwnPropertyDescriptor(this, propertyName);
+      return descriptor?.value;
+    },
+    set(value) {
+      // Define the property directly on the instance (not prototype) as enumerable
+      // This makes it serializable with JSON.stringify
+      Object.defineProperty(this, propertyName, {
+        value: value,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+    },
     enumerable: true,
-    configurable: true,
-    value: undefined
+    configurable: true
   });
   
   // Set design-time type metadata for reflection
