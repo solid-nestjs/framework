@@ -31,8 +31,8 @@ export const ProductGroupByFields = createGroupByFields(Product, {
   supplier: SupplierGroupByFields,
 });
 
-// Old Implementation that might work?
-
+// Old Implementation that works
+/*
 @InputType('ProductGroupByInput')
 export class ProductGroupByRequest extends GroupByRequestInput {
   @ApiProperty({
@@ -66,16 +66,16 @@ export class GroupedProductArgs
   @Type(() => ProductGroupByRequest)
   groupBy;
 }
-
+*/
 //Our implementation that doesn't work
-/*
+
 @ArgsType()
 export class GroupedProductArgs extends GroupByArgsFrom({
   findArgsType: FindProductArgs,
   groupByFieldsType: ProductGroupByFields,
-  options: { 
+  options: {
     name: 'GroupedProductArgs',
-    description: 'Arguments for grouping products'
-  }
+    description: 'Arguments for grouping products',
+  },
 }) {}
-  */
+/**/

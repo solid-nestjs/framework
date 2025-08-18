@@ -1,8 +1,9 @@
 import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, InputType, ArgsType } from '@nestjs/graphql';
 import { IsOptional, IsBoolean, ValidateNested } from 'class-validator';
 import { Type as TransformType } from 'class-transformer';
+import { AggregateFieldInput } from '../../classes/inputs';
 import {
   GroupByArgsFrom as BaseGroupByArgsFrom,
   getGroupByArgsMetadata,
@@ -69,134 +70,68 @@ export function GroupByArgsFrom<T = any>(config: GroupByArgsFromConfigWithOption
   // Determine the fields type to use
   const fieldsType = config.groupByFieldsType || config.groupByFields;
   
-  // If a class type is provided, use it to create a proper GroupByRequest structure
+  // If a class type is provided, use static class decoration pattern (like FindArgsFrom)
   if (fieldsType && typeof fieldsType === 'function') {
     // Get the FindArgs class
     const FindArgsClass = config.findArgsType;
-    
-    // Create the GroupByArgs class that extends FindArgs and includes the groupBy field
     const className = config.options?.name || `${FindArgsClass.name}GroupBy`;
     
-    // First, create a GroupByRequest class that has fields and aggregates
-    const GroupByRequestClass = generateBaseClass({
-      className: `${className}Request`,
-      metadata: {
-        className: `${className}Request`,
-        description: 'GroupBy request with fields and aggregates',
-        fields: []
-      }
-    });
-    
-    // Add fields property (using the fieldsType class)
-    addPropertyToClass(GroupByRequestClass, 'fields', {
-      type: fieldsType,
-      isOptional: true,
-      description: 'Fields to group by'
-    });
-    
-    // Apply decorators for fields property
-    applyDecoratorToProperty(
-      ApiProperty({
+    // Create a GroupByRequest class using static decoration
+    @InputType(`${className}Request`, {
+      description: 'GroupBy request with fields and aggregates'
+    })
+    class GroupByRequestClass {
+      @ApiProperty({
         type: fieldsType,
         required: false,
         description: 'Fields to group by'
-      }),
-      GroupByRequestClass,
-      'fields'
-    );
-    
-    applyDecoratorToProperty(
-      Field(() => fieldsType, {
+      })
+      @Field(() => fieldsType, {
         nullable: true,
         description: 'Fields to group by'
-      }),
-      GroupByRequestClass,
-      'fields'
-    );
-    
-    applyDecoratorToProperty(IsOptional(), GroupByRequestClass, 'fields');
-    applyDecoratorToProperty(ValidateNested(), GroupByRequestClass, 'fields');
-    applyDecoratorToProperty(TransformType(() => fieldsType), GroupByRequestClass, 'fields');
-    
-    // Add aggregates property (array of aggregate functions)
-    addPropertyToClass(GroupByRequestClass, 'aggregates', {
-      type: Array,
-      isOptional: true,
-      description: 'Aggregate functions to apply'
-    });
-    
-    // Apply decorators for aggregates property
-    applyDecoratorToProperty(
-      ApiProperty({
-        type: [Object],
+      })
+      @IsOptional()
+      @ValidateNested()
+      @TransformType(() => fieldsType)
+      fields?: any;
+      
+      @ApiProperty({
+        type: [AggregateFieldInput],
         required: false,
         description: 'Aggregate functions to apply',
         example: [{ field: 'price', function: 'AVG', alias: 'avgPrice' }]
-      }),
-      GroupByRequestClass,
-      'aggregates'
-    );
-    
-    applyDecoratorToProperty(
-      Field(() => [Object], {
+      })
+      @Field(() => [AggregateFieldInput], {
         nullable: true,
         description: 'Aggregate functions to apply'
-      }),
-      GroupByRequestClass,
-      'aggregates'
-    );
+      })
+      @IsOptional()
+      @ValidateNested({ each: true })
+      @TransformType(() => AggregateFieldInput)
+      aggregates?: AggregateFieldInput[];
+    }
     
-    applyDecoratorToProperty(IsOptional(), GroupByRequestClass, 'aggregates');
-    
-    // Apply class-level InputType decorator to GroupByRequest
-    applyDecoratorToClass(
-      InputType(`${className}Request`, {
-        description: 'GroupBy request with fields and aggregates'
-      }),
-      GroupByRequestClass
-    );
-    
-    // Now create the main GroupByArgs class that extends FindArgs
-    const GroupByArgsClass = class extends FindArgsClass {
+    // Create the main GroupByArgs class using static decoration AND ArgsType
+    @ArgsType()
+    class GroupByArgsClass extends FindArgsClass {
+      @ApiProperty({
+        type: GroupByRequestClass,
+        required: true,
+        description: config.options?.description || 'GroupBy configuration'
+      })
+      @Field(() => GroupByRequestClass, {
+        description: config.options?.description || 'GroupBy configuration'
+      })
+      @ValidateNested()
+      @TransformType(() => GroupByRequestClass)
       groupBy!: any;
-    };
+    }
     
     // Set class name
     Object.defineProperty(GroupByArgsClass, 'name', {
       value: className,
       configurable: true
     });
-    
-    // Add the groupBy property with the GroupByRequest type
-    addPropertyToClass(GroupByArgsClass, 'groupBy', {
-      type: GroupByRequestClass,
-      isOptional: false,
-      description: config.options?.description || 'GroupBy configuration'
-    });
-    
-    // Apply Swagger decorator
-    applyDecoratorToProperty(
-      ApiProperty({
-        type: GroupByRequestClass,
-        required: true,
-        description: config.options?.description || 'GroupBy configuration'
-      }),
-      GroupByArgsClass,
-      'groupBy'
-    );
-    
-    // Apply GraphQL decorator
-    applyDecoratorToProperty(
-      Field(() => GroupByRequestClass, {
-        description: config.options?.description || 'GroupBy configuration'
-      }),
-      GroupByArgsClass,
-      'groupBy'
-    );
-    
-    // Apply validation decorators
-    applyDecoratorToProperty(ValidateNested(), GroupByArgsClass, 'groupBy');
-    applyDecoratorToProperty(TransformType(() => GroupByRequestClass), GroupByArgsClass, 'groupBy');
     
     return GroupByArgsClass as Type<GroupByArgs<T> & FindArgs<T>>;
   }
