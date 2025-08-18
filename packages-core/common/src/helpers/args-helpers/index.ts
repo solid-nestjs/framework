@@ -9,6 +9,7 @@
 // Type inference utilities
 export {
   inferFilterType,
+  inferPlainType,
   FilterTypeRegistry,
   setDefaultFilterTypes, // deprecated, use FilterTypeRegistry.register()
   isSupportedPrimitiveType,

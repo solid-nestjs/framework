@@ -8,7 +8,8 @@ export type FieldConfig =
   | true                           // Simple enable with auto-inference
   | Type<any>                      // Explicit type
   | {                              // Full configuration
-      type?: Type<any>;
+      type?: Type<any>;            // Explicit type for API (Swagger/GraphQL)
+      isPlain?: boolean;           // If true, use plain types (String, Number, Date) instead of filters
       description?: string;
       required?: boolean;
       example?: any;
@@ -23,6 +24,7 @@ export type FieldConfig =
  */
 export interface ParsedFieldConfig {
   type?: Type<any>;
+  isPlain?: boolean;
   description?: string;
   required?: boolean;
   example?: any;
@@ -30,6 +32,64 @@ export interface ParsedFieldConfig {
   enum?: any;
   enumName?: string;
   isRelation?: boolean;
+}
+
+/**
+ * Infers the appropriate plain type (String, Number, Date) for an entity property.
+ * Used when isPlain: true is specified in the field configuration.
+ * 
+ * @template T - The entity type
+ * @param entity - The entity class constructor
+ * @param propertyName - The name of the property to infer type for
+ * @returns The plain type class constructor (String, Number, Date, Boolean)
+ * 
+ * @example
+ * ```typescript
+ * class Product {
+ *   name: string;    // Will infer String
+ *   price: number;   // Will infer Number
+ *   createdAt: Date; // Will infer Date
+ *   isActive: boolean; // Will infer Boolean
+ * }
+ * 
+ * const nameType = inferPlainType(Product, 'name'); // String
+ * const priceType = inferPlainType(Product, 'price'); // Number
+ * ```
+ */
+export function inferPlainType(
+  entity: Type<any>, 
+  propertyName: string
+): Type<any> {
+  // Use reflection to get property type from TypeScript metadata
+  const type = Reflect.getMetadata('design:type', entity.prototype, propertyName);
+  
+  if (!type) {
+    console.warn(`Could not infer type for property ${propertyName} on ${entity.name}. Using String as fallback.`);
+    return String;
+  }
+  
+  // Map native TypeScript types to plain types
+  if (type === String) {
+    return String;
+  }
+  if (type === Number) {
+    return Number;
+  }
+  if (type === Date) {
+    return Date;
+  }
+  if (type === Boolean) {
+    return Boolean;
+  }
+  
+  // For enums, treat as String
+  if (isEnum(type)) {
+    return String;
+  }
+  
+  // For unknown types, fallback to String
+  console.warn(`Unknown type ${type.name} for property ${propertyName}. Using String as fallback.`);
+  return String;
 }
 
 /**

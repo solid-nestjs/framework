@@ -178,7 +178,7 @@ export function validateFieldConfig(config: any, fieldName: string): void {
   
   if (typeof config === 'object') {
     // Validate object configuration
-    const validKeys = ['type', 'description', 'required', 'example', 'deprecated', 'enum', 'enumName', 'isRelation'];
+    const validKeys = ['type', 'isPlain', 'description', 'required', 'example', 'deprecated', 'enum', 'enumName', 'isRelation'];
     const configKeys = Object.keys(config);
     
     for (const key of configKeys) {

@@ -30,6 +30,7 @@ Before running development servers, use these utilities to avoid port conflicts:
 1. Before running any `npm run start:dev` command, first run: `powershell -ExecutionPolicy Bypass -File ".\scripts\cleanup-ports.ps1" -Port [PORT_NUMBER]`
 2. After testing or when done, run: `powershell -ExecutionPolicy Bypass -File ".\scripts\kill-all-node-except-claude.ps1"`
 3. Always use timeout with `npm run start:dev` commands to prevent indefinite hanging: `timeout 30 npm run start:dev`
+4. **CRITICAL**: When making changes to core packages (`packages-core/*`), always run `npm run build` to compile the packages before testing in example apps (`apps-examples/*`)
 
 ### Testing
 

@@ -1,10 +1,6 @@
-import { IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import { ArgsType } from '@nestjs/graphql';
 import {
   FindArgsFrom,
-  StringFilter,
-  Where,
   getWhereClass,
   createWhereFields,
   createOrderByFields,
@@ -14,32 +10,25 @@ import { FindProductArgs } from '../../../products/dto';
 
 const ProductWhere = getWhereClass(FindProductArgs);
 
-// Generated WHERE fields using helper for most fields, productId manual
-const PartialInvoiceDetailWhere = createWhereFields(
+// Generated WHERE fields using helper including productId with hybrid type
+const InvoiceDetailWhere = createWhereFields(
   InvoiceDetail,
   {
     id: true, // Auto-infers NumberFilter + applies all decorators
     quantity: true, // Auto-infers NumberFilter + applies all decorators
     unitPrice: true, // Auto-infers NumberFilter + applies all decorators
     totalAmount: true, // Auto-infers NumberFilter + applies all decorators
+    productId: {
+      isPlain: true, // Use plain String type instead of StringFilter
+      description: 'Filter by product ID'
+    },
     product: ProductWhere, // Use existing Where class for relations
   },
   {
-    name: 'PartialInvoiceDetailWhere',
-    description: 'Partial WHERE conditions for InvoiceDetail queries',
+    name: 'InvoiceDetailWhere',
+    description: 'WHERE conditions for InvoiceDetail queries',
   },
 );
-
-@InputType({ isAbstract: true })
-class FindInvoiceDetailWhere
-  extends PartialInvoiceDetailWhere
-  implements Where<InvoiceDetail>
-{
-  @Field(() => String, { nullable: true })
-  @ApiProperty({ type: () => String, required: false })
-  @IsOptional()
-  productId?: string | string[] | StringFilter | undefined;
-}
 
 // Generated ORDER BY fields using helper for all fields
 const InvoiceDetailOrderBy = createOrderByFields(
@@ -59,6 +48,6 @@ const InvoiceDetailOrderBy = createOrderByFields(
 
 @ArgsType()
 export class FindInvoiceDetailArgs extends FindArgsFrom<InvoiceDetail>({
-  whereType: FindInvoiceDetailWhere,
+  whereType: InvoiceDetailWhere,
   orderByType: InvoiceDetailOrderBy,
 }) {}

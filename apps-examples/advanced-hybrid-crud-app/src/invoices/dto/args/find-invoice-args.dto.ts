@@ -1,10 +1,6 @@
-import { IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import { ArgsType } from '@nestjs/graphql';
 import {
   FindArgsFrom,
-  StringFilter,
-  Where,
   getWhereClass,
   createWhereFields,
   createOrderByFields,
@@ -17,7 +13,7 @@ const ClientWhere = getWhereClass(FindClientArgs);
 const InvoiceDetailWhere = getWhereClass(FindInvoiceDetailArgs);
 
 // Generated WHERE fields using helper for most fields except string fields
-const PartialInvoiceWhere = createWhereFields(
+const FindInvoiceWhere = createWhereFields(
   Invoice,
   {
     id: true, // Auto-infers NumberFilter + applies all decorators
@@ -25,25 +21,14 @@ const PartialInvoiceWhere = createWhereFields(
     invoiceDate: true, // Auto-infers DateFilter + applies all decorators
     client: ClientWhere, // Use existing Where class for relations
     details: InvoiceDetailWhere, // Use existing InvoiceDetail Where class
+    invoiceNumber: { isPlain: true },
+    status: { isPlain: true },
   },
   {
-    name: 'PartialInvoiceWhere',
+    name: 'FindInvoiceWhere',
     description: 'Partial WHERE conditions for Invoice queries',
   },
 );
-
-@InputType({ isAbstract: true })
-class FindInvoiceWhere extends PartialInvoiceWhere implements Where<Invoice> {
-  @Field(() => String, { nullable: true })
-  @ApiProperty({ type: () => String, required: false })
-  @IsOptional()
-  invoiceNumber?: string | string[] | StringFilter | undefined;
-
-  @Field(() => String, { nullable: true })
-  @ApiProperty({ type: () => String, required: false })
-  @IsOptional()
-  status?: string | string[] | StringFilter | undefined;
-}
 
 // Generated ORDER BY fields using helper for all fields
 const InvoiceOrderBy = createOrderByFields(
