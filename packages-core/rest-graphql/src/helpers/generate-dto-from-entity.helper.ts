@@ -15,7 +15,9 @@ import {
   isFlatType,
   validatePropertySelection,
   PropertyInclusionConfig,
-  InferDtoType
+  InferDtoType,
+  applyInferredValidations,
+  hasExistingValidation
 } from '@solid-nestjs/common';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -53,22 +55,28 @@ export function GenerateDtoFromEntity<
   // Get Swagger metadata from the original entity
   const fields = modelPropertiesAccessor.getModelProperties(EntityClass.prototype);
   
-  // Add Swagger decorators to selected properties only
+  // Add Swagger decorators and infer validation for selected properties
   selectedProperties.forEach(propertyKey => {
-    if (!fields.includes(propertyKey)) return;
+    // Add Swagger decorators if available
+    if (fields.includes(propertyKey)) {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        EntityClass.prototype,
+        propertyKey,
+      ) || {};
+      
+      const swaggerDecorator = ApiProperty({
+        ...metadata,
+        required: false, // Make all properties optional in DTOs
+      });
+      
+      swaggerDecorator(PickedClass.prototype, propertyKey);
+    }
     
-    const metadata = Reflect.getMetadata(
-      DECORATORS.API_MODEL_PROPERTIES,
-      EntityClass.prototype,
-      propertyKey,
-    ) || {};
-    
-    const swaggerDecorator = ApiProperty({
-      ...metadata,
-      required: false, // Make all properties optional in DTOs
-    });
-    
-    swaggerDecorator(PickedClass.prototype, propertyKey);
+    // Apply automatic validation inference if no existing validation decorators
+    if (!hasExistingValidation(PickedClass, propertyKey)) {
+      applyInferredValidations(PickedClass, EntityClass, propertyKey);
+    }
   });
   
   // Set class name for debugging

@@ -1,13 +1,11 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
 import { Product } from '../../products/entities/product.entity';
 
 @Entity()
 export class Supplier {
   @ApiProperty({ description: 'The unique identifier of the supplier' })
   @PrimaryGeneratedColumn('uuid')
-  @IsUUID()
   id: string;
 
   @ApiProperty({ description: 'The name of the supplier' })

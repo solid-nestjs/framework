@@ -10,7 +10,9 @@ import {
   validatePropertySelection,
   getPropertyDesignType,
   PropertyInclusionConfig,
-  InferDtoType
+  InferDtoType,
+  applyInferredValidations,
+  hasExistingValidation
 } from '@solid-nestjs/common';
 
 /**
@@ -45,6 +47,14 @@ export function GenerateDtoFromEntity<
   
   // Note: GraphQL PickType should handle the field decorators automatically
   // since SOLID entities already have the necessary GraphQL metadata
+  
+  // Apply automatic validation inference for selected properties
+  selectedProperties.forEach(propertyKey => {
+    // Apply automatic validation inference if no existing validation decorators
+    if (!hasExistingValidation(PickedClass, propertyKey)) {
+      applyInferredValidations(PickedClass, EntityClass, propertyKey);
+    }
+  });
   
   // Set class name for debugging
   Object.defineProperty(PickedClass, 'name', {
