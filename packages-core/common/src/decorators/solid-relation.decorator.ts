@@ -14,7 +14,7 @@ export interface SolidRelationOptions extends Omit<SolidFieldOptions, 'relation'
 }
 
 /**
- * Decorator for entity relations with automatic TypeORM, GraphQL, and REST API mappings
+ * Decorator for entity relations with automatic adapter mappings
  */
 export function SolidRelation(options: SolidRelationOptions): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {

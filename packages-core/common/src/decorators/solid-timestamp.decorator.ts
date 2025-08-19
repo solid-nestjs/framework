@@ -41,21 +41,8 @@ export function SolidTimestamp(
       ...config,
       skip: ['validation'], // Timestamps don't need validation
       adapters: {
-        ...options?.adapters,
-        typeorm: {
-          [type + 'At']: true,
-          ...options?.adapters?.typeorm
-        },
-        graphql: {
-          type: () => Date,
-          ...options?.adapters?.graphql
-        },
-        swagger: {
-          type: 'string',
-          format: 'date-time',
-          readOnly: true,
-          ...options?.adapters?.swagger
-        }
+        ...options?.adapters
+        // Individual adapters will handle timestamp-specific logic internally
       }
     };
     

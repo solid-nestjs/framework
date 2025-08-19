@@ -19,25 +19,8 @@ export function SolidId(options?: SolidIdOptions): PropertyDecorator {
       nullable: false,
       generated: options?.generated ?? 'uuid',
       adapters: {
-        ...options?.adapters,
-        typeorm: {
-          primary: true,
-          generated: options?.generated ?? 'uuid',
-          ...options?.adapters?.typeorm
-        },
-        graphql: {
-          type: 'ID',
-          ...options?.adapters?.graphql
-        },
-        swagger: {
-          description: options?.description || 'Unique identifier',
-          readOnly: true,
-          ...options?.adapters?.swagger
-        },
-        validation: {
-          skip: true, // Primary keys typically don't need validation on input
-          ...options?.adapters?.validation
-        }
+        ...options?.adapters
+        // Individual adapters will handle ID-specific logic internally
       }
     };
     

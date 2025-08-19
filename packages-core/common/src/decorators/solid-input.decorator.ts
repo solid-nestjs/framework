@@ -8,7 +8,7 @@ import { DecoratorRegistry } from '../decorator-registry';
 export function SolidInput(options?: SolidInputOptions): ClassDecorator {
   return function (target: Function) {
     // Default skip list for input types (typically skip database decorators)
-    const defaultSkip = options?.defaultSkip || ['typeorm'];
+    const defaultSkip = options?.defaultSkip || [];
     const skipList = [
       ...defaultSkip,
       ...(options?.skip || [])

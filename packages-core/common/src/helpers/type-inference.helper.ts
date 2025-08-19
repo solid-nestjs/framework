@@ -165,33 +165,12 @@ export function mapTypeToColumnType(type: any): string {
 }
 
 /**
- * Maps TypeScript types to GraphQL types
+ * Generic type mapping utility - each adapter can use this as base
  */
-export function mapTypeToGraphQLType(type: any): string {
-  const typeMap = new Map<any, string>([
-    [String, 'String'],
-    [Number, 'Int'], // Could be Float depending on context
-    [Boolean, 'Boolean'],
-    [Date, 'DateTime'],
-  ]);
-
-  return typeMap.get(type) || 'String';
-}
-
-/**
- * Maps TypeScript types to Swagger/OpenAPI types
- */
-export function mapTypeToSwaggerType(type: any): string {
-  const typeMap = new Map<any, string>([
-    [String, 'string'],
-    [Number, 'number'],
-    [Boolean, 'boolean'],
-    [Date, 'string'], // with format: date-time
-    [Array, 'array'],
-    [Object, 'object'],
-  ]);
-
-  return typeMap.get(type) || 'string';
+export function createTypeMapper<T>(typeMap: Map<any, T>, defaultValue: T) {
+  return function(type: any): T {
+    return typeMap.get(type) || defaultValue;
+  };
 }
 
 /**
