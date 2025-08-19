@@ -7,7 +7,6 @@ import {
   SolidDeletedAt,
   SolidOneToMany,
 } from '@solid-nestjs/common';
-import { Invoice } from '../../invoices/entities/invoice.entity';
 
 @SolidEntity()
 export class Client {
@@ -65,10 +64,17 @@ export class Client {
   })
   country?: string;
 
-  @SolidOneToMany(() => Invoice, invoice => invoice.client, {
-    description: 'Client invoices',
-  })
-  invoices?: Invoice[];
+  @SolidOneToMany(
+    () => {
+      const { Invoice } = require('../../invoices/entities/invoice.entity');
+      return Invoice;
+    },
+    (invoice: any) => invoice.client,
+    {
+      description: 'Client invoices',
+    }
+  )
+  invoices?: any[];
 
   @SolidCreatedAt()
   createdAt!: Date;
