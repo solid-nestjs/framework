@@ -1,85 +1,84 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  OneToMany,
-  ManyToOne,
-  DeleteDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
-import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
-import type { InvoiceDetail } from './invoice-detail.entity';
+import { 
+  SolidEntity, 
+  SolidId, 
+  SolidField, 
+  SolidOneToMany, 
+  SolidManyToOne, 
+  SolidCreatedAt, 
+  SolidUpdatedAt, 
+  SolidDeletedAt 
+} from '@solid-nestjs/common';
+import { InvoiceDetail } from './invoice-detail.entity';
 import { Client } from '../../clients/entities/client.entity';
 
-@ObjectType()
-@Entity()
+@SolidEntity()
 export class Invoice {
-  @ApiProperty({ description: 'The unique identifier of the invoice' })
-  @Field(() => ID, { description: 'The unique identifier of the invoice' })
-  @PrimaryGeneratedColumn()
+  @SolidId({
+    generated: 'increment',
+    description: 'The unique identifier of the invoice',
+  })
   id: number;
 
-  @ApiProperty({ description: 'The invoice number' })
-  @Field({ description: 'The invoice number' })
-  @Column({ unique: true })
+  @SolidField({
+    description: 'The invoice number',
+    unique: true,
+  })
   invoiceNumber: string;
 
-  @ApiProperty({ description: 'The total amount of the invoice' })
-  @Field(() => Float, { description: 'The total amount of the invoice' })
-  @Column('decimal', { precision: 10, scale: 2, transformer: {
-    to: (value: number) => value,
-    from: (value: string) => parseFloat(value)
-  }})
+  @SolidField({
+    description: 'The total amount of the invoice',
+    float: true,
+    precision: 10,
+    scale: 2,
+    adapters: {
+      typeorm: {
+        columnType: 'decimal',
+        transformer: {
+          to: (value: number) => value,
+          from: (value: string) => parseFloat(value)
+        }
+      },
+      graphql: {
+        type: 'Float'
+      }
+    }
+  })
   totalAmount: number;
 
-  @ApiProperty({ description: 'The status of the invoice' })
-  @Field({ description: 'The status of the invoice' })
-  @Column({ default: 'pending' })
+  @SolidField({
+    description: 'The status of the invoice',
+    defaultValue: 'pending',
+  })
   status: string;
 
-  @ApiProperty({ description: 'The date when the invoice was created' })
-  @Field({ description: 'The date when the invoice was created' })
-  @CreateDateColumn()
+  @SolidCreatedAt({
+    description: 'The date when the invoice was created',
+  })
   invoiceDate: Date;
 
-  @ApiProperty({
-    description: 'Invoice details/line items',
-    type: () => require('./invoice-detail.entity').InvoiceDetail,
-  })
-  @Field(() => [require('./invoice-detail.entity').InvoiceDetail], {
-    description: 'Invoice details/line items',
-  })
-  @OneToMany(
-    () => require('./invoice-detail.entity').InvoiceDetail,
-    (detail: any) => detail.invoice,
+  @SolidOneToMany(
+    () => InvoiceDetail,
+    (detail: InvoiceDetail) => detail.invoice,
     {
-      cascade: true,
-    },
+      description: 'Invoice details/line items',
+      cascade: ['insert', 'update', 'remove', 'soft-remove', 'recover'],
+    }
   )
   details: InvoiceDetail[];
 
-  @ApiProperty({ description: 'Invoice client', type: () => Client })
-  @Field(() => Client, { description: 'Invoice client' })
-  @ManyToOne(() => Client, client => client.invoices, {
+  @SolidManyToOne(() => Client, (client: Client) => client.invoices, {
+    description: 'Invoice client',
     onDelete: 'CASCADE',
   })
   client: Client;
 
-  @ApiProperty({ description: 'The date when the product was last updated' })
-  @Field({ description: 'The date when the product was last updated' })
-  @UpdateDateColumn()
+  @SolidUpdatedAt({
+    description: 'The date when the invoice was last updated',
+  })
   updatedAt!: Date;
 
-  @ApiProperty({
-    description: 'The date when the product was deleted (soft delete)',
-    required: false,
+  @SolidDeletedAt({
+    description: 'The date when the invoice was deleted (soft delete)',
   })
-  @Field({
-    description: 'The date when the product was deleted (soft delete)',
-    nullable: true,
-  })
-  @DeleteDateColumn()
   deletedAt?: Date;
 }

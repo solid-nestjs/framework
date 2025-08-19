@@ -218,13 +218,31 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
       return;
     }
     
+    // Build relation options from adapter options
+    const relationOptions: any = {
+      cascade: adapterOptions?.cascade || options.cascade,
+      eager: adapterOptions?.eager || options.eager,
+      lazy: adapterOptions?.lazy || options.lazy,
+      onDelete: adapterOptions?.onDelete || options.onDelete,
+      onUpdate: adapterOptions?.onUpdate || options.onUpdate,
+      orphanedRowAction: adapterOptions?.orphanedRowAction || options.orphanedRowAction,
+      ...adapterOptions?.relationOptions
+    };
+    
+    // Remove undefined values
+    Object.keys(relationOptions).forEach(key => {
+      if (relationOptions[key] === undefined) {
+        delete relationOptions[key];
+      }
+    });
+
     switch (relationType) {
       case 'many-to-one':
         if (ManyToOne) {
           ManyToOne(
-            () => relationTarget,
+            relationTarget, // relationTarget is already a function
             inverseProperty,
-            adapterOptions?.relationOptions || {}
+            relationOptions
           )(target, propertyKey);
           
           if (options.joinColumn !== false && adapterOptions?.joinColumn !== false && JoinColumn) {
@@ -238,7 +256,7 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
           OneToMany(
             relationTarget, // Use relationTarget directly (it's already a function)
             inverseProperty,
-            adapterOptions?.relationOptions || {}
+            relationOptions
           )(target, propertyKey);
         }
         break;
@@ -246,9 +264,9 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
       case 'many-to-many':
         if (ManyToMany) {
           ManyToMany(
-            () => relationTarget,
+            relationTarget, // relationTarget is already a function
             inverseProperty,
-            adapterOptions?.relationOptions || {}
+            relationOptions
           )(target, propertyKey);
           
           if ((options.joinTable || adapterOptions?.joinTable) && JoinTable) {
@@ -260,9 +278,9 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
       case 'one-to-one':
         if (OneToOne) {
           OneToOne(
-            () => relationTarget,
+            relationTarget, // relationTarget is already a function
             inverseProperty,
-            adapterOptions?.relationOptions || {}
+            relationOptions
           )(target, propertyKey);
           
           if (options.joinColumn !== false && adapterOptions?.joinColumn !== false && JoinColumn) {

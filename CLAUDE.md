@@ -30,7 +30,7 @@ Before running development servers, use these utilities to avoid port conflicts:
 1. Before running any `npm run start:dev` command, first run: `powershell -ExecutionPolicy Bypass -File ".\scripts\cleanup-ports.ps1" -Port [PORT_NUMBER]`
 2. After testing or when done, run: `powershell -ExecutionPolicy Bypass -File ".\scripts\kill-all-node-except-claude.ps1"`
 3. Always use timeout with `npm run start:dev` commands to prevent indefinite hanging: `timeout 30 npm run start:dev`
-4. **CRITICAL**: When making changes to core packages (`packages-core/*`), always run `npm run build` to compile the packages before testing in example apps (`apps-examples/*`)
+4. **CRITICAL**: When making changes to core packages (`packages-core/*`), always run `npm run build` to each modified package to compile the packages before testing in example apps (`apps-examples/*`)
 
 ### Testing
 
@@ -194,15 +194,16 @@ This is a monorepo with multiple packages organized as:
 
 **CRITICAL**: The core packages must maintain strict dependency separation to preserve modular architecture:
 
-| Package | ❌ PROHIBITED Dependencies | ✅ ALLOWED Dependencies |
-|---------|---------------------------|------------------------|
-| `packages-core/common` | `@nestjs/swagger`, `@nestjs/graphql`, `typeorm` | Only `@nestjs/common`, `@nestjs/core` |
-| `packages-core/rest-api` | `@nestjs/graphql`, `typeorm` | `@nestjs/swagger`, `@solid-nestjs/common` |
-| `packages-core/graphql` | `@nestjs/swagger`, `typeorm` | `@nestjs/graphql`, `@solid-nestjs/common` |
-| `packages-core/rest-graphql` | `typeorm` | `@nestjs/swagger`, `@nestjs/graphql`, other core packages |
-| `packages-core/typeorm` | `@nestjs/swagger`, `@nestjs/graphql` | `typeorm`, `@nestjs/typeorm`, `@solid-nestjs/common` |
+| Package                      | ❌ PROHIBITED Dependencies                      | ✅ ALLOWED Dependencies                                   |
+| ---------------------------- | ----------------------------------------------- | --------------------------------------------------------- |
+| `packages-core/common`       | `@nestjs/swagger`, `@nestjs/graphql`, `typeorm` | Only `@nestjs/common`, `@nestjs/core`                     |
+| `packages-core/rest-api`     | `@nestjs/graphql`, `typeorm`                    | `@nestjs/swagger`, `@solid-nestjs/common`                 |
+| `packages-core/graphql`      | `@nestjs/swagger`, `typeorm`                    | `@nestjs/graphql`, `@solid-nestjs/common`                 |
+| `packages-core/rest-graphql` | `typeorm`                                       | `@nestjs/swagger`, `@nestjs/graphql`, other core packages |
+| `packages-core/typeorm`      | `@nestjs/swagger`, `@nestjs/graphql`            | `typeorm`, `@nestjs/typeorm`, `@solid-nestjs/common`      |
 
 **Rules**:
+
 1. The `common` package must remain technology-agnostic and contain only shared utilities
 2. Specialized packages (`rest-api`, `graphql`, `typeorm`) must not cross-reference each other's technologies
 3. Only `rest-graphql` may combine REST and GraphQL technologies, but never TypeORM
@@ -312,6 +313,7 @@ The framework provides comprehensive soft deletion and bulk operation support:
 ### Core Packages Testing
 
 **Unit Tests for Core Packages** (`packages-core/*`):
+
 - Place unit tests in `src/` alongside source code using `*.spec.ts` suffix
 - Test individual functions, classes, and helpers in isolation
 - Use Jest with `rootDir: "src"` configuration
@@ -321,6 +323,7 @@ The framework provides comprehensive soft deletion and bulk operation support:
 ### Example Applications Testing
 
 **E2E Tests Only for Example Apps** (`apps-examples/*`):
+
 - Example applications should ONLY have E2E tests in `test/` folder
 - Use `*.e2e-spec.ts` suffix for E2E test files
 - Test complete user workflows and integration scenarios
