@@ -7,7 +7,6 @@ import {
   SolidUpdatedAt, 
   SolidDeletedAt 
 } from '@solid-nestjs/common';
-import { Supplier } from '../../suppliers/entities/supplier.entity';
 
 @SolidEntity()
 export class Product {
@@ -58,11 +57,18 @@ export class Product {
   })
   stock: number;
 
-  @SolidManyToOne(() => Supplier, (supplier: Supplier) => supplier.products, {
-    description: 'Product Supplier',
-    onDelete: 'CASCADE',
-  })
-  supplier: Supplier;
+  @SolidManyToOne(
+    () => {
+      const { Supplier } = require('../../suppliers/entities/supplier.entity');
+      return Supplier;
+    },
+    (supplier: any) => supplier.products,
+    {
+      description: 'Product Supplier',
+      onDelete: 'CASCADE',
+    }
+  )
+  supplier: any;
 
   @SolidCreatedAt({
     description: 'The date when the product was created',

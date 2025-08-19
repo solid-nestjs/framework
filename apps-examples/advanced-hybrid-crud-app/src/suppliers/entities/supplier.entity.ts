@@ -7,7 +7,6 @@ import {
   SolidUpdatedAt, 
   SolidDeletedAt 
 } from '@solid-nestjs/common';
-import { Product } from '../../products/entities/product.entity';
 
 @SolidEntity()
 export class Supplier {
@@ -28,11 +27,18 @@ export class Supplier {
   })
   contactEmail: string;
 
-  @SolidOneToMany(() => Product, product => product.supplier, {
-    description: 'Supplier Products',
-    cascade: ['insert', 'update', 'remove', 'soft-remove', 'recover'],
-  })
-  products: Product[];
+  @SolidOneToMany(
+    () => {
+      const { Product } = require('../../products/entities/product.entity');
+      return Product;
+    },
+    (product: any) => product.supplier,
+    {
+      description: 'Supplier Products',
+      cascade: ['insert', 'update', 'remove', 'soft-remove', 'recover'],
+    }
+  )
+  products: any[];
 
   @SolidCreatedAt({
     description: 'The date when the supplier was created',
