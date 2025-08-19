@@ -45,12 +45,14 @@ export function getDefaultProperties(
 }
 
 /**
- * Validates that selected properties exist and are flat types
+ * Validates that selected properties exist and are valid for DTO generation
+ * @param allowSystemFields - When true, allows system fields (id, timestamps) to be included
  */
 export function validatePropertySelection(
   EntityClass: Type,
   allProperties: string[],
-  selectedProperties: string[]
+  selectedProperties: string[],
+  allowSystemFields: boolean = false
 ): void {
   const entityName = EntityClass.name;
   
@@ -62,10 +64,11 @@ export function validatePropertySelection(
       );
     }
     
-    // Check property is not a system field
-    if (isSystemField(prop)) {
+    // Check property is not a system field (unless explicitly allowed)
+    if (!allowSystemFields && isSystemField(prop)) {
       throw new Error(
-        `Property '${prop}' is a system field (id, timestamps) and cannot be included in generated DTO`
+        `Property '${prop}' is a system field (id, timestamps) and cannot be included in generated DTO. ` +
+        `Use the object format with explicit boolean configuration to include system fields.`
       );
     }
     
@@ -77,9 +80,9 @@ export function validatePropertySelection(
       );
     }
     
-    // Check property is flat type
+    // Check property is flat type (system fields get special treatment for id)
     const type = getPropertyDesignType(EntityClass, prop);
-    if (!isFlatType(type)) {
+    if (!isFlatType(type) && !(isSystemField(prop) && prop === 'id')) {
       throw new Error(
         `Property '${prop}' is not a flat type (string, number, boolean, Date) ` +
         `and cannot be included in generated DTO`

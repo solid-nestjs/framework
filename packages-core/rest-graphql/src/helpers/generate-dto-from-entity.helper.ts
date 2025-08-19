@@ -8,22 +8,36 @@ import {
   extractAllPropertyNames,
   filterProperties,
   getPropertyDesignType,
-  extractEntityFieldMetadata
+  extractEntityFieldMetadata,
+  getDefaultProperties,
+  isSystemField,
+  isRelationalField,
+  isFlatType,
+  validatePropertySelection
 } from '@solid-nestjs/common';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
 /**
+ * Property inclusion configuration for GenerateDtoFromEntity
+ * - undefined: use default rules (include if flat type and not system field)
+ * - true: always include the property
+ * - false: always exclude the property
+ */
+export type PropertyInclusionConfig<TEntity> = Partial<Record<keyof TEntity, boolean>>;
+
+/**
  * Generates a DTO class from an entity for both GraphQL and REST
+ * Supports both legacy array format and new object configuration for backward compatibility
  */
 export function GenerateDtoFromEntity<TEntity extends object>(
   EntityClass: Type<TEntity>,
-  properties?: (keyof TEntity)[],
+  propertiesOrConfig?: (keyof TEntity)[] | PropertyInclusionConfig<TEntity>,
   decorator?: ClassDecoratorFactory
 ): Type<Partial<TEntity>> {
-  // Get all properties and filter them
+  // Get all properties and determine which ones to include
   const allProperties = extractAllPropertyNames(EntityClass);
-  const selectedProperties = filterProperties(EntityClass, allProperties, properties as string[]);
+  const selectedProperties = selectProperties(EntityClass, allProperties, propertiesOrConfig);
   
   // Use GraphQL PickType directly on SOLID entity (like PartialType does)
   const PickedClass = PickType(
@@ -59,5 +73,59 @@ export function GenerateDtoFromEntity<TEntity extends object>(
   });
   
   return PickedClass as Type<Partial<TEntity>>;
+}
+
+/**
+ * Selects properties supporting both array (legacy) and object (new) formats
+ */
+function selectProperties<TEntity>(
+  EntityClass: Type<TEntity>,
+  allProperties: string[],
+  propertiesOrConfig?: (keyof TEntity)[] | PropertyInclusionConfig<TEntity>
+): string[] {
+  if (!propertiesOrConfig) {
+    // Use default rules when no config provided
+    return getDefaultProperties(EntityClass, allProperties);
+  }
+  
+  // Check if it's an array (legacy format)
+  if (Array.isArray(propertiesOrConfig)) {
+    // Legacy array format: validate and return selected properties
+    // Allow system fields when explicitly specified in array format
+    const selectedProperties = propertiesOrConfig as string[];
+    validatePropertySelection(EntityClass, allProperties, selectedProperties, true);
+    return selectedProperties;
+  }
+  
+  // New object format: process boolean configuration
+  const propertyConfig = propertiesOrConfig as PropertyInclusionConfig<TEntity>;
+  const selectedProperties: string[] = [];
+  
+  allProperties.forEach(prop => {
+    const configValue = propertyConfig[prop as keyof TEntity];
+    
+    if (configValue === true) {
+      // Always include when explicitly set to true
+      selectedProperties.push(prop);
+    } else if (configValue === false) {
+      // Always exclude when explicitly set to false
+      return;
+    } else if (configValue === undefined) {
+      // Use default rules when undefined
+      // Skip system fields
+      if (isSystemField(prop)) return;
+      
+      // Skip relational fields
+      if (isRelationalField(EntityClass, prop)) return;
+      
+      // Only include flat types
+      const type = getPropertyDesignType(EntityClass, prop);
+      if (isFlatType(type)) {
+        selectedProperties.push(prop);
+      }
+    }
+  });
+  
+  return selectedProperties;
 }
 
