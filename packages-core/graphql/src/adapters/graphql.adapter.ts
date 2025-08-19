@@ -197,10 +197,20 @@ export class GraphQLDecoratorAdapter implements DecoratorAdapter {
       return Int; // Default to Int for numbers
     }
     
-    // Handle arrays - check both explicit and inferred arrays
-    const arrayInfo = detectArrayInfo(target, propertyKey);
-    if (Array.isArray(type) || options.array || arrayInfo.isArray) {
-      const itemType = options.arrayType || type[0] || arrayInfo.elementType || String;
+    // Handle arrays - check explicit array option first
+    if (options.array || Array.isArray(type)) {
+      let itemType = options.arrayType;
+      
+      // If explicit arrayType is a function, call it
+      if (typeof itemType === 'function') {
+        itemType = itemType();
+      }
+      
+      // Fallback to other sources if no explicit arrayType
+      if (!itemType) {
+        itemType = type[0] || String;
+      }
+      
       const mappedItemType = this.mapSingleType(itemType);
       return mappedItemType ? [mappedItemType] : [String];
     }

@@ -231,13 +231,16 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
       IsDate()(target, propertyKey);
     }
     
-    // Array validators
-    else if ((Array.isArray(type) || adapterOptions?.isArray) && IsArray) {
+    // Array validators - check explicit array option first
+    else if ((options.array || Array.isArray(type) || adapterOptions?.isArray) && IsArray) {
       IsArray()(target, propertyKey);
       
-      if (adapterOptions?.arrayType && ValidateNested && Type) {
+      // Get array type from options first, then adapter
+      const arrayType = options.arrayType || adapterOptions?.arrayType;
+      
+      if (arrayType && ValidateNested && Type) {
         ValidateNested({ each: true })(target, propertyKey);
-        Type(() => adapterOptions.arrayType)(target, propertyKey);
+        Type(arrayType)(target, propertyKey);
       }
     }
     

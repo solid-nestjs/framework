@@ -32,6 +32,7 @@ export interface SolidFieldOptions {
   positive?: boolean;
   negative?: boolean;
   array?: boolean;
+  arrayType?: () => Function;
   enum?: object;
   enumName?: string;
 

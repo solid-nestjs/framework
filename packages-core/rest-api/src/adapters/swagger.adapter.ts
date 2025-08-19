@@ -167,9 +167,20 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
       return explicitType;
     }
     
-    // Handle arrays
-    if (Array.isArray(type) || options.array) {
-      const itemType = options.arrayType || type[0] || String;
+    // Handle arrays - check explicit array option first
+    if (options.array || Array.isArray(type)) {
+      let itemType = options.arrayType;
+      
+      // If explicit arrayType is a function, call it
+      if (typeof itemType === 'function') {
+        itemType = itemType();
+      }
+      
+      // Fallback to other sources if no explicit arrayType
+      if (!itemType) {
+        itemType = type[0] || String;
+      }
+      
       return [this.mapTypeToSwaggerType(itemType, {}, {})];
     }
     

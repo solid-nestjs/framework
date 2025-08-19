@@ -80,31 +80,13 @@ export class CreateInvoiceDto {
 
   @SolidField({
     description: 'Invoice details/line items',
-    adapters: {
-      graphql: {
-        type: () => [CreateInvoiceDetailDto]
-      },
-      swagger: {
-        type: () => [CreateInvoiceDetailDto]
-      },
-      validation: {
-        isArray: true,
-        arrayType: () => CreateInvoiceDetailDto
-      }
-    }
+    array: true,
+    arrayType: () => CreateInvoiceDetailDto
   })
   details: CreateInvoiceDetailDto[];
 
   @SolidField({
-    description: 'Invoice client',
-    adapters: {
-      graphql: {
-        type: () => InvoiceClientDto
-      },
-      swagger: {
-        type: () => InvoiceClientDto
-      }
-    }
+    description: 'Invoice client'
   })
   client: InvoiceClientDto;
 }

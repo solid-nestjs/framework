@@ -51,7 +51,9 @@ export class CreateSupplierDto {
 
   @SolidField({
     description: 'Supplier`s products',
-    nullable: true
+    nullable: true,
+    array: true,
+    arrayType: () => SupplierProductDto
   })
   products?: SupplierProductDto[];
 }
