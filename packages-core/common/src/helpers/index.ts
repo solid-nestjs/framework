@@ -6,3 +6,6 @@ export * from './decorators';
 export * from './args-helpers';
 export * from './type-inference.helper';
 export * from './package-detector.helper';
+export * from './metadata-extractor.helper';
+export * from './property-filter.helper';
+export * from './dto-generator-base.helper';
