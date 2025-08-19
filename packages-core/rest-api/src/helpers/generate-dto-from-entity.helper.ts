@@ -10,27 +10,30 @@ import {
   isRelationalField,
   isFlatType,
   validatePropertySelection,
-  getPropertyDesignType
+  getPropertyDesignType,
+  PropertyInclusionConfig,
+  InferDtoType
 } from '@solid-nestjs/common';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
 /**
- * Property inclusion configuration for GenerateDtoFromEntity
- * - undefined: use default rules (include if flat type and not system field)
- * - true: always include the property
- * - false: always exclude the property
- */
-export type PropertyInclusionConfig<TEntity> = Partial<Record<keyof TEntity, boolean>>;
-
-/**
- * Generates a DTO class from an entity for REST API with Swagger decorators
+ * Generates a DTO class from an entity for REST API with Swagger decorators and improved TypeScript inference
  * Supports both legacy array format and new object configuration for backward compatibility
+ * 
+ * @template TEntity - The source entity type
+ * @template TPropertiesOrConfig - The properties selection (array, object config, or undefined)
+ * @param EntityClass - The entity class to generate DTO from
+ * @param propertiesOrConfig - Property selection configuration
+ * @returns A DTO class with only the selected primitive properties
  */
-export function GenerateDtoFromEntity<TEntity extends object>(
+export function GenerateDtoFromEntity<
+  TEntity extends object,
+  TPropertiesOrConfig extends (keyof TEntity)[] | PropertyInclusionConfig<TEntity> | undefined = undefined
+>(
   EntityClass: Type<TEntity>,
-  propertiesOrConfig?: (keyof TEntity)[] | PropertyInclusionConfig<TEntity>
-): Type<Partial<TEntity>> {
+  propertiesOrConfig?: TPropertiesOrConfig
+): Type<InferDtoType<TEntity, TPropertiesOrConfig>> {
   // Get all properties and determine which ones to include
   const allProperties = extractAllPropertyNames(EntityClass);
   const selectedProperties = selectProperties(EntityClass, allProperties, propertiesOrConfig);
@@ -67,7 +70,7 @@ export function GenerateDtoFromEntity<TEntity extends object>(
     value: `Generated${EntityClass.name}Dto`
   });
   
-  return PickedClass as Type<Partial<TEntity>>;
+  return PickedClass as any;
 }
 
 /**

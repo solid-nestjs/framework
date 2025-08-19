@@ -39,7 +39,6 @@ export class CreateProductDto extends GenerateDtoFromEntity(Product, [
   // Custom field: composite key (only type, code is auto-generated)
   @Field(() => ProductIdDto, { description: 'id of the product' })
   @IsNotEmpty()
-  //@ts-ignore
   id: ProductIdDto;
 
   // Custom field: supplier relation
@@ -48,7 +47,6 @@ export class CreateProductDto extends GenerateDtoFromEntity(Product, [
     nullable: true,
   })
   @IsOptional()
-  //@ts-ignore
   supplier?: ProductSupplierDto;
 }
 
