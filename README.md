@@ -1,35 +1,115 @@
 # SOLID NestJS Framework
 
-A powerful, modular, and type-safe framework for building scalable NestJS applications with automatic CRUD generation, advanced query capabilities, and extensible architecture.
+A powerful, modular, and type-safe framework for building scalable NestJS applications with **unified decorators**, automatic CRUD generation, advanced query capabilities, and extensible architecture.
 
 ## 🚀 Overview
 
-The SOLID NestJS Framework is a collection of utilities and mixins that accelerate the development of robust REST APIs with TypeORM. It follows SOLID principles and provides a clean, maintainable architecture for enterprise-grade applications.
+The SOLID NestJS Framework revolutionizes NestJS development with **SOLID Decorators** - a unified decorator system that automatically applies TypeORM, GraphQL, Swagger, and validation decorators, reducing boilerplate code by 70-80% while maintaining full type safety and functionality.
 
 ### Core Packages
 
-- **`@solid-nestjs/common`** - Common utilities, interfaces, and decorators
+- **`@solid-nestjs/common`** - ✨ **Unified decorators**, utilities, interfaces, and automatic decorator adapters
 - **`@solid-nestjs/typeorm`** - TypeORM service mixins for data access
 - **`@solid-nestjs/rest-api`** - REST API controller mixins with Swagger integration
+- **`@solid-nestjs/graphql`** - GraphQL resolver mixins and utilities
+- **`@solid-nestjs/rest-graphql`** - Combined REST and GraphQL utilities
+
+### Bundle Packages
+
+- **`@solid-nestjs/typeorm-crud`** - REST API with TypeORM bundle
+- **`@solid-nestjs/typeorm-graphql-crud`** - GraphQL with TypeORM bundle  
+- **`@solid-nestjs/typeorm-hybrid-crud`** - **REST + GraphQL with TypeORM bundle**
+
+## ✨ NEW: SOLID Decorators (v0.2.8)
+
+### Revolutionary Unified Decorators
+
+Transform this traditional boilerplate-heavy approach:
+
+```typescript
+// ❌ Traditional approach (10+ decorators per field)
+@ObjectType()
+@Entity()
+export class Product {
+  @ApiProperty({ description: 'Product ID', format: 'uuid' })
+  @Field(() => ID, { description: 'Product ID' })
+  @PrimaryGeneratedColumn('uuid')
+  @IsUUID()
+  id: string;
+
+  @ApiProperty({ description: 'Product name', maxLength: 100 })
+  @Field({ description: 'Product name' })
+  @Column({ length: 100 })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(100)
+  name: string;
+
+  @ApiProperty({ description: 'Product price', minimum: 0 })
+  @Field(() => Float, { description: 'Product price' })
+  @Column('decimal', { precision: 10, scale: 2 })
+  @IsNumber()
+  @Min(0)
+  price: number;
+}
+```
+
+Into this clean, unified approach:
+
+```typescript
+// ✅ SOLID approach (1 decorator per field)
+@SolidEntity()
+export class Product {
+  @SolidId({
+    generated: 'uuid',
+    description: 'Product ID'
+  })
+  id: string;
+
+  @SolidField({
+    description: 'Product name',
+    maxLength: 100
+  })
+  name: string;
+
+  @SolidField({
+    description: 'Product price',
+    precision: 10,
+    scale: 2,
+    min: 0
+  })
+  price: number;
+}
+```
 
 ### 🌟 Key Features
 
+- **✨ SOLID Decorators** - Revolutionary unified decorators that reduce boilerplate by 70-80%
+- **🧠 Automatic Type Inference** - Smart validation and documentation based on TypeScript types
 - **🔧 Auto-generated CRUD Operations** - Instantly create controllers and services with full CRUD functionality
-- **🎯 Args Helpers** - Revolutionary DTO creation with 60-80% code reduction for filtering, ordering, and grouping
-- **🔍 Advanced Query System** - Powerful filtering, pagination, sorting, and relation handling
-- **📊 GROUP BY Aggregations** - Advanced data grouping with COUNT, SUM, AVG, MIN, MAX functions for both REST and GraphQL
+- **🎯 Advanced Query System** - Powerful filtering, pagination, sorting, and relation handling
+- **📊 GROUP BY Aggregations** - Advanced data grouping with COUNT, SUM, AVG, MIN, MAX functions
 - **🔒 Transaction Support** - Built-in transaction management with isolation levels
-- **📝 Type Safety** - Full TypeScript support with comprehensive type definitions and automatic filter type inference
-- **🎯 OpenAPI Integration** - Automatic Swagger documentation generation
-- **🔄 Flexible Relations** - Easy configuration of entity relationships and eager loading
-- **🛡️ Input Validation** - Integrated class-validator support
-- **📦 Modular Architecture** - Clean separation of concerns following SOLID principles
-- **🎨 Extensible Design** - Easy to extend and customize for specific needs
+- **📝 Type Safety** - Full TypeScript support with comprehensive type definitions
+- **🎯 Universal API Documentation** - Automatic Swagger + GraphQL schema generation
+- **🔄 Flexible Relations** - Easy configuration with circular import protection
+- **🛡️ Smart Validation** - Automatic class-validator application
+- **📦 Modular Architecture** - Clean separation with plugin-based adapter system
 - **🔄 Soft Delete Support** - Built-in soft delete functionality with recovery operations
 - **🔄 Bulk Operations** - Efficient bulk insert, update, delete, and remove operations
 - **♻️ Recovery Operations** - Restore soft-deleted entities with cascade support
-- **📊 Audit Trail** - Optional audit logging for data changes
-- **🚀 Future-Ready** - Designed for GraphQL and Prisma integration
+
+## 🎉 What's NEW in v0.2.8
+
+#### ✨ SOLID Decorators - RELEASED!
+
+- ✅ **Unified Field Decorators** - Single decorators that automatically apply TypeORM, GraphQL, Swagger, and validation decorators
+- ✅ **Automatic Type Inference** - Smart validation and documentation based on TypeScript types
+- ✅ **Plugin-Based Architecture** - Modular adapter system for different technologies
+- ✅ **70-80% Code Reduction** - Dramatically reduce boilerplate while maintaining functionality
+- ✅ **Circular Import Protection** - Built-in solutions for entity relationship cycles
+- ✅ **Universal Array Support** - Automatic array handling for both entities and DTOs
+- ✅ **Adapter-Specific Options** - Fine-grained control over technology-specific configurations
 
 ## 🗺️ What's Coming in v0.3.0
 
@@ -37,15 +117,14 @@ We're excited to share a preview of upcoming features in version 0.3.0:
 
 #### 🛠️ Enhanced CLI Tools
 
-- 🔲 **Framework CLI Generator** - Scaffold controllers, services, and modules with interactive prompts
+- 🔲 **SOLID CLI Generator** - Scaffold entities, DTOs, controllers, and services using SOLID Decorators
+- 🔲 **Migration Assistant** - Automated migration from traditional decorators to SOLID Decorators
 
-#### 🎨 Custom Decorators & Boilerplate Reduction
+#### 🎨 Advanced SOLID Decorator Features
 
-- 🔲 **Composite Field Decorators** - Create unified decorators that combine common patterns like `@ApiProperty`, `@IsString`, `@IsNotEmpty`, etc.
-- 🔲 **Smart Type Inference Decorators** - Automatically generate validation and API documentation based on TypeScript types
-- 🔲 **Entity-to-DTO Code Generation** - Generate DTOs automatically from entity definitions with configurable validation rules
-- 🔲 **Hybrid API Decorators** - Single decorators that work for both REST (`@ApiProperty`) and GraphQL (`@Field`) simultaneously
-- 🔲 **Validation Preset Decorators** - Pre-configured decorator combinations for common patterns (email, UUID, positive numbers, etc.)
+- 🔲 **Custom Adapter Creation** - Build your own technology-specific adapters
+- 🔲 **Conditional Decorators** - Environment and context-aware decorator application
+- 🔲 **Validation Presets** - Pre-configured validation combinations for common patterns
 
 #### 🔐 Advanced Authentication & Authorization
 
@@ -79,15 +158,120 @@ We're excited to share a preview of upcoming features in version 0.3.0:
 
 _Want to influence the roadmap? Check out our [full roadmap](ROADMAP.md) and join the discussion!_
 
-## 🚀 Try It Now
+## 🚀 Quick Start with SOLID Decorators
+
+### 📦 Installation
+
+```bash
+# Install the hybrid bundle (includes REST + GraphQL + TypeORM)
+npm install @solid-nestjs/typeorm-hybrid-crud
+
+# Or install specific packages
+npm install @solid-nestjs/common @solid-nestjs/typeorm @solid-nestjs/rest-api
+```
+
+### ✨ Create Your First Entity
+
+```typescript
+// user.entity.ts
+import { SolidEntity, SolidId, SolidField, SolidCreatedAt, SolidUpdatedAt } from '@solid-nestjs/common';
+
+@SolidEntity()
+export class User {
+  @SolidId({
+    generated: 'uuid',
+    description: 'User unique identifier'
+  })
+  id: string;
+
+  @SolidField({
+    description: 'User email address',
+    email: true,
+    unique: true
+  })
+  email: string;
+
+  @SolidField({
+    description: 'User first name',
+    maxLength: 100
+  })
+  firstName: string;
+
+  @SolidField({
+    description: 'User age',
+    integer: true,
+    min: 18,
+    max: 120,
+    nullable: true
+  })
+  age?: number;
+
+  @SolidCreatedAt()
+  createdAt: Date;
+
+  @SolidUpdatedAt()
+  updatedAt: Date;
+}
+```
+
+### 🔧 Create DTOs
+
+```typescript
+// create-user.dto.ts
+import { SolidInput, SolidField } from '@solid-nestjs/common';
+
+@SolidInput()
+export class CreateUserDto {
+  @SolidField({
+    description: 'User email address',
+    email: true
+  })
+  email: string;
+
+  @SolidField({
+    description: 'User first name',
+    maxLength: 100
+  })
+  firstName: string;
+
+  @SolidField({
+    description: 'User age',
+    integer: true,
+    min: 18,
+    max: 120,
+    nullable: true
+  })
+  age?: number;
+}
+```
+
+### 🎯 Auto-Generated Results
+
+The SOLID Decorators automatically generate:
+
+- ✅ **TypeORM**: `@Entity()`, `@Column()`, `@PrimaryGeneratedColumn()`
+- ✅ **GraphQL**: `@ObjectType()`, `@Field()`, `@InputType()`
+- ✅ **Swagger**: `@ApiProperty()`, complete OpenAPI documentation
+- ✅ **Validation**: `@IsEmail()`, `@IsString()`, `@Min()`, `@Max()`, `@IsOptional()`
+
+### 🚀 Try Complete Examples
 
 Get started immediately with our working examples:
+
+### ✨ Advanced Hybrid Example (REST + GraphQL + SOLID Decorators)
+
+```bash
+# Clone and run the advanced example with SOLID Decorators
+git clone https://github.com/solid-nestjs/framework.git
+cd framework/apps-examples/advanced-hybrid-crud-app
+npm install && npm run start:dev
+# Visit http://localhost:3000/api (REST) or http://localhost:3000/graphql
+```
 
 ### 🎯 REST API Example
 
 ```bash
-# Clone and run the REST API example
-git clone https://github.com/solid-nestjs/framework.git
+# Run the REST API example
 cd framework/apps-examples/simple-crud-app
 npm install && npm run start:dev
 # Visit http://localhost:3000/api for Swagger docs
