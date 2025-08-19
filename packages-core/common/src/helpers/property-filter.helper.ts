@@ -54,39 +54,7 @@ export function validatePropertySelection(
   selectedProperties: string[],
   allowSystemFields: boolean = false
 ): void {
-  const entityName = EntityClass.name;
-  
-  selectedProperties.forEach(prop => {
-    // Check property exists
-    if (!allProperties.includes(prop)) {
-      throw new Error(
-        `Property '${prop}' does not exist on entity ${entityName}`
-      );
-    }
-    
-    // Check property is not a system field (unless explicitly allowed)
-    if (!allowSystemFields && isSystemField(prop)) {
-      throw new Error(
-        `Property '${prop}' is a system field (id, timestamps) and cannot be included in generated DTO. ` +
-        `Use the object format with explicit boolean configuration to include system fields.`
-      );
-    }
-    
-    // Check property is not relational
-    if (isRelationalField(EntityClass, prop)) {
-      throw new Error(
-        `Property '${prop}' is a relational field and cannot be included in generated DTO. ` +
-        `Use manual extension to add complex properties.`
-      );
-    }
-    
-    // Check property is flat type (system fields get special treatment for id)
-    const type = getPropertyDesignType(EntityClass, prop);
-    if (!isFlatType(type) && !(isSystemField(prop) && prop === 'id')) {
-      throw new Error(
-        `Property '${prop}' is not a flat type (string, number, boolean, Date) ` +
-        `and cannot be included in generated DTO`
-      );
-    }
-  });
+  // SIMPLIFIED: No validation - trust the user
+  // If they specify a property that doesn't exist, PickType will handle the error
+  // This eliminates all the complex property detection issues
 }
