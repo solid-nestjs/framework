@@ -8,3 +8,4 @@ export * from './pipes';
 export * from './metadata';
 export * from './decorator-registry';
 export * from './adapters';
+export * from './registry';

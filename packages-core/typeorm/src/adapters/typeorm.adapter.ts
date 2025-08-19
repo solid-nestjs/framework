@@ -1,4 +1,4 @@
-import { DecoratorAdapter, FieldMetadata } from '@solid-nestjs/common';
+import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper } from '@solid-nestjs/common';
 
 // Dynamic imports to avoid dependency issues when TypeORM is not available
 let Entity: any;
@@ -16,6 +16,23 @@ let JoinColumn: any;
 let JoinTable: any;
 let Index: any;
 let Unique: any;
+
+// Relation adapter helper for TypeORM
+class TypeOrmRelationAdapterHelper implements RelationAdapterHelper {
+  getRelationAdapterOptions(type: string, targetFn: () => Function, inverseSide: any, options: any): any {
+    return {
+      relation: type,
+      target: targetFn,
+      inverseSide,
+      cascade: options.cascade,
+      eager: options.eager,
+      lazy: options.lazy,
+      onDelete: options.onDelete,
+      onUpdate: options.onUpdate,
+      orphanedRowAction: options.orphanedRowAction,
+    };
+  }
+}
 
 export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
   name = 'typeorm';
@@ -385,3 +402,6 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
            options.createdAt || options.updatedAt || options.deletedAt;
   }
 }
+
+// Register the TypeORM relation adapter
+RelationAdapterRegistry.registerAdapter('typeorm', new TypeOrmRelationAdapterHelper());

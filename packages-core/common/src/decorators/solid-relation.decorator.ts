@@ -1,5 +1,6 @@
 import { SolidFieldOptions } from '../interfaces';
 import { SolidField } from './solid-field.decorator';
+import { RelationAdapterRegistry } from '../registry';
 
 export type RelationType = 'one-to-many' | 'many-to-one' | 'one-to-one' | 'many-to-many';
 
@@ -29,36 +30,14 @@ export function SolidRelation(options: SolidRelationOptions): PropertyDecorator 
         inverseSide,
       adapters: {
         ...restOptions.adapters,
-        typeorm: {
-          relation: type,
-          target: targetFn,
-          inverseSide,
-          cascade: options.cascade,
-          eager: options.eager,
-          lazy: options.lazy,
-          onDelete: options.onDelete,
-          onUpdate: options.onUpdate,
-          orphanedRowAction: options.orphanedRowAction,
-          ...restOptions.adapters?.typeorm
-        },
-        graphql: {
-          type: type === 'one-to-many' || type === 'many-to-many' ? [targetFn] : targetFn,
-          nullable: type === 'one-to-many' || type === 'many-to-many' ? true : options.nullable,
-          ...restOptions.adapters?.graphql
-        },
-        swagger: {
-          type: () => {
-            const targetClass = targetFn();
-            // For array relations, return array type
-            if (type === 'one-to-many' || type === 'many-to-many') {
-              return [targetClass];
-            }
-            // For single relations, return single type
-            return targetClass;
-          },
-          description: options.description || `Related ${targetFn().name} entities`,
-          ...restOptions.adapters?.swagger
-        }
+        // Generate adapter options for all registered adapters
+        ...RelationAdapterRegistry.getRegisteredAdapters().reduce((acc, adapterName) => {
+          acc[adapterName] = {
+            ...RelationAdapterRegistry.getAdapterOptions(adapterName, type, targetFn, inverseSide, options),
+            ...restOptions.adapters?.[adapterName]
+          };
+          return acc;
+        }, {} as any)
       }
     };
     

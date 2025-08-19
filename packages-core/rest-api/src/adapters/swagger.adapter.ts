@@ -1,10 +1,28 @@
-import { DecoratorAdapter, FieldMetadata } from '@solid-nestjs/common';
+import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper } from '@solid-nestjs/common';
 
 // Dynamic imports to avoid dependency issues when Swagger is not available
 let ApiProperty: any;
 let ApiPropertyOptional: any;
 let ApiHideProperty: any;
 let ApiResponseProperty: any;
+
+// Relation adapter helper for Swagger
+class SwaggerRelationAdapterHelper implements RelationAdapterHelper {
+  getRelationAdapterOptions(type: string, targetFn: () => Function, inverseSide: any, options: any): any {
+    return {
+      type: () => {
+        const targetClass = targetFn();
+        // For array relations, return array type
+        if (type === 'one-to-many' || type === 'many-to-many') {
+          return [targetClass];
+        }
+        // For single relations, return single type
+        return targetClass;
+      },
+      description: options.description || `Related ${targetFn().name} entities`,
+    };
+  }
+}
 
 export class SwaggerDecoratorAdapter implements DecoratorAdapter {
   name = 'swagger';
@@ -230,3 +248,6 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     }
   }
 }
+
+// Register the Swagger relation adapter
+RelationAdapterRegistry.registerAdapter('swagger', new SwaggerRelationAdapterHelper());

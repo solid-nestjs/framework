@@ -1,4 +1,4 @@
-import { DecoratorAdapter, FieldMetadata } from '@solid-nestjs/common';
+import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper } from '@solid-nestjs/common';
 
 // Dynamic imports to avoid dependency issues when GraphQL is not available
 let Field: any;
@@ -10,6 +10,16 @@ let ID: any;
 let GraphQLISODateTime: any;
 let HideField: any;
 let registerEnumType: any;
+
+// Relation adapter helper for GraphQL
+class GraphQLRelationAdapterHelper implements RelationAdapterHelper {
+  getRelationAdapterOptions(type: string, targetFn: () => Function, inverseSide: any, options: any): any {
+    return {
+      type: type === 'one-to-many' || type === 'many-to-many' ? [targetFn] : targetFn,
+      nullable: type === 'one-to-many' || type === 'many-to-many' ? true : options.nullable,
+    };
+  }
+}
 
 export class GraphQLDecoratorAdapter implements DecoratorAdapter {
   name = 'graphql';
@@ -229,3 +239,6 @@ export class GraphQLDecoratorAdapter implements DecoratorAdapter {
     }
   }
 }
+
+// Register the GraphQL relation adapter
+RelationAdapterRegistry.registerAdapter('graphql', new GraphQLRelationAdapterHelper());
