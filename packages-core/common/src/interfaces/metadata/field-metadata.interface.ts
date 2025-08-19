@@ -21,6 +21,7 @@ export interface SolidEntityOptions {
   tableName?: string;
   schema?: string;
   skip?: string[];
+  adapters?: Record<string, any>;
 }
 
 export interface SolidInputOptions {

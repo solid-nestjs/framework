@@ -176,12 +176,16 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
     if (!PrimaryGeneratedColumn || !PrimaryColumn) return;
     
     const generated = options.generated ?? adapterOptions?.generated;
+    const isPrimaryColumn = adapterOptions?.primaryColumn;
     
-    if (generated) {
+    if (generated && !isPrimaryColumn) {
       const generationType = generated === true ? 'uuid' : generated;
       PrimaryGeneratedColumn(generationType, adapterOptions || {})(target, propertyKey);
     } else {
-      PrimaryColumn(adapterOptions || {})(target, propertyKey);
+      // Use PrimaryColumn for composite keys or when explicitly specified
+      const columnOptions = { ...adapterOptions };
+      delete columnOptions.primaryColumn; // Remove our custom flag
+      PrimaryColumn(columnOptions)(target, propertyKey);
     }
   }
   
@@ -246,7 +250,7 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
           )(target, propertyKey);
           
           if (options.joinColumn !== false && adapterOptions?.joinColumn !== false && JoinColumn) {
-            JoinColumn(adapterOptions?.joinColumnOptions || {})(target, propertyKey);
+            JoinColumn(adapterOptions?.joinColumn || adapterOptions?.joinColumnOptions || {})(target, propertyKey);
           }
         }
         break;
@@ -284,7 +288,7 @@ export class TypeOrmDecoratorAdapter implements DecoratorAdapter {
           )(target, propertyKey);
           
           if (options.joinColumn !== false && adapterOptions?.joinColumn !== false && JoinColumn) {
-            JoinColumn(adapterOptions?.joinColumnOptions || {})(target, propertyKey);
+            JoinColumn(adapterOptions?.joinColumn || adapterOptions?.joinColumnOptions || {})(target, propertyKey);
           }
         }
         break;
