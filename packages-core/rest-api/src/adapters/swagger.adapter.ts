@@ -1,28 +1,10 @@
-import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper } from '@solid-nestjs/common';
+import { DecoratorAdapter, FieldMetadata } from '@solid-nestjs/common';
 
 // Dynamic imports to avoid dependency issues when Swagger is not available
 let ApiProperty: any;
 let ApiPropertyOptional: any;
 let ApiHideProperty: any;
-let ApiResponseProperty: any;
-
-// Relation adapter helper for Swagger
-class SwaggerRelationAdapterHelper implements RelationAdapterHelper {
-  getRelationAdapterOptions(type: string, targetFn: () => Function, inverseSide: any, options: any): any {
-    return {
-      type: () => {
-        const targetClass = targetFn();
-        // For array relations, return array type
-        if (type === 'one-to-many' || type === 'many-to-many') {
-          return [targetClass];
-        }
-        // For single relations, return single type
-        return targetClass;
-      },
-      description: options.description || `Related ${targetFn().name} entities`,
-    };
-  }
-}
+let ApiExtraModels: any;
 
 export class SwaggerDecoratorAdapter implements DecoratorAdapter {
   name = 'swagger';
@@ -37,241 +19,160 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     }
   }
   
-  private async loadSwagger(): Promise<void> {
+  private loadSwagger(): void {
     if (this.swaggerLoaded) return;
     
     try {
-      const swagger = await import('@nestjs/swagger');
+      const swagger = require('@nestjs/swagger');
       
-      // Assign decorators
       ApiProperty = swagger.ApiProperty;
       ApiPropertyOptional = swagger.ApiPropertyOptional;
       ApiHideProperty = swagger.ApiHideProperty;
-      ApiResponseProperty = swagger.ApiResponseProperty;
+      ApiExtraModels = swagger.ApiExtraModels;
       
       this.swaggerLoaded = true;
     } catch (error) {
       console.warn('[SolidNestJS] Failed to load Swagger decorators:', error);
     }
   }
-
-  private loadSwaggerSync(): void {
-    if (this.swaggerLoaded) return;
-    
-    try {
-      const swagger = require('@nestjs/swagger');
-      
-      // Assign decorators
-      ApiProperty = swagger.ApiProperty;
-      ApiPropertyOptional = swagger.ApiPropertyOptional;
-      ApiHideProperty = swagger.ApiHideProperty;
-      ApiResponseProperty = swagger.ApiResponseProperty;
-      
-      this.swaggerLoaded = true;
-    } catch (error) {
-      console.warn('[SolidNestJS] Failed to load Swagger decorators synchronously:', error);
-    }
-  }
   
   apply(target: any, propertyKey: string | symbol, metadata: FieldMetadata): void {
-    // Load Swagger if not already loaded synchronously
     if (!this.swaggerLoaded) {
-      this.loadSwaggerSync();
+      this.loadSwagger();
       if (!this.swaggerLoaded) return;
     }
     
-    const { type, options, isOptional, adapterOptions } = metadata;
+    const { type, options, isOptional } = metadata;
     
     // Skip hidden fields
-    if (options.hidden || adapterOptions?.hidden) {
+    if (options.hidden) {
       if (ApiHideProperty) {
         ApiHideProperty()(target, propertyKey);
       }
       return;
     }
     
-    // Build API property options
-    const apiPropertyOptions: any = this.buildApiPropertyOptions(
-      type, options, isOptional, adapterOptions
-    );
+    // Build Swagger property options
+    const swaggerOptions = this.buildSwaggerOptions(type, options);
     
     // Apply appropriate decorator
-    if (options.nullable ?? isOptional) {
-      if (ApiPropertyOptional) {
-        ApiPropertyOptional(apiPropertyOptions)(target, propertyKey);
-      }
-    } else {
-      if (ApiProperty) {
-        ApiProperty(apiPropertyOptions)(target, propertyKey);
-      }
-    }
-    
-    // Apply response property if specified
-    if ((options.responseOnly || adapterOptions?.responseOnly) && ApiResponseProperty) {
-      ApiResponseProperty(apiPropertyOptions)(target, propertyKey);
+    const decorator = (options.nullable ?? isOptional) ? ApiPropertyOptional : ApiProperty;
+    if (decorator) {
+      decorator(swaggerOptions)(target, propertyKey);
     }
   }
   
   applyClassDecorator(target: Function, type: 'entity' | 'input', options: any): void {
-    // Swagger class decorators are typically handled at controller level
-    // This adapter focuses on property decorators
+    // No class decorators needed for this adapter
+    // Schema registration is handled at the controller level
   }
   
-  private buildApiPropertyOptions(
-    type: any,
-    options: any,
-    isOptional: boolean,
-    adapterOptions: any
-  ): any {
-    const apiOptions: any = {
-      type: this.mapTypeToSwaggerType(type, options, adapterOptions),
+  private buildSwaggerOptions(type: any, options: any): any {
+    const swaggerOptions: any = {
       description: options.description,
-      required: !(options.nullable ?? isOptional),
       example: options.example,
-      deprecated: options.deprecated,
       default: options.defaultValue,
+      deprecated: options.deprecated,
       minimum: options.min,
       maximum: options.max,
       minLength: options.minLength,
       maxLength: options.maxLength,
       pattern: options.pattern?.source,
       readOnly: options.readOnly,
-      writeOnly: options.writeOnly,
-      ...adapterOptions // Allow full override
+      writeOnly: options.writeOnly
     };
     
-    // Handle special types
-    this.enhanceForSpecialTypes(apiOptions, type, options, adapterOptions);
-    
-    // Remove undefined values
-    Object.keys(apiOptions).forEach(key => {
-      if (apiOptions[key] === undefined) {
-        delete apiOptions[key];
-      }
-    });
-    
-    return apiOptions;
-  }
-  
-  private mapTypeToSwaggerType(type: any, options: any, adapterOptions?: any): any {
-    // Check for explicit type override from adapter options
-    if (adapterOptions?.type) {
-      const explicitType = typeof adapterOptions.type === 'function' ? 
-        adapterOptions.type() : adapterOptions.type;
+    // Handle type mapping
+    if (options.array) {
+      swaggerOptions.isArray = true;
       
-      // Handle array types like [CreateInvoiceDetailDto]
-      if (Array.isArray(explicitType) && explicitType.length > 0) {
-        return [explicitType[0]];
-      }
-      
-      return explicitType;
-    }
-    
-    // Handle arrays - check explicit array option first
-    if (options.array || Array.isArray(type)) {
+      // Get array item type
       let itemType = options.arrayType;
-      
-      // If explicit arrayType is a function, call it
       if (typeof itemType === 'function') {
         itemType = itemType();
       }
       
-      // Fallback to other sources if no explicit arrayType
-      if (!itemType) {
-        itemType = type[0] || String;
+      if (itemType) {
+        // For custom classes, use the class directly
+        if (typeof itemType === 'function' && itemType.prototype) {
+          swaggerOptions.type = itemType;
+        } else {
+          // For primitives, map them
+          swaggerOptions.type = this.mapPrimitiveType(itemType);
+        }
+      } else {
+        swaggerOptions.type = this.mapPrimitiveType(type);
       }
       
-      return [this.mapTypeToSwaggerType(itemType, {}, {})];
+      // Array-specific options
+      if (options.minSize !== undefined) swaggerOptions.minItems = options.minSize;
+      if (options.maxSize !== undefined) swaggerOptions.maxItems = options.maxSize;
+      if (options.uniqueItems) swaggerOptions.uniqueItems = true;
+      
+    } else {
+      // Single value type
+      swaggerOptions.type = this.mapPrimitiveType(type);
     }
     
     // Handle enums
     if (options.enum) {
-      return options.enum;
+      swaggerOptions.enum = options.enum;
+      if (options.enumName) {
+        swaggerOptions.enumName = options.enumName;
+      }
     }
     
-    // Map primitive types
+    // Handle special string formats
+    if (type === String) {
+      if (options.email) swaggerOptions.format = 'email';
+      if (options.url) swaggerOptions.format = 'url';
+      if (options.uuid) swaggerOptions.format = 'uuid';
+      if (options.password) swaggerOptions.format = 'password';
+    }
+    
+    // Handle date format
+    if (type === Date) {
+      swaggerOptions.format = 'date-time';
+    }
+    
+    // Handle number formats
+    if (type === Number) {
+      if (options.integer) {
+        swaggerOptions.type = 'integer';
+      }
+      if (options.float || options.precision) {
+        swaggerOptions.format = 'float';
+      }
+      if (options.double) {
+        swaggerOptions.format = 'double';
+      }
+    }
+    
+    // Remove undefined values
+    Object.keys(swaggerOptions).forEach(key => {
+      if (swaggerOptions[key] === undefined) {
+        delete swaggerOptions[key];
+      }
+    });
+    
+    return swaggerOptions;
+  }
+  
+  private mapPrimitiveType(type: any): any {
+    // For custom classes, return the class directly
+    if (typeof type === 'function' && type.prototype && type.name) {
+      return type;
+    }
+    
+    // Map primitive types to Swagger types
     const typeMap = new Map<any, string>([
       [String, 'string'],
       [Number, 'number'],
       [Boolean, 'boolean'],
-      [Date, 'string'], // With format: date-time
-      [Object, 'object'],
+      [Date, 'string'],
+      [Object, 'object']
     ]);
     
-    // Return mapped type or the type itself for custom classes
     return typeMap.get(type) || type;
   }
-  
-  private enhanceForSpecialTypes(
-    apiOptions: any,
-    type: any,
-    options: any,
-    adapterOptions: any
-  ): void {
-    // Date formatting
-    if (type === Date) {
-      apiOptions.format = adapterOptions?.format || 'date-time';
-    }
-    
-    // Number formatting
-    if (type === Number) {
-      if (options.integer || adapterOptions?.integer) {
-        apiOptions.type = 'integer';
-      }
-      if (options.float || options.precision) {
-        apiOptions.format = 'float';
-      }
-      if (options.double || adapterOptions?.double) {
-        apiOptions.format = 'double';
-      }
-    }
-    
-    // String formatting
-    if (type === String) {
-      if (options.email) apiOptions.format = 'email';
-      if (options.url) apiOptions.format = 'url';
-      if (options.uuid) apiOptions.format = 'uuid';
-      if (options.binary || adapterOptions?.binary) apiOptions.format = 'binary';
-      if (options.password || adapterOptions?.password) apiOptions.format = 'password';
-    }
-    
-    // Enum handling
-    if (options.enum || adapterOptions?.enum) {
-      apiOptions.enum = options.enum || adapterOptions.enum;
-      if (options.enumName || adapterOptions?.enumName) {
-        apiOptions.enumName = options.enumName || adapterOptions.enumName;
-      }
-    }
-    
-    // Array handling
-    if (Array.isArray(type) || options.array || adapterOptions?.array) {
-      apiOptions.isArray = true;
-      if (options.minSize !== undefined) apiOptions.minItems = options.minSize;
-      if (options.maxSize !== undefined) apiOptions.maxItems = options.maxSize;
-      if (options.uniqueItems || adapterOptions?.uniqueItems) {
-        apiOptions.uniqueItems = true;
-      }
-    }
-    
-    // File upload handling
-    if (options.file || adapterOptions?.file) {
-      apiOptions.type = 'string';
-      apiOptions.format = 'binary';
-    }
-    
-    // Primary key handling
-    if (options.isPrimaryKey) {
-      apiOptions.description = apiOptions.description || 'Unique identifier';
-      apiOptions.readOnly = true;
-    }
-    
-    // Timestamp handling
-    if (options.createdAt || options.updatedAt || options.deletedAt) {
-      apiOptions.format = 'date-time';
-      apiOptions.readOnly = true;
-    }
-  }
 }
-
-// Register the Swagger relation adapter
-RelationAdapterRegistry.registerAdapter('swagger', new SwaggerRelationAdapterHelper());
