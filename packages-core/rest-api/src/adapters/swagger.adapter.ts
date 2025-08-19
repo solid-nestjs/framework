@@ -1,10 +1,28 @@
-import { DecoratorAdapter, FieldMetadata } from '@solid-nestjs/common';
+import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper } from '@solid-nestjs/common';
 
 // Dynamic imports to avoid dependency issues when Swagger is not available
 let ApiProperty: any;
 let ApiPropertyOptional: any;
 let ApiHideProperty: any;
 let ApiExtraModels: any;
+
+// Relation adapter helper for Swagger
+class SwaggerRelationAdapterHelper implements RelationAdapterHelper {
+  getRelationAdapterOptions(type: string, targetFn: () => Function, inverseSide: any, options: any): any {
+    return {
+      type: () => {
+        const targetClass = targetFn();
+        // For array relations, return array type
+        if (type === 'one-to-many' || type === 'many-to-many') {
+          return [targetClass];
+        }
+        // For single relations, return single type
+        return targetClass;
+      },
+      description: options.description || `Related ${targetFn().name} entities`,
+    };
+  }
+}
 
 export class SwaggerDecoratorAdapter implements DecoratorAdapter {
   name = 'swagger';
@@ -83,8 +101,8 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     };
     
     // Handle type mapping
-    if (options.array) {
-      swaggerOptions.isArray = true;
+    if (options.array || Array.isArray(type)) {
+      swaggerOptions.type = 'array';
       
       // Get array item type
       let itemType = options.arrayType;
@@ -92,16 +110,22 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
         itemType = itemType();
       }
       
+      // If no explicit arrayType, try to get from type array
+      if (!itemType && Array.isArray(type) && type.length > 0) {
+        itemType = type[0];
+      }
+      
       if (itemType) {
-        // For custom classes, use the class directly
+        // For custom classes, create reference
         if (typeof itemType === 'function' && itemType.prototype) {
-          swaggerOptions.type = itemType;
+          swaggerOptions.items = { $ref: `#/components/schemas/${itemType.name}` };
         } else {
           // For primitives, map them
-          swaggerOptions.type = this.mapPrimitiveType(itemType);
+          swaggerOptions.items = { type: this.mapPrimitiveType(itemType) };
         }
       } else {
-        swaggerOptions.type = this.mapPrimitiveType(type);
+        // Fallback
+        swaggerOptions.items = { type: 'object' };
       }
       
       // Array-specific options
@@ -176,3 +200,6 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     return typeMap.get(type) || type;
   }
 }
+
+// Register the Swagger relation adapter
+RelationAdapterRegistry.registerAdapter('swagger', new SwaggerRelationAdapterHelper());
