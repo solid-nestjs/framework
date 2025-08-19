@@ -1,108 +1,106 @@
-import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  IsUUID,
-  Min,
-  ValidateNested,
-  IsOptional,
-  IsArray,
-} from 'class-validator';
+import { SolidInput, SolidField } from '@solid-nestjs/common';
+import { Float, Int, ID } from '@nestjs/graphql';
 import { IsFlexibleUUID } from '../../../common/validators/is-flexible-uuid.validator';
 
-@InputType()
+@SolidInput()
 export class UpdateInvoiceClientDto {
-  @ApiProperty({ description: 'client id' })
-  @Field(() => ID)
-  @IsString()
-  @IsFlexibleUUID()
+  @SolidField({
+    description: 'client id',
+    adapters: {
+      graphql: {
+        type: () => ID,
+      },
+      validation: {
+        validators: [IsFlexibleUUID],
+      },
+    },
+  })
   id: string;
 }
 
-@InputType()
+@SolidInput()
 export class UpdateInvoiceDetailDto {
-  @ApiProperty({
-    description: 'detail id for updating existing detail',
-    required: false,
-  })
-  @Field(() => ID, {
+  @SolidField({
     description: 'detail id for updating existing detail',
     nullable: true,
+    adapters: {
+      graphql: {
+        type: () => ID,
+      },
+    },
   })
-  @IsOptional()
-  @IsNumber()
   id?: number;
 
-  @ApiProperty({ description: 'product id' })
-  @Field(() => ID, { description: 'product id' })
-  @IsNotEmpty()
-  @IsString()
-  @IsFlexibleUUID()
+  @SolidField({
+    description: 'product id',
+    adapters: {
+      graphql: {
+        type: () => ID,
+      },
+      validation: {
+        validators: [IsFlexibleUUID],
+      },
+    },
+  })
   productId: string;
 
-  @ApiProperty({ description: 'The quantity of the product' })
-  @Field(() => Int, { description: 'The quantity of the product' })
-  @IsNumber()
-  @Min(1)
+  @SolidField({
+    description: 'The quantity of the product',
+    min: 1,
+    adapters: {
+      graphql: {
+        type: () => Int,
+      },
+    },
+  })
   quantity: number;
 
-  @ApiProperty({ description: 'The unit price of the product' })
-  @Field(() => Float, { description: 'The unit price of the product' })
-  @IsNumber()
-  @Min(0)
+  @SolidField({
+    description: 'The unit price of the product',
+    min: 0,
+    adapters: {
+      graphql: {
+        type: () => Float,
+      },
+    },
+  })
   unitPrice: number;
 }
 
-@InputType()
+@SolidInput()
 export class UpdateInvoiceDto {
-  @ApiProperty({ description: 'The invoice number', required: false })
-  @Field({ description: 'The invoice number', nullable: true })
-  @IsOptional()
-  @IsString()
+  @SolidField({
+    description: 'The invoice number',
+    nullable: true,
+  })
   invoiceNumber?: string;
 
-  @ApiProperty({
-    description: 'The status of the invoice',
-    enum: ['pending', 'paid', 'cancelled'],
-    required: false,
-  })
-  @Field({
+  @SolidField({
     description: 'The status of the invoice',
     nullable: true,
+    enum: ['pending', 'paid', 'cancelled'],
+    adapters: {
+      graphql: {
+        defaultValue: 'pending',
+      },
+      swagger: {
+        default: 'pending',
+      },
+    },
   })
-  @IsOptional()
-  @IsString()
   status?: string;
 
-  @ApiProperty({
+  @SolidField({
     description: 'Invoice details/line items',
-    type: () => [UpdateInvoiceDetailDto],
-    required: false,
-  })
-  @Field(() => [UpdateInvoiceDetailDto], {
-    description: 'Invoice details/line items',
+    array: true,
+    arrayType: () => UpdateInvoiceDetailDto,
     nullable: true,
   })
-  @IsOptional()
-  @Type(() => UpdateInvoiceDetailDto)
-  @ValidateNested({ each: true })
-  @IsArray()
   details?: UpdateInvoiceDetailDto[];
 
-  @ApiProperty({
-    description: 'Invoice client',
-    type: () => UpdateInvoiceClientDto,
-    required: false,
-  })
-  @Field(() => UpdateInvoiceClientDto, {
+  @SolidField({
     description: 'Invoice client',
     nullable: true,
   })
-  @IsOptional()
-  @Type(() => UpdateInvoiceClientDto)
-  @ValidateNested()
   client?: UpdateInvoiceClientDto;
 }
