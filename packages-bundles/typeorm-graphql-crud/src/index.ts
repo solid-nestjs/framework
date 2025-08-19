@@ -23,6 +23,9 @@ export {
   createGroupByFields,
 } from '@solid-nestjs/graphql';
 
+//DTO Generation
+export { GenerateDtoFromEntity } from '@solid-nestjs/graphql';
+
 //Crud Resolver
 export {
   DataResolverFrom,
