@@ -124,7 +124,7 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     adapterOptions: any
   ): any {
     const apiOptions: any = {
-      type: this.mapTypeToSwaggerType(type, options),
+      type: this.mapTypeToSwaggerType(type, options, adapterOptions),
       description: options.description,
       required: !(options.nullable ?? isOptional),
       example: options.example,
@@ -153,11 +153,24 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     return apiOptions;
   }
   
-  private mapTypeToSwaggerType(type: any, options: any): any {
+  private mapTypeToSwaggerType(type: any, options: any, adapterOptions?: any): any {
+    // Check for explicit type override from adapter options
+    if (adapterOptions?.type) {
+      const explicitType = typeof adapterOptions.type === 'function' ? 
+        adapterOptions.type() : adapterOptions.type;
+      
+      // Handle array types like [CreateInvoiceDetailDto]
+      if (Array.isArray(explicitType) && explicitType.length > 0) {
+        return [explicitType[0]];
+      }
+      
+      return explicitType;
+    }
+    
     // Handle arrays
     if (Array.isArray(type) || options.array) {
       const itemType = options.arrayType || type[0] || String;
-      return [this.mapTypeToSwaggerType(itemType, {})];
+      return [this.mapTypeToSwaggerType(itemType, {}, {})];
     }
     
     // Handle enums

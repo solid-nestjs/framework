@@ -1,4 +1,4 @@
-import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper } from '@solid-nestjs/common';
+import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper, detectArrayInfo } from '@solid-nestjs/common';
 
 // Dynamic imports to avoid dependency issues when GraphQL is not available
 let Field: any;
@@ -144,7 +144,7 @@ export class GraphQLDecoratorAdapter implements DecoratorAdapter {
     });
     
     // Determine GraphQL type
-    const graphqlType = this.mapTypeToGraphQLType(type, options, adapterOptions);
+    const graphqlType = this.mapTypeToGraphQLType(target, propertyKey, type, options, adapterOptions);
     
     // Apply Field decorator directly
     if (graphqlType) {
@@ -154,7 +154,7 @@ export class GraphQLDecoratorAdapter implements DecoratorAdapter {
     }
   }
   
-  private mapTypeToGraphQLType(type: any, options: any, adapterOptions: any): any {
+  private mapTypeToGraphQLType(target: any, propertyKey: string | symbol, type: any, options: any, adapterOptions: any): any {
     // Allow explicit type override
     if (adapterOptions?.type) {
       if (adapterOptions.type === 'ID') return ID;
@@ -197,9 +197,10 @@ export class GraphQLDecoratorAdapter implements DecoratorAdapter {
       return Int; // Default to Int for numbers
     }
     
-    // Handle arrays
-    if (Array.isArray(type) || options.array) {
-      const itemType = options.arrayType || type[0] || String;
+    // Handle arrays - check both explicit and inferred arrays
+    const arrayInfo = detectArrayInfo(target, propertyKey);
+    if (Array.isArray(type) || options.array || arrayInfo.isArray) {
+      const itemType = options.arrayType || type[0] || arrayInfo.elementType || String;
       const mappedItemType = this.mapSingleType(itemType);
       return mappedItemType ? [mappedItemType] : [String];
     }

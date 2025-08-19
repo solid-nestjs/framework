@@ -1,72 +1,57 @@
-import {
-  IsArray,
-  IsEmail,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  IsString,
-  Min,
-  ValidateNested,
-} from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { Field, Float, InputType, Int } from '@nestjs/graphql';
-import { Type } from 'class-transformer';
+import { SolidInput, SolidField } from '@solid-nestjs/common';
+import { Float, Int } from '@nestjs/graphql';
 
-@InputType()
-export class CreateSupplierDto {
-  @ApiProperty({ description: 'The name of the supplier' })
-  @Field({ description: 'The name of the supplier' })
-  @IsNotEmpty()
-  @IsString()
-  name: string;
-
-  @ApiProperty({ description: 'The email of the supplier' })
-  @Field({ description: 'The email of the supplier' })
-  @IsNotEmpty()
-  @IsString()
-  @IsEmail()
-  contactEmail: string;
-
-  @ApiProperty({
-    description: 'Supplier`s products',
-    type: () => [SupplierProductDto],
-    required: false,
-  })
-  @Field(() => [SupplierProductDto], {
-    description: 'Supplier`s products',
-    nullable: true,
-  })
-  @Type(() => SupplierProductDto)
-  @IsArray()
-  @IsOptional()
-  @ValidateNested()
-  products?: SupplierProductDto[];
-}
-
-@InputType()
+@SolidInput()
 export class SupplierProductDto {
-  @ApiProperty({ description: 'The name of the product' })
-  @Field({ description: 'The name of the product' })
-  @IsNotEmpty()
-  @IsString()
+  @SolidField({
+    description: 'The name of the product',
+  })
   name: string;
 
-  @ApiProperty({ description: 'The description of the product' })
-  @Field({ description: 'The description of the product' })
-  @IsNotEmpty()
-  @IsString()
+  @SolidField({
+    description: 'The description of the product',
+  })
   description: string;
 
-  @ApiProperty({ description: 'The price of the product' })
-  @Field(() => Float, { description: 'The price of the product' })
-  @IsNumber()
-  @IsPositive()
+  @SolidField({
+    description: 'The price of the product',
+    positive: true,
+    adapters: {
+      graphql: {
+        type: () => Float,
+      },
+    },
+  })
   price: number;
 
-  @ApiProperty({ description: 'The stock quantity of the product' })
-  @Field(() => Int, { description: 'The stock quantity of the product' })
-  @IsNumber()
-  @Min(0)
+  @SolidField({
+    description: 'The stock quantity of the product',
+    min: 0,
+    adapters: {
+      graphql: {
+        type: () => Int,
+      },
+    },
+  })
   stock: number;
+}
+
+@SolidInput()
+export class CreateSupplierDto {
+  @SolidField({
+    description: 'The name of the supplier',
+  })
+  name: string;
+
+  @SolidField({
+    description: 'The email of the supplier',
+    email: true,
+  })
+  contactEmail: string;
+
+  @SolidField({
+    description: 'Supplier`s products',
+    nullable: true
+  })
+  products?: SupplierProductDto[];
 }

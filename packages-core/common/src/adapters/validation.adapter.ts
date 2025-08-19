@@ -3,6 +3,7 @@ import {
   isClassValidatorAvailable, 
   isClassTransformerAvailable 
 } from '../helpers/package-detector.helper';
+import { detectArrayInfo } from '../helpers/type-inference.helper';
 
 // Dynamic imports to avoid dependency issues
 let IsString: any;
@@ -16,6 +17,7 @@ let IsJSON: any;
 let IsOptional: any;
 let IsNotEmpty: any;
 let IsEnum: any;
+let IsIn: any;
 let IsArray: any;
 let IsObject: any;
 let IsInt: any;
@@ -43,12 +45,12 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
     return isClassValidatorAvailable() && isClassTransformerAvailable();
   }
   
-  private async loadValidators(): Promise<void> {
+  private loadValidatorsSync(): void {
     if (this.validatorsLoaded) return;
     
     try {
-      const classValidator = await import('class-validator');
-      const classTransformer = await import('class-transformer');
+      const classValidator = require('class-validator');
+      const classTransformer = require('class-transformer');
       
       // Assign validators
       IsString = classValidator.IsString;
@@ -62,6 +64,7 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
       IsOptional = classValidator.IsOptional;
       IsNotEmpty = classValidator.IsNotEmpty;
       IsEnum = classValidator.IsEnum;
+      IsIn = classValidator.IsIn;
       IsArray = classValidator.IsArray;
       IsObject = classValidator.IsObject;
       IsInt = classValidator.IsInt;
@@ -89,7 +92,7 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
   apply(target: any, propertyKey: string | symbol, metadata: FieldMetadata): void {
     // Load validators if not already loaded
     if (!this.validatorsLoaded) {
-      this.loadValidators();
+      this.loadValidatorsSync();
       if (!this.validatorsLoaded) return;
     }
     
@@ -100,6 +103,11 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
     this.markAsApplied(target, propertyKey);
     
     const { type, options, isOptional, adapterOptions } = metadata;
+    
+    // Debug logging (disabled)
+    // if (process.env.NODE_ENV !== 'production') {
+    //   console.log(`[ValidationAdapter] Applying to ${target.constructor.name}.${String(propertyKey)}: type=${type?.name}, optional=${isOptional}, nullable=${options.nullable}`);
+    // }
     
     // Skip if validation explicitly disabled
     if (options.skipValidation || adapterOptions?.skip) {
@@ -114,6 +122,9 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
     
     // Apply type-specific validators
     this.applyTypeValidators(target, propertyKey, type, options, adapterOptions);
+    
+    // Apply array-specific validators if detected
+    this.applyArrayValidators(target, propertyKey, type, options, adapterOptions);
     
     // Apply constraint validators
     this.applyConstraintValidators(target, propertyKey, type, options, adapterOptions);
@@ -136,9 +147,13 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
       return;
     }
     
-    // Apply Type decorator for nested objects
-    if (type && !this.isPrimitiveType(type)) {
-      Type(() => type)(target, propertyKey);
+    // Apply Type decorator for nested objects only when safe
+    if (type && typeof type === 'function' && !this.isPrimitiveType(type)) {
+      try {
+        Type(() => type)(target, propertyKey);
+      } catch (error) {
+        console.warn(`[SolidNestJS] Failed to apply Type decorator for ${String(propertyKey)}:`, error);
+      }
     }
     
     // Apply custom transformers
@@ -226,10 +241,17 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
       }
     }
     
-    // Enum validators
-    else if ((options.enum || adapterOptions?.enum) && IsEnum) {
+    // Enum validators - use IsIn for arrays, IsEnum for actual enum types
+    else if (options.enum || adapterOptions?.enum) {
       const enumType = options.enum || adapterOptions.enum;
-      IsEnum(enumType)(target, propertyKey);
+      
+      if (Array.isArray(enumType) && IsIn) {
+        // For array of values like ['pending', 'paid', 'cancelled']
+        IsIn(enumType)(target, propertyKey);
+      } else if (IsEnum && typeof enumType === 'object') {
+        // For actual TypeScript enums
+        IsEnum(enumType)(target, propertyKey);
+      }
     }
     
     // Object validators
@@ -292,9 +314,42 @@ export class ValidationDecoratorAdapter implements DecoratorAdapter {
     if (adapterOptions?.validators && Array.isArray(adapterOptions.validators)) {
       adapterOptions.validators.forEach((validator: any) => {
         if (typeof validator === 'function') {
+          // Apply validator directly as a decorator function
           validator(target, propertyKey);
         }
       });
+    }
+  }
+  
+  private applyArrayValidators(
+    target: any,
+    propertyKey: string | symbol,
+    type: any,
+    options: any,
+    adapterOptions: any
+  ): void {
+    // Check if this is an array type
+    const arrayInfo = detectArrayInfo(target, propertyKey);
+    
+    if (arrayInfo.isArray && IsArray) {
+      IsArray()(target, propertyKey);
+      
+      // Apply ValidateNested for object arrays
+      if (ValidateNested) {
+        ValidateNested({ each: true })(target, propertyKey);
+      }
+      
+      // Apply Type decorator for array element transformation
+      if (Type && adapterOptions?.isArray) {
+        // Try to get the array element type from GraphQL configuration
+        if (adapterOptions.arrayType && typeof adapterOptions.arrayType === 'function') {
+          try {
+            Type(adapterOptions.arrayType)(target, propertyKey);
+          } catch (error) {
+            console.warn(`[SolidNestJS] Failed to apply array Type decorator for ${String(propertyKey)}:`, error);
+          }
+        }
+      }
     }
   }
   

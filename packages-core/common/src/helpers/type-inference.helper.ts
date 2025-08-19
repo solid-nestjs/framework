@@ -40,20 +40,10 @@ export function isOptionalProperty(
   target: any,
   propertyKey: string | symbol
 ): boolean {
-  // Check if the property descriptor exists and has a getter/setter
-  const descriptor = Object.getOwnPropertyDescriptor(target, propertyKey);
-  if (descriptor) {
-    // For getters/setters, check if they're marked as optional
-    return false; // TODO: Implement better optional detection
-  }
-
-  // For regular properties, check if they're in the class prototype
-  const prototype = target.constructor?.prototype || target;
-  const hasProperty = propertyKey in prototype;
-  
-  // If property is not in prototype, it might be optional
-  // This is a heuristic approach since TypeScript optional info is lost at runtime
-  return !hasProperty;
+  // TypeScript optional information is lost at runtime, so we can't reliably detect it
+  // The SolidField decorator should use explicit options instead
+  // Return false by default - let the decorator options determine optionality
+  return false;
 }
 
 /**
@@ -217,4 +207,32 @@ export function extractGenericTypes(target: any, propertyKey: string | symbol): 
   }
   
   return [];
+}
+
+/**
+ * Enhanced type detection that checks for array properties and their element types
+ */
+export function detectArrayInfo(target: any, propertyKey: string | symbol): {
+  isArray: boolean;
+  elementType?: any;
+} {
+  const designType = Reflect.getMetadata('design:type', target, propertyKey);
+  
+  // Check if the property type is Array
+  if (designType === Array) {
+    // Try to get the actual property descriptor to analyze the type annotation
+    const descriptor = Object.getOwnPropertyDescriptor(target, propertyKey);
+    
+    // For TypeScript arrays like SupplierProductDto[], the runtime type is just Array
+    // We need to rely on conventions or explicit type information
+    return {
+      isArray: true,
+      elementType: undefined // Will need to be provided explicitly or through other means
+    };
+  }
+  
+  return {
+    isArray: false,
+    elementType: undefined
+  };
 }
