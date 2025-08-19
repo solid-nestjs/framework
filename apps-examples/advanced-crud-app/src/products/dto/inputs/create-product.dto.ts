@@ -1,43 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  IsUUID,
-  Min,
-  ValidateNested,
-} from 'class-validator';
+import { IsNotEmpty, IsUUID, ValidateNested } from 'class-validator';
+import { GenerateDtoFromEntity } from '@solid-nestjs/typeorm-crud';
+import { Product } from '../../entities/product.entity';
+import { Supplier } from '../../../suppliers/entities/supplier.entity';
 
-export class ProductSupplierDto {
-  @ApiProperty({ description: 'supplier id' })
-  @IsNotEmpty()
-  @IsString()
-  @IsUUID()
-  id: string;
-}
+// Generate DTO from Supplier entity, selecting only the 'id' property
+export class ProductSupplierDto extends GenerateDtoFromEntity(Supplier, [
+  'id',
+]) {}
 
-export class CreateProductDto {
-  @ApiProperty({ description: 'The name of the product' })
-  @IsNotEmpty()
-  @IsString()
-  name: string;
+// Generate DTO from Product entity, selecting the basic properties we need for creation
+export class CreateProductDto extends GenerateDtoFromEntity(Product, [
+  'name',
+  'description',
+  'price',
+  'stock',
+]) {
+  // All selected properties (name, description, price, stock) are automatically included
+  // from the Product entity with their original Swagger decorators
 
-  @ApiProperty({ description: 'The description of the product' })
-  @IsNotEmpty()
-  @IsString()
-  description: string;
-
-  @ApiProperty({ description: 'The price of the product' })
-  @IsNumber()
-  @Min(0)
-  price: number;
-
-  @ApiProperty({ description: 'The stock quantity of the product' })
-  @IsNumber()
-  @Min(0)
-  stock: number;
-
+  // Add the custom supplier relation field
   @ApiProperty({
     description: 'product Supplier',
     type: () => ProductSupplierDto,
