@@ -1,14 +1,20 @@
-import { Entity, Column, ManyToOne, JoinColumn, PrimaryColumn } from 'typeorm';
-import { ObjectType, Field, Float, Int } from '@nestjs/graphql';
+import {
+  SolidEntity,
+  SolidField,
+  SolidManyToOne,
+  SolidId,
+} from '@solid-nestjs/common';
 import { Supplier } from '../../suppliers/entities/supplier.entity';
 import { ProductId } from './product.key';
 import { AutoIncrement } from '@solid-nestjs/typeorm-graphql-crud';
 
-@ObjectType()
-@Entity()
+@SolidEntity()
 @AutoIncrement<ProductId>('code')
 export class Product {
-  @Field(() => ProductId, { description: 'The id of the product' })
+  @SolidField({
+    description: 'The id of the product',
+    skip: ['typeorm'], // Skip TypeORM adapter for computed getter
+  })
   get id(): ProductId {
     return { type: this.type, code: this.code };
   }
@@ -17,42 +23,81 @@ export class Product {
     this.code = value.code;
   }
 
-  @PrimaryColumn()
+  @SolidId({
+    description: 'The type component of the composite primary key',
+  })
   type: string;
 
-  @PrimaryColumn()
+  @SolidId({
+    description: 'The code component of the composite primary key',
+  })
   code: number;
 
-  @Field({ description: 'The name of the product' })
-  @Column()
+  @SolidField({
+    description: 'The name of the product',
+  })
   name: string;
 
-  @Field({ description: 'The description of the product' })
-  @Column()
+  @SolidField({
+    description: 'The description of the product',
+  })
   description: string;
 
-  @Field(() => Float, { description: 'The price of the product' })
-  @Column('decimal', { precision: 10, scale: 2 })
+  @SolidField({
+    description: 'The price of the product',
+    float: true,
+    precision: 10,
+    scale: 2,
+    adapters: {
+      typeorm: {
+        columnType: 'decimal',
+        transformer: {
+          to: (value: number) => value,
+          from: (value: string) => parseFloat(value),
+        },
+      },
+      graphql: {
+        type: 'Float',
+      },
+    },
+  })
   price: number;
 
-  @Field(() => Int, { description: 'The stock quantity of the product' })
-  @Column()
+  @SolidField({
+    description: 'The stock quantity of the product',
+    adapters: {
+      graphql: {
+        type: 'Int',
+      },
+    },
+  })
   stock: number;
 
   // Foreign key columns for the composite primary key relationship
-  @Column({ nullable: true })
+  @SolidField({
+    description: 'Supplier type foreign key component',
+    nullable: true,
+  })
   supplier_id_type: string;
 
-  @Column({ nullable: true })
+  @SolidField({
+    description: 'Supplier code foreign key component',
+    nullable: true,
+  })
   supplier_id_code: number;
 
-  @Field(() => Supplier, { description: 'Product Supplier', nullable: true })
-  @JoinColumn([
-    { name: 'supplier_id_type', referencedColumnName: 'type' },
-    { name: 'supplier_id_code', referencedColumnName: 'code' },
-  ])
-  @ManyToOne(() => Supplier, supplier => supplier.products, {
+  @SolidManyToOne(() => Supplier, supplier => supplier.products, {
+    description: 'Product Supplier',
+    nullable: true,
     onDelete: 'CASCADE',
+    adapters: {
+      typeorm: {
+        joinColumn: [
+          { name: 'supplier_id_type', referencedColumnName: 'type' },
+          { name: 'supplier_id_code', referencedColumnName: 'code' },
+        ],
+      },
+    },
   })
   supplier: Supplier;
 }

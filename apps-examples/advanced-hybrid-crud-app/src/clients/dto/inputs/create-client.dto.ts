@@ -1,51 +1,44 @@
-import { InputType, Field } from '@nestjs/graphql';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsEmail, IsOptional } from 'class-validator';
+import { SolidInput, SolidField } from '@solid-nestjs/common';
 
-@InputType()
+@SolidInput()
 export class CreateClientDto {
-  @ApiProperty({ description: 'The first name of the client' })
-  @Field({ description: 'The first name of the client' })
-  @IsNotEmpty()
-  @IsString()
+  @SolidField({
+    description: 'The first name of the client'
+  })
   firstName: string;
 
-  @ApiProperty({ description: 'The last name of the client' })
-  @Field({ description: 'The last name of the client' })
-  @IsNotEmpty()
-  @IsString()
+  @SolidField({
+    description: 'The last name of the client'
+  })
   lastName: string;
 
-  @ApiProperty({ description: 'The email address of the client' })
-  @Field({ description: 'The email address of the client' })
-  @IsNotEmpty()
-  @IsEmail()
+  @SolidField({
+    description: 'The email address of the client',
+    email: true
+  })
   email: string;
 
-  @ApiProperty({
+  @SolidField({
     description: 'The phone number of the client',
-    required: false,
+    nullable: true
   })
-  @Field({ description: 'The phone number of the client', nullable: true })
-  @IsOptional()
-  @IsString()
   phone?: string;
 
-  @ApiProperty({ description: 'The address of the client', required: false })
-  @Field({ description: 'The address of the client', nullable: true })
-  @IsOptional()
-  @IsString()
+  @SolidField({
+    description: 'The address of the client',
+    nullable: true
+  })
   address?: string;
 
-  @ApiProperty({ description: 'The city of the client', required: false })
-  @Field({ description: 'The city of the client', nullable: true })
-  @IsOptional()
-  @IsString()
+  @SolidField({
+    description: 'The city of the client',
+    nullable: true
+  })
   city?: string;
 
-  @ApiProperty({ description: 'The country of the client', required: false })
-  @Field({ description: 'The country of the client', nullable: true })
-  @IsOptional()
-  @IsString()
+  @SolidField({
+    description: 'The country of the client',
+    nullable: true
+  })
   country?: string;
 }

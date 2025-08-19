@@ -1,104 +1,124 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
-  DeleteDateColumn,
-  UpdateDateColumn,
-  CreateDateColumn,
-} from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
-import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
+import { 
+  SolidEntity, 
+  SolidId, 
+  SolidField, 
+  SolidManyToOne, 
+  SolidCreatedAt, 
+  SolidUpdatedAt, 
+  SolidDeletedAt 
+} from '@solid-nestjs/common';
 import { Product } from '../../products/entities/product.entity';
 
-@ObjectType()
-@Entity()
+@SolidEntity()
 export class InvoiceDetail {
-  @ApiProperty({ description: 'The unique identifier of the invoice detail' })
-  @Field(() => ID, {
+  @SolidId({
+    generated: 'increment',
     description: 'The unique identifier of the invoice detail',
   })
-  @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ description: 'The quantity of the product in this line item' })
-  @Field(() => Int, {
+  @SolidField({
     description: 'The quantity of the product in this line item',
+    adapters: {
+      graphql: {
+        type: 'Int'
+      }
+    }
   })
-  @Column()
   quantity: number;
 
-  @ApiProperty({
+  @SolidField({
     description: 'The unit price of the product at the time of invoice',
+    float: true,
+    precision: 10,
+    scale: 2,
+    adapters: {
+      typeorm: {
+        columnType: 'decimal',
+        transformer: {
+          to: (value: number) => value,
+          from: (value: string) => parseFloat(value)
+        }
+      },
+      graphql: {
+        type: 'Float'
+      }
+    }
   })
-  @Field(() => Float, {
-    description: 'The unit price of the product at the time of invoice',
-  })
-  @Column('decimal', { precision: 10, scale: 2, transformer: {
-    to: (value: number) => value,
-    from: (value: string) => parseFloat(value)
-  }})
   unitPrice: number;
 
-  @ApiProperty({
+  @SolidField({
     description: 'The total amount for this line item (quantity * unitPrice)',
+    float: true,
+    precision: 10,
+    scale: 2,
+    adapters: {
+      typeorm: {
+        columnType: 'decimal',
+        transformer: {
+          to: (value: number) => value,
+          from: (value: string) => parseFloat(value)
+        }
+      },
+      graphql: {
+        type: 'Float'
+      }
+    }
   })
-  @Field(() => Float, {
-    description: 'The total amount for this line item (quantity * unitPrice)',
-  })
-  @Column('decimal', { precision: 10, scale: 2, transformer: {
-    to: (value: number) => value,
-    from: (value: string) => parseFloat(value)
-  }})
   totalAmount: number;
 
-  @ApiProperty({ description: 'Invoice Detail Product', type: () => Product })
-  @Field(() => Product, { description: 'Invoice Detail Product' })
-  @ManyToOne(() => Product, { eager: true, nullable: false })
-  @JoinColumn({ name: 'productId' })
+  @SolidManyToOne(() => Product, null, {
+    description: 'Invoice Detail Product',
+    eager: true,
+    nullable: false,
+    adapters: {
+      typeorm: {
+        eager: true,
+        nullable: false,
+        joinColumn: { name: 'productId' }
+      },
+      graphql: {
+        nullable: false
+      }
+    }
+  })
   product: Product;
 
-  @ApiProperty({ description: 'The ID of the product in this detail' })
-  @Field(() => String, { description: 'The ID of the product in this detail' })
-  @Column()
+  @SolidField({
+    description: 'The ID of the product in this detail',
+  })
   productId: string;
 
-  @ApiProperty({
-    description: 'Invoice this detail belongs to',
-    type: () => require('./invoice.entity').Invoice,
-  })
-  @Field(() => require('./invoice.entity').Invoice, {
-    description: 'Invoice this detail belongs to',
-  })
-  @ManyToOne(
-    () => require('./invoice.entity').Invoice,
+  @SolidManyToOne(
+    () => {
+      const { Invoice } = require('./invoice.entity');
+      return Invoice;
+    },
     (invoice: any) => invoice.details,
     {
+      description: 'Invoice this detail belongs to',
       onDelete: 'CASCADE',
-    },
+      adapters: {
+        typeorm: {
+          joinColumn: { name: 'invoiceId' }
+        }
+      }
+    }
   )
-  @JoinColumn({ name: 'invoiceId' })
   invoice: any;
 
-  @ApiProperty({ description: 'The date when the product was created' })
-  @Field({ description: 'The date when the product was created' })
-  @CreateDateColumn()
+  @SolidCreatedAt({
+    description: 'The date when the invoice detail was created',
+  })
   createdAt!: Date;
 
-  @ApiProperty({ description: 'The date when the product was last updated' })
-  @Field({ description: 'The date when the product was last updated' })
-  @UpdateDateColumn()
+  @SolidUpdatedAt({
+    description: 'The date when the invoice detail was last updated',
+  })
   updatedAt!: Date;
 
-  @ApiProperty({
-    description: 'The date when the product was deleted (soft delete)',
-    required: false,
+  @SolidDeletedAt({
+    description: 'The date when the invoice detail was deleted (soft delete)',
   })
-  @Field({
-    description: 'The date when the product was deleted (soft delete)',
-    nullable: true,
-  })
-  @DeleteDateColumn()
   deletedAt?: Date;
 }

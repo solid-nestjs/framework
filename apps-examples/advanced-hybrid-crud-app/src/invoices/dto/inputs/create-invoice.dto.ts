@@ -1,91 +1,92 @@
-import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  IsUUID,
-  Min,
-  ValidateNested,
-  IsOptional,
-  IsIn,
-  IsArray,
-} from 'class-validator';
+import { SolidInput, SolidField } from '@solid-nestjs/common';
+import { Float, Int, ID } from '@nestjs/graphql';
 import { IsFlexibleUUID } from '../../../common/validators/is-flexible-uuid.validator';
 
-@InputType()
+@SolidInput()
 export class InvoiceClientDto {
-  @ApiProperty({ description: 'client id' })
-  @Field(() => ID)
-  @IsString()
-  @IsFlexibleUUID()
+  @SolidField({
+    description: 'client id',
+    adapters: {
+      graphql: {
+        type: () => ID,
+      },
+      validation: {
+        validators: [IsFlexibleUUID],
+      },
+    },
+  })
   id: string;
 }
 
-@InputType()
+@SolidInput()
 export class CreateInvoiceDetailDto {
-  @ApiProperty({ description: 'product id' })
-  @Field(() => ID, { description: 'product id' })
-  @IsNotEmpty()
-  @IsString()
-  @IsFlexibleUUID()
+  @SolidField({
+    description: 'product id',
+    adapters: {
+      graphql: {
+        type: () => ID,
+      },
+      validation: {
+        validators: [IsFlexibleUUID],
+      },
+    },
+  })
   productId: string;
 
-  @ApiProperty({ description: 'The quantity of the product' })
-  @Field(() => Int, { description: 'The quantity of the product' })
-  @IsNumber()
-  @Min(1)
+  @SolidField({
+    description: 'The quantity of the product',
+    min: 1,
+    adapters: {
+      graphql: {
+        type: () => Int,
+      },
+    },
+  })
   quantity: number;
 
-  @ApiProperty({ description: 'The unit price of the product' })
-  @Field(() => Float, { description: 'The unit price of the product' })
-  @IsNumber()
-  @Min(0)
+  @SolidField({
+    description: 'The unit price of the product',
+    min: 0,
+    adapters: {
+      graphql: {
+        type: () => Float,
+      },
+    },
+  })
   unitPrice: number;
 }
 
-@InputType()
+@SolidInput()
 export class CreateInvoiceDto {
-  @ApiProperty({ description: 'The invoice number' })
-  @Field({ description: 'The invoice number' })
-  @IsNotEmpty()
-  @IsString()
+  @SolidField({
+    description: 'The invoice number',
+  })
   invoiceNumber: string;
 
-  @ApiProperty({
-    description: 'The status of the invoice',
-    enum: ['pending', 'paid', 'cancelled'],
-    default: 'pending',
-  })
-  @Field({
+  @SolidField({
     description: 'The status of the invoice',
     nullable: true,
-    defaultValue: 'pending',
+    enum: ['pending', 'paid', 'cancelled'],
+    adapters: {
+      graphql: {
+        defaultValue: 'pending',
+      },
+      swagger: {
+        default: 'pending',
+      },
+    },
   })
-  @IsOptional()
-  @IsString()
-  @IsIn(['pending', 'paid', 'cancelled'])
   status?: string;
 
-  @ApiProperty({
+  @SolidField({
     description: 'Invoice details/line items',
-    type: () => [CreateInvoiceDetailDto],
+    array: true,
+    arrayType: () => CreateInvoiceDetailDto
   })
-  @Field(() => [CreateInvoiceDetailDto], {
-    description: 'Invoice details/line items',
-  })
-  @Type(() => CreateInvoiceDetailDto)
-  @ValidateNested({ each: true })
-  @IsArray()
   details: CreateInvoiceDetailDto[];
 
-  @ApiProperty({
-    description: 'Invoice client',
-    type: () => InvoiceClientDto,
+  @SolidField({
+    description: 'Invoice client'
   })
-  @Field(() => InvoiceClientDto, { description: 'Invoice client' })
-  @Type(() => InvoiceClientDto)
-  @ValidateNested()
   client: InvoiceClientDto;
 }

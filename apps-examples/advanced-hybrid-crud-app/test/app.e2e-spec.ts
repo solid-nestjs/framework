@@ -1782,10 +1782,6 @@ describe('Advanced Hybrid CRUD App (e2e)', () => {
               id
               quantity
               unitPrice
-              product {
-                id
-                name
-              }
             }
           }
         }

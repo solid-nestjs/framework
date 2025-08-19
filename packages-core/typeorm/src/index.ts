@@ -3,3 +3,4 @@ export * from './interfaces';
 export * from './decorators';
 export * from './types';
 export * from './seeders';
+export * from './adapters';
