@@ -1,9 +1,5 @@
-import {
-  DecoratorAdapter,
-  FieldMetadata,
-  RelationAdapterRegistry,
-  RelationAdapterHelper,
-} from '@solid-nestjs/common';
+//Base: 081d3ec version que funciona para DTOs + lógica de relaciones
+import { DecoratorAdapter, FieldMetadata, RelationAdapterRegistry, RelationAdapterHelper } from '@solid-nestjs/common';
 
 // Dynamic imports to avoid dependency issues when Swagger is not available
 let ApiProperty: any;
@@ -77,7 +73,7 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     const { type, options, isOptional, adapterOptions } = metadata;
 
     // Skip hidden fields
-    if (options.hidden || adapterOptions?.hidden) {
+    if (options.hidden) {
       if (ApiHideProperty) {
         ApiHideProperty()(target, propertyKey);
       }
@@ -85,7 +81,7 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     }
 
     // Build Swagger property options
-    const swaggerOptions = this.buildSwaggerOptions(type, options, isOptional, adapterOptions);
+    const swaggerOptions = this.buildSwaggerOptions(type, options, adapterOptions);
 
     // Apply appropriate decorator
     const decorator =
@@ -104,7 +100,7 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     // Schema registration is handled at the controller level
   }
 
-  private buildSwaggerOptions(type: any, options: any, isOptional: boolean, adapterOptions?: any): any {
+  private buildSwaggerOptions(type: any, options: any, adapterOptions?: any): any {
     const swaggerOptions: any = {
       description: options.description,
       example: options.example,
@@ -117,45 +113,90 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
       pattern: options.pattern?.source,
       readOnly: options.readOnly,
       writeOnly: options.writeOnly,
-      required: !(options.nullable ?? isOptional),
-      ...adapterOptions, // Allow full override from adapter options
     };
 
-    // Handle type mapping with unified logic for both entity relations and DTO arrays
-    const resolvedType = this.resolveSwaggerType(type, options, adapterOptions);
-    
-    // Check if this is an array type (from either source)
-    const isArrayType = this.isArrayType(type, options, adapterOptions, resolvedType);
-    
-    if (isArrayType) {
+    // NUEVO: Detectar relaciones PRIMERO
+    if (adapterOptions?.type) {
+      const explicitType = typeof adapterOptions.type === 'function'
+        ? adapterOptions.type()
+        : adapterOptions.type;
+
+      // Si es [TargetClass] de relaciones
+      if (Array.isArray(explicitType) && explicitType.length > 0) {
+        swaggerOptions.isArray = true;
+        swaggerOptions.type = this.mapPrimitiveType(explicitType[0]);
+      } else {
+        // Single relation
+        swaggerOptions.type = this.mapPrimitiveType(explicitType);
+      }
+    }
+    // ORIGINAL: Lógica de 081d3ec para arrays de DTOs
+    else if (options.array) {
       swaggerOptions.isArray = true;
-      
-      // Get the array item type
-      const itemType = this.getArrayItemType(type, options, adapterOptions, resolvedType);
-      swaggerOptions.type = this.mapPrimitiveType(itemType);
+
+      // Get array item type
+      let itemType = options.arrayType;
+      if (typeof itemType === 'function') {
+        itemType = itemType();
+      }
+
+      if (itemType) {
+        // For custom classes, use the class directly
+        if (typeof itemType === 'function' && itemType.prototype) {
+          swaggerOptions.type = itemType;
+        } else {
+          // For primitives, map them
+          swaggerOptions.type = this.mapPrimitiveType(itemType);
+        }
+      } else {
+        swaggerOptions.type = this.mapPrimitiveType(type);
+      }
 
       // Array-specific options
       if (options.minSize !== undefined)
         swaggerOptions.minItems = options.minSize;
       if (options.maxSize !== undefined)
         swaggerOptions.maxItems = options.maxSize;
-      if (options.uniqueItems || adapterOptions?.uniqueItems) 
-        swaggerOptions.uniqueItems = true;
-    } else {
-      // Single value type
-      swaggerOptions.type = this.mapPrimitiveType(resolvedType);
+      if (options.uniqueItems) swaggerOptions.uniqueItems = true;
+    } 
+    // ORIGINAL: Single value type
+    else {
+      swaggerOptions.type = this.mapPrimitiveType(type);
     }
 
     // Handle enums
-    if (options.enum || adapterOptions?.enum) {
-      swaggerOptions.enum = options.enum || adapterOptions.enum;
-      if (options.enumName || adapterOptions?.enumName) {
-        swaggerOptions.enumName = options.enumName || adapterOptions.enumName;
+    if (options.enum) {
+      swaggerOptions.enum = options.enum;
+      if (options.enumName) {
+        swaggerOptions.enumName = options.enumName;
       }
     }
 
-    // Handle special formatting
-    this.applySpecialFormatting(swaggerOptions, resolvedType, options, adapterOptions);
+    // Handle special string formats
+    if (type === String) {
+      if (options.email) swaggerOptions.format = 'email';
+      if (options.url) swaggerOptions.format = 'url';
+      if (options.uuid) swaggerOptions.format = 'uuid';
+      if (options.password) swaggerOptions.format = 'password';
+    }
+
+    // Handle date format
+    if (type === Date) {
+      swaggerOptions.format = 'date-time';
+    }
+
+    // Handle number formats
+    if (type === Number) {
+      if (options.integer) {
+        swaggerOptions.type = 'integer';
+      }
+      if (options.float || options.precision) {
+        swaggerOptions.format = 'float';
+      }
+      if (options.double) {
+        swaggerOptions.format = 'double';
+      }
+    }
 
     // Remove undefined values
     Object.keys(swaggerOptions).forEach(key => {
@@ -165,102 +206,6 @@ export class SwaggerDecoratorAdapter implements DecoratorAdapter {
     });
 
     return swaggerOptions;
-  }
-
-  private resolveSwaggerType(type: any, options: any, adapterOptions?: any): any {
-    // Priority 1: Explicit type override from adapter options
-    if (adapterOptions?.type) {
-      const explicitType = typeof adapterOptions.type === 'function' 
-        ? adapterOptions.type() 
-        : adapterOptions.type;
-      return explicitType;
-    }
-
-    // Priority 2: Use the provided type
-    return type;
-  }
-
-  private isArrayType(type: any, options: any, adapterOptions?: any, resolvedType?: any): boolean {
-    // Check explicit array flag
-    if (options.array || adapterOptions?.array) {
-      return true;
-    }
-
-    // Check if resolved type is an array (from relation adapters)
-    if (Array.isArray(resolvedType)) {
-      return true;
-    }
-
-    // Check if original type is array
-    if (Array.isArray(type)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  private getArrayItemType(type: any, options: any, adapterOptions?: any, resolvedType?: any): any {
-    // Priority 1: From resolved type (relation adapters)
-    if (Array.isArray(resolvedType) && resolvedType.length > 0) {
-      return resolvedType[0];
-    }
-
-    // Priority 2: From explicit arrayType in options
-    let itemType = options.arrayType;
-    if (typeof itemType === 'function') {
-      itemType = itemType();
-    }
-    if (itemType) {
-      return itemType;
-    }
-
-    // Priority 3: From array type structure
-    if (Array.isArray(type) && type.length > 0) {
-      return type[0];
-    }
-
-    // Fallback: String type
-    return String;
-  }
-
-  private applySpecialFormatting(swaggerOptions: any, type: any, options: any, adapterOptions?: any): void {
-    // Handle special string formats
-    if (type === String) {
-      if (options.email) swaggerOptions.format = 'email';
-      if (options.url) swaggerOptions.format = 'url';
-      if (options.uuid) swaggerOptions.format = 'uuid';
-      if (options.password || adapterOptions?.password) swaggerOptions.format = 'password';
-    }
-
-    // Handle date format
-    if (type === Date) {
-      swaggerOptions.format = adapterOptions?.format || 'date-time';
-    }
-
-    // Handle number formats
-    if (type === Number) {
-      if (options.integer || adapterOptions?.integer) {
-        swaggerOptions.type = 'integer';
-      }
-      if (options.float || options.precision) {
-        swaggerOptions.format = 'float';
-      }
-      if (options.double || adapterOptions?.double) {
-        swaggerOptions.format = 'double';
-      }
-    }
-
-    // Handle primary key
-    if (options.isPrimaryKey) {
-      swaggerOptions.description = swaggerOptions.description || 'Unique identifier';
-      swaggerOptions.readOnly = true;
-    }
-
-    // Handle timestamps
-    if (options.createdAt || options.updatedAt || options.deletedAt) {
-      swaggerOptions.format = 'date-time';
-      swaggerOptions.readOnly = true;
-    }
   }
 
   private mapPrimitiveType(type: any): any {
