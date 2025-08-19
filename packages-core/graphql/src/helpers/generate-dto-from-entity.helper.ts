@@ -1,164 +1,105 @@
 import { Type } from '@nestjs/common';
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, InputType, PickType } from '@nestjs/graphql';
+import { ClassDecoratorFactory } from '@nestjs/graphql/dist/interfaces/class-decorator-factory.interface';
 import { 
-  DtoGeneratorBase, 
-  MetadataStorage, 
-  SolidField,
-  cleanSolidFieldOptions 
+  extractAllPropertyNames,
+  getDefaultProperties,
+  isSystemField,
+  isRelationalField,
+  isFlatType,
+  validatePropertySelection,
+  getPropertyDesignType
 } from '@solid-nestjs/common';
 
-// GraphQL metadata keys (from @nestjs/graphql internals)
-const FIELD_METADATA_KEY = 'graphql:field_metadata';
-const TYPE_METADATA_KEY = 'graphql:type_metadata';
+/**
+ * Property inclusion configuration for GenerateDtoFromEntity
+ * - undefined: use default rules (include if flat type and not system field)
+ * - true: always include the property
+ * - false: always exclude the property
+ */
+export type PropertyInclusionConfig<TEntity> = Partial<Record<keyof TEntity, boolean>>;
 
 /**
- * Generates a DTO class from an entity with automatic GraphQL decorator transfer
+ * Generates a DTO class from an entity for GraphQL
+ * Supports both legacy array format and new object configuration for backward compatibility
  */
 export function GenerateDtoFromEntity<TEntity extends object>(
   EntityClass: Type<TEntity>,
-  properties?: (keyof TEntity)[]
+  propertiesOrConfig?: (keyof TEntity)[] | PropertyInclusionConfig<TEntity>,
+  decorator?: ClassDecoratorFactory
 ): Type<Partial<TEntity>> {
-  return DtoGeneratorBase['generateDto'](
-    EntityClass,
-    properties,
-    transferDecorators
+  // Get all properties and determine which ones to include
+  const allProperties = extractAllPropertyNames(EntityClass);
+  const selectedProperties = selectProperties(EntityClass, allProperties, propertiesOrConfig);
+  
+  // Use GraphQL PickType directly on SOLID entity (like PartialType does)
+  const PickedClass = PickType(
+    EntityClass, 
+    selectedProperties as any,
+    decorator || InputType
   );
+  
+  // Note: GraphQL PickType should handle the field decorators automatically
+  // since SOLID entities already have the necessary GraphQL metadata
+  
+  // Set class name for debugging
+  Object.defineProperty(PickedClass, 'name', {
+    value: `Generated${EntityClass.name}Dto`
+  });
+  
+  return PickedClass as Type<Partial<TEntity>>;
 }
 
 /**
- * Transfers decorators for GraphQL (Field + validation)
+ * Selects properties supporting both array (legacy) and object (new) formats
  */
-function transferDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  // Transfer GraphQL field metadata
-  transferGraphQLDecorators(sourceClass, targetClass, propertyKey);
-  
-  // Transfer validation metadata
-  transferValidationDecorators(sourceClass, targetClass, propertyKey);
-  
-  // Transfer SOLID metadata if present
-  transferSolidDecorators(sourceClass, targetClass, propertyKey);
-}
-
-/**
- * Transfers GraphQL @Field decorators
- */
-function transferGraphQLDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  // Get the TypeScript design type for the property
-  const tsType = Reflect.getMetadata('design:type', sourceClass.prototype, propertyKey);
-  
-  // Try to get GraphQL field metadata
-  const graphqlMetadata = Reflect.getMetadata(
-    FIELD_METADATA_KEY,
-    sourceClass.prototype,
-    propertyKey
-  );
-  
-  let fieldOptions: any = {
-    nullable: true,
-    description: `${String(propertyKey)} field`
-  };
-  
-  // Apply @Field decorator with explicit type function
-  let decorator;
-  
-  if (graphqlMetadata && graphqlMetadata.type && typeof graphqlMetadata.type === 'function') {
-    // Use existing GraphQL type
-    decorator = Field(graphqlMetadata.type, {
-      ...graphqlMetadata.options,
-      nullable: true
-    });
-  } else if (tsType) {
-    // Create type function based on TypeScript type
-    if (tsType === String) {
-      decorator = Field(() => String, fieldOptions);
-    } else if (tsType === Number) {
-      decorator = Field(() => Number, fieldOptions);
-    } else if (tsType === Boolean) {
-      decorator = Field(() => Boolean, fieldOptions);
-    } else if (tsType === Date) {
-      decorator = Field(() => Date, fieldOptions);
-    } else {
-      // Fallback for unknown types
-      decorator = Field(() => String, fieldOptions);
-    }
-  } else {
-    // Last resort fallback
-    decorator = Field(() => String, fieldOptions);
+function selectProperties<TEntity>(
+  EntityClass: Type<TEntity>,
+  allProperties: string[],
+  propertiesOrConfig?: (keyof TEntity)[] | PropertyInclusionConfig<TEntity>
+): string[] {
+  if (!propertiesOrConfig) {
+    // Use default rules when no config provided
+    return getDefaultProperties(EntityClass, allProperties);
   }
   
-  decorator(targetClass.prototype, propertyKey);
-}
-
-/**
- * Transfers validation decorators
- */
-function transferValidationDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  // Get all metadata keys for the property
-  const metadataKeys = Reflect.getMetadataKeys(
-    sourceClass.prototype,
-    propertyKey
-  ) || [];
+  // Check if it's an array (legacy format)
+  if (Array.isArray(propertiesOrConfig)) {
+    // Legacy array format: validate and return selected properties
+    // Allow system fields when explicitly specified in array format
+    const selectedProperties = propertiesOrConfig as string[];
+    validatePropertySelection(EntityClass, allProperties, selectedProperties, true);
+    return selectedProperties;
+  }
   
-  // Transfer validation-related metadata
-  metadataKeys
-    .filter(key => {
-      const keyStr = key.toString();
-      return keyStr.includes('validation') || 
-             keyStr.includes('class-validator') ||
-             keyStr.includes('__validator');
-    })
-    .forEach(key => {
-      const metadata = Reflect.getMetadata(
-        key,
-        sourceClass.prototype,
-        propertyKey
-      );
+  // New object format: process boolean configuration
+  const propertyConfig = propertiesOrConfig as PropertyInclusionConfig<TEntity>;
+  const selectedProperties: string[] = [];
+  
+  allProperties.forEach(prop => {
+    const configValue = propertyConfig[prop as keyof TEntity];
+    
+    if (configValue === true) {
+      // Always include when explicitly set to true
+      selectedProperties.push(prop);
+    } else if (configValue === false) {
+      // Always exclude when explicitly set to false
+      return;
+    } else if (configValue === undefined) {
+      // Use default rules when undefined
+      // Skip system fields
+      if (isSystemField(prop)) return;
       
-      if (metadata !== undefined) {
-        Reflect.defineMetadata(
-          key,
-          metadata,
-          targetClass.prototype,
-          propertyKey
-        );
+      // Skip relational fields
+      if (isRelationalField(EntityClass, prop)) return;
+      
+      // Only include flat types
+      const type = getPropertyDesignType(EntityClass, prop);
+      if (isFlatType(type)) {
+        selectedProperties.push(prop);
       }
-    });
-}
-
-/**
- * Transfers SOLID field decorators
- */
-function transferSolidDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  const solidMetadata = MetadataStorage.getFieldMetadata(sourceClass, propertyKey);
-  
-  if (solidMetadata.length > 0) {
-    const fieldMetadata = solidMetadata[0];
-    const cleanedOptions = cleanSolidFieldOptions(fieldMetadata.options);
-    
-    // Remove graphql-specific adapters since we handle GraphQL separately
-    if (cleanedOptions.adapters?.graphql) {
-      cleanedOptions.adapters = { ...cleanedOptions.adapters };
-      delete cleanedOptions.adapters.graphql;
     }
-    
-    // Apply @SolidField with cleaned options
-    const decorator = SolidField(cleanedOptions);
-    decorator(targetClass.prototype, propertyKey);
-  }
+  });
+  
+  return selectedProperties;
 }

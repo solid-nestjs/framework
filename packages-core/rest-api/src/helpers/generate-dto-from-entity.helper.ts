@@ -1,133 +1,125 @@
 import { Type } from '@nestjs/common';
+import { PickType } from '@nestjs/swagger';
 import { ApiProperty } from '@nestjs/swagger';
 import { DECORATORS } from '@nestjs/swagger/dist/constants';
+import { ModelPropertiesAccessor } from '@nestjs/swagger/dist/services/model-properties-accessor';
 import { 
-  DtoGeneratorBase, 
-  MetadataStorage, 
-  SolidField,
-  cleanSolidFieldOptions 
+  extractAllPropertyNames,
+  getDefaultProperties,
+  isSystemField,
+  isRelationalField,
+  isFlatType,
+  validatePropertySelection,
+  getPropertyDesignType
 } from '@solid-nestjs/common';
 
+const modelPropertiesAccessor = new ModelPropertiesAccessor();
+
 /**
- * Generates a DTO class from an entity with automatic Swagger decorator transfer
+ * Property inclusion configuration for GenerateDtoFromEntity
+ * - undefined: use default rules (include if flat type and not system field)
+ * - true: always include the property
+ * - false: always exclude the property
+ */
+export type PropertyInclusionConfig<TEntity> = Partial<Record<keyof TEntity, boolean>>;
+
+/**
+ * Generates a DTO class from an entity for REST API with Swagger decorators
+ * Supports both legacy array format and new object configuration for backward compatibility
  */
 export function GenerateDtoFromEntity<TEntity extends object>(
   EntityClass: Type<TEntity>,
-  properties?: (keyof TEntity)[]
+  propertiesOrConfig?: (keyof TEntity)[] | PropertyInclusionConfig<TEntity>
 ): Type<Partial<TEntity>> {
-  return DtoGeneratorBase['generateDto'](
-    EntityClass,
-    properties,
-    transferDecorators
-  );
-}
-
-/**
- * Transfers decorators for REST API (Swagger + validation)
- */
-function transferDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  // Transfer Swagger metadata
-  transferSwaggerDecorators(sourceClass, targetClass, propertyKey);
+  // Get all properties and determine which ones to include
+  const allProperties = extractAllPropertyNames(EntityClass);
+  const selectedProperties = selectProperties(EntityClass, allProperties, propertiesOrConfig);
   
-  // Transfer validation metadata
-  transferValidationDecorators(sourceClass, targetClass, propertyKey);
-  
-  // Transfer SOLID metadata if present
-  transferSolidDecorators(sourceClass, targetClass, propertyKey);
-}
-
-/**
- * Transfers Swagger @ApiProperty decorators
- */
-function transferSwaggerDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  const swaggerMetadata = Reflect.getMetadata(
-    DECORATORS.API_MODEL_PROPERTIES,
-    sourceClass.prototype,
-    propertyKey
+  // Use Swagger PickType directly on SOLID entity
+  const PickedClass = PickType(
+    EntityClass, 
+    selectedProperties as any
   );
   
-  if (swaggerMetadata) {
-    // Make the field optional for DTOs
-    const decoratorOptions = {
-      ...swaggerMetadata,
-      required: false
-    };
+  // Get Swagger metadata from the original entity
+  const fields = modelPropertiesAccessor.getModelProperties(EntityClass.prototype);
+  
+  // Add Swagger decorators to selected properties only
+  selectedProperties.forEach(propertyKey => {
+    if (!fields.includes(propertyKey)) return;
     
-    const decorator = ApiProperty(decoratorOptions);
-    decorator(targetClass.prototype, propertyKey);
-  }
-}
-
-/**
- * Transfers validation decorators
- */
-function transferValidationDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  // Get all metadata keys for the property
-  const metadataKeys = Reflect.getMetadataKeys(
-    sourceClass.prototype,
-    propertyKey
-  ) || [];
-  
-  // Transfer validation-related metadata
-  metadataKeys
-    .filter(key => {
-      const keyStr = key.toString();
-      return keyStr.includes('validation') || 
-             keyStr.includes('class-validator') ||
-             keyStr.includes('__validator');
-    })
-    .forEach(key => {
-      const metadata = Reflect.getMetadata(
-        key,
-        sourceClass.prototype,
-        propertyKey
-      );
-      
-      if (metadata !== undefined) {
-        Reflect.defineMetadata(
-          key,
-          metadata,
-          targetClass.prototype,
-          propertyKey
-        );
-      }
+    const metadata = Reflect.getMetadata(
+      DECORATORS.API_MODEL_PROPERTIES,
+      EntityClass.prototype,
+      propertyKey,
+    ) || {};
+    
+    const swaggerDecorator = ApiProperty({
+      ...metadata,
+      required: false, // Make all properties optional in DTOs
     });
+    
+    swaggerDecorator(PickedClass.prototype, propertyKey);
+  });
+  
+  // Set class name for debugging
+  Object.defineProperty(PickedClass, 'name', {
+    value: `Generated${EntityClass.name}Dto`
+  });
+  
+  return PickedClass as Type<Partial<TEntity>>;
 }
 
 /**
- * Transfers SOLID field decorators
+ * Selects properties supporting both array (legacy) and object (new) formats
  */
-function transferSolidDecorators(
-  sourceClass: Type,
-  targetClass: Type,
-  propertyKey: string
-): void {
-  const solidMetadata = MetadataStorage.getFieldMetadata(sourceClass, propertyKey);
-  
-  if (solidMetadata.length > 0) {
-    const fieldMetadata = solidMetadata[0];
-    const cleanedOptions = cleanSolidFieldOptions(fieldMetadata.options);
-    
-    // Remove swagger-specific adapters since we handle Swagger separately
-    if (cleanedOptions.adapters?.swagger) {
-      cleanedOptions.adapters = { ...cleanedOptions.adapters };
-      delete cleanedOptions.adapters.swagger;
-    }
-    
-    // Apply @SolidField with cleaned options
-    const decorator = SolidField(cleanedOptions);
-    decorator(targetClass.prototype, propertyKey);
+function selectProperties<TEntity>(
+  EntityClass: Type<TEntity>,
+  allProperties: string[],
+  propertiesOrConfig?: (keyof TEntity)[] | PropertyInclusionConfig<TEntity>
+): string[] {
+  if (!propertiesOrConfig) {
+    // Use default rules when no config provided
+    return getDefaultProperties(EntityClass, allProperties);
   }
+  
+  // Check if it's an array (legacy format)
+  if (Array.isArray(propertiesOrConfig)) {
+    // Legacy array format: validate and return selected properties
+    // Allow system fields when explicitly specified in array format
+    const selectedProperties = propertiesOrConfig as string[];
+    validatePropertySelection(EntityClass, allProperties, selectedProperties, true);
+    return selectedProperties;
+  }
+  
+  // New object format: process boolean configuration
+  const propertyConfig = propertiesOrConfig as PropertyInclusionConfig<TEntity>;
+  const selectedProperties: string[] = [];
+  
+  allProperties.forEach(prop => {
+    const configValue = propertyConfig[prop as keyof TEntity];
+    
+    if (configValue === true) {
+      // Always include when explicitly set to true
+      selectedProperties.push(prop);
+    } else if (configValue === false) {
+      // Always exclude when explicitly set to false
+      return;
+    } else if (configValue === undefined) {
+      // Use default rules when undefined
+      // Skip system fields
+      if (isSystemField(prop)) return;
+      
+      // Skip relational fields
+      if (isRelationalField(EntityClass, prop)) return;
+      
+      // Only include flat types
+      const type = getPropertyDesignType(EntityClass, prop);
+      if (isFlatType(type)) {
+        selectedProperties.push(prop);
+      }
+    }
+  });
+  
+  return selectedProperties;
 }

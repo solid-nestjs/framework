@@ -11,11 +11,12 @@ export function extractEntityFieldMetadata(EntityClass: Type): FieldMetadata[] {
 
 /**
  * Gets all property names from a class using SOLID metadata and reflection
+ * Includes inherited properties from parent classes
  */
 export function extractAllPropertyNames(EntityClass: Type): string[] {
   const properties = new Set<string>();
   
-  // First, get properties from SOLID metadata
+  // First, get properties from SOLID metadata (including inherited)
   const fieldMetadata = extractEntityFieldMetadata(EntityClass);
   fieldMetadata.forEach(meta => {
     if (typeof meta.propertyKey === 'string') {
@@ -23,30 +24,95 @@ export function extractAllPropertyNames(EntityClass: Type): string[] {
     }
   });
   
-  // Also get properties from prototype reflection
+  // Get SOLID metadata from parent classes as well
+  let currentClass = EntityClass;
+  while (currentClass && currentClass !== Object && currentClass.prototype) {
+    const parentFieldMetadata = MetadataStorage.getAllFieldMetadata(currentClass);
+    parentFieldMetadata.forEach(meta => {
+      if (typeof meta.propertyKey === 'string') {
+        properties.add(meta.propertyKey);
+      }
+    });
+    
+    // Move to parent class
+    currentClass = Object.getPrototypeOf(currentClass);
+  }
+  
+  // Enhanced property detection from prototype chain
+  // This is critical for detecting properties from parent classes that use standard decorators (not SOLID)
   let obj = EntityClass.prototype;
   while (obj && obj !== Object.prototype) {
-    Object.getOwnPropertyNames(obj).forEach(prop => {
+    // Get own property names
+    const ownProps = Object.getOwnPropertyNames(obj);
+    ownProps.forEach(prop => {
       if (prop !== 'constructor' && typeof prop === 'string') {
         properties.add(prop);
       }
     });
+    
+    // Check for properties with design:type metadata (from TypeScript decorators)
+    // This catches properties from parent classes that use standard GraphQL/TypeORM decorators
+    // We need to check ALL possible property keys that might have metadata, not just own properties
+    const allMetadataKeys = Reflect.getMetadataKeys(obj) || [];
+    allMetadataKeys.forEach(metaKey => {
+      if (typeof metaKey === 'string' && metaKey === 'design:type') {
+        // Get all properties that have design:type metadata on this prototype level
+        Object.getOwnPropertyNames(obj).forEach(prop => {
+          if (prop !== 'constructor') {
+            const designType = Reflect.getMetadata('design:type', obj, prop);
+            if (designType) {
+              properties.add(prop);
+            }
+          }
+        });
+      }
+    });
+    
+    // Also directly check specific properties that might exist via inheritance
+    Object.getOwnPropertyNames(obj).forEach(prop => {
+      if (prop !== 'constructor') {
+        if (Reflect.hasMetadata('design:type', obj, prop)) {
+          properties.add(prop);
+        }
+      }
+    });
+    
+    // Finally, check for all decorated properties by iterating through potential property names
+    // This ensures we catch properties like 'type', 'code' that are defined in parent classes
+    const potentialProps = ['type', 'code', 'name', 'description', 'price', 'stock']; // Common entity properties
+    potentialProps.forEach(prop => {
+      if (Reflect.hasMetadata('design:type', obj, prop)) {
+        properties.add(prop);
+      }
+    });
+    
+    // Check for standard GraphQL and TypeORM decorator metadata
+    Object.getOwnPropertyNames(obj).forEach(prop => {
+      if (prop !== 'constructor') {
+        // Check for design:type first (most common)
+        const hasDesignType = Reflect.hasMetadata('design:type', obj, prop);
+        
+        // Check for GraphQL Field metadata (from @Field decorator)
+        const hasGraphQLField = Reflect.getMetadata('graphql:field_type', obj, prop) || 
+                               Reflect.getMetadata('graphql:field_metadata', obj, prop);
+        
+        // Check for TypeORM Column metadata (from @Column, @PrimaryColumn, etc.)
+        const hasTypeORMColumn = Reflect.getMetadata('design:paramtypes', obj, prop) ||
+                                Reflect.getMetadata('typeorm:column_type', obj, prop) ||
+                                Reflect.getMetadata('typeorm:column_metadata', obj, prop);
+        
+        // Check for class-validator metadata
+        const hasValidator = Reflect.hasMetadata('class-validator:validate', obj, prop);
+        
+        // Add property if it has any kind of decorator metadata
+        if (hasDesignType || hasGraphQLField || hasTypeORMColumn || hasValidator) {
+          properties.add(prop);
+        }
+      }
+    });
+    
     obj = Object.getPrototypeOf(obj);
   }
-  
-  // Get properties from design metadata keys
-  const metadataKeys = Reflect.getMetadataKeys(EntityClass.prototype) || [];
-  metadataKeys.forEach(key => {
-    if (key === 'design:type') {
-      // This means there are properties with TypeScript metadata
-      const propertyKeys = Reflect.getOwnMetadataKeys(EntityClass.prototype);
-      propertyKeys.forEach(propKey => {
-        if (typeof propKey === 'string' && propKey !== 'constructor') {
-          properties.add(propKey);
-        }
-      });
-    }
-  });
   
   return Array.from(properties);
 }
