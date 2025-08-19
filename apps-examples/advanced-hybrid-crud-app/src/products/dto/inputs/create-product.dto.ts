@@ -1,55 +1,55 @@
-import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsString,
-  IsNumber,
-  IsPositive,
-  Min,
-  ValidateNested,
-} from 'class-validator';
+import { SolidInput, SolidField } from '@solid-nestjs/common';
+import { Float, Int, ID } from '@nestjs/graphql';
 
-@InputType()
+@SolidInput()
 export class ProductSupplierDto {
-  @ApiProperty({ description: 'supplier id' })
-  @Field(() => ID)
-  @IsString()
+  @SolidField({
+    description: 'supplier id',
+    adapters: {
+      graphql: {
+        type: () => ID
+      }
+    }
+  })
   id: string;
 }
 
-@InputType()
+@SolidInput()
 export class CreateProductDto {
-  @ApiProperty({ description: 'The name of the product' })
-  @Field({ description: 'The name of the product' })
-  @IsNotEmpty()
-  @IsString()
+  @SolidField({
+    description: 'The name of the product'
+  })
   name: string;
 
-  @ApiProperty({ description: 'The description of the product' })
-  @Field({ description: 'The description of the product' })
-  @IsNotEmpty()
-  @IsString()
+  @SolidField({
+    description: 'The description of the product'
+  })
   description: string;
 
-  @ApiProperty({ description: 'The price of the product' })
-  @Field(() => Float, { description: 'The price of the product' })
-  @IsNumber()
-  @IsPositive()
+  @SolidField({
+    description: 'The price of the product',
+    positive: true,
+    adapters: {
+      graphql: {
+        type: () => Float
+      }
+    }
+  })
   price: number;
 
-  @ApiProperty({ description: 'The stock quantity of the product' })
-  @Field(() => Int, { description: 'The stock quantity of the product' })
-  @IsNumber()
-  @Min(0)
+  @SolidField({
+    description: 'The stock quantity of the product',
+    min: 0,
+    adapters: {
+      graphql: {
+        type: () => Int
+      }
+    }
+  })
   stock: number;
 
-  @ApiProperty({
-    description: 'product Supplier',
-    type: () => ProductSupplierDto,
+  @SolidField({
+    description: 'product Supplier'
   })
-  @Field(() => ProductSupplierDto, { description: 'product Supplier' })
-  @Type(() => ProductSupplierDto)
-  @ValidateNested()
   supplier: ProductSupplierDto;
 }

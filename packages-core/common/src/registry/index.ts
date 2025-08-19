@@ -1,0 +1,1 @@
+export * from './relation-adapter-registry';
