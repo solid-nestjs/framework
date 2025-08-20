@@ -6,6 +6,9 @@ packages-core/**/build
 packages-bundles/**/dist
 packages-bundles/**/node_modules
 packages-bundles/**/build
+packages-tools/**/dist
+packages-tools/**/node_modules
+packages-tools/**/build
 apps-examples/**/dist
 apps-examples/**/node_modules
 apps-examples/**/build
@@ -15,6 +18,7 @@ apps-debug
 database-data
 packages-core/**/database-data
 packages-bundles/**/database-data
+packages-tools/**/database-data
 apps-examples/**/database-data
 
 # Auto-generated GraphQL schema files
@@ -40,10 +44,12 @@ lerna-debug.log*
 # Tests
 packages-core/**/coverage
 packages-bundles/**/coverage
+packages-tools/**/coverage
 apps-examples/**/coverage
 # Tests e2e
 packages-core/**/coverage-e2e
 packages-bundles/**/coverage-e2e
+packages-tools/**/coverage-e2e
 apps-examples/**/coverage-e2e
 
 # IDEs and editors
@@ -83,4 +89,11 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# CLI Tool Specific
+# Generated test projects from CLI development
+packages-tools/snest-cli/test-*
+packages-tools/snest-cli/*.tgz
+# CLI backup files
+packages-tools/**/*.backup.*
 
