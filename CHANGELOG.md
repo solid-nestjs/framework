@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.9](https://github.com/solid-nestjs/framework/compare/v0.2.8...v0.2.9) (2025-08-20)
+
+### Bug Fixes
+
+- typescript error in example app fixed ([72cff57](https://github.com/solid-nestjs/framework/commit/72cff57c46e386dd67e65739cbad4476e7a1e2fb))
+
+### Features
+
+- args helper feature complete ([#25](https://github.com/solid-nestjs/framework/issues/25)) ([6e61a92](https://github.com/solid-nestjs/framework/commit/6e61a925a44831ba44dc413339eeea5d95c98d0b))
+- entity to dto generation ([#27](https://github.com/solid-nestjs/framework/issues/27)) ([f0a0217](https://github.com/solid-nestjs/framework/commit/f0a02177c384a985b7c557e083ebaf9c1fb64524))
+- SOLID decorators for unified DTO logic. ([#26](https://github.com/solid-nestjs/framework/issues/26)) ([0a107e3](https://github.com/solid-nestjs/framework/commit/0a107e37f1a049a5b20d0018ae4bd534613983e5))
+
 ## [0.2.8](https://github.com/solid-nestjs/framework/compare/v0.2.7...v0.2.8) (2025-08-16)
 
 ### Features

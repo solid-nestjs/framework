@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.9](https://github.com/solid-nestjs/framework/compare/v0.2.8...v0.2.9) (2025-08-20)
+
+### Features
+
+- entity to dto generation ([#27](https://github.com/solid-nestjs/framework/issues/27)) ([f0a0217](https://github.com/solid-nestjs/framework/commit/f0a02177c384a985b7c557e083ebaf9c1fb64524))
+
 ## [0.2.8](https://github.com/solid-nestjs/framework/compare/v0.2.7...v0.2.8) (2025-08-16)
 
 ### Features

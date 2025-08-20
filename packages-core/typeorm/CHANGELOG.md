@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.9](https://github.com/solid-nestjs/framework/compare/v0.2.8...v0.2.9) (2025-08-20)
+
+### Features
+
+- SOLID decorators for unified DTO logic. ([#26](https://github.com/solid-nestjs/framework/issues/26)) ([0a107e3](https://github.com/solid-nestjs/framework/commit/0a107e37f1a049a5b20d0018ae4bd534613983e5))
+
 ## [0.2.8](https://github.com/solid-nestjs/framework/compare/v0.2.7...v0.2.8) (2025-08-16)
 
 ### Features

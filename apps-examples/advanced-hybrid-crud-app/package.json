@@ -1,6 +1,6 @@
 {
   "name": "advanced-hybrid-crud-app",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Hybrid REST + GraphQL CRUD application example using SOLID NestJS Framework with TypeORM, SQLite, dual API support, and comprehensive documentation",
   "author": "SOLID NestJS Framework",
   "private": true,
@@ -36,7 +36,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.1.4",
     "@nestjs/typeorm": "^11.0.0",
-    "@solid-nestjs/typeorm-hybrid-crud": "^0.2.8",
+    "@solid-nestjs/typeorm-hybrid-crud": "^0.2.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cross-env": "^7.0.3",

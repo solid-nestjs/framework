@@ -1,6 +1,6 @@
 {
   "name": "@solid-nestjs/rest-graphql",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "solid-nestjs Rest-API + GraphQL utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,9 +38,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@solid-nestjs/common": "^0.2.8",
-    "@solid-nestjs/graphql": "^0.2.8",
-    "@solid-nestjs/rest-api": "^0.2.8"
+    "@solid-nestjs/common": "^0.2.9",
+    "@solid-nestjs/graphql": "^0.2.9",
+    "@solid-nestjs/rest-api": "^0.2.9"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.1",
