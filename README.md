@@ -17,10 +17,10 @@ The SOLID NestJS Framework revolutionizes NestJS development with **SOLID Decora
 ### Bundle Packages
 
 - **`@solid-nestjs/typeorm-crud`** - REST API with TypeORM bundle
-- **`@solid-nestjs/typeorm-graphql-crud`** - GraphQL with TypeORM bundle  
+- **`@solid-nestjs/typeorm-graphql-crud`** - GraphQL with TypeORM bundle
 - **`@solid-nestjs/typeorm-hybrid-crud`** - **REST + GraphQL with TypeORM bundle**
 
-## ✨ NEW: SOLID Decorators (v0.2.8)
+## ✨ NEW: SOLID Decorators (v0.2.9)
 
 ### Revolutionary Unified Decorators
 
@@ -62,13 +62,13 @@ Into this clean, unified approach:
 export class Product {
   @SolidId({
     generated: 'uuid',
-    description: 'Product ID'
+    description: 'Product ID',
   })
   id: string;
 
   @SolidField({
     description: 'Product name',
-    maxLength: 100
+    maxLength: 100,
   })
   name: string;
 
@@ -76,7 +76,7 @@ export class Product {
     description: 'Product price',
     precision: 10,
     scale: 2,
-    min: 0
+    min: 0,
   })
   price: number;
 }
@@ -89,11 +89,12 @@ export class Product {
 - **🔧 Auto-generated CRUD Operations** - Instantly create controllers and services with full CRUD functionality
 - **🎯 Advanced Query System** - Powerful filtering, pagination, sorting, and relation handling
 - **📊 GROUP BY Aggregations** - Advanced data grouping with COUNT, SUM, AVG, MIN, MAX functions
+- **🏗️ Entity-to-DTO Generation** - **NEW!** Automatically generate DTOs from entities with validation inference
 - **🔒 Transaction Support** - Built-in transaction management with isolation levels
 - **📝 Type Safety** - Full TypeScript support with comprehensive type definitions
 - **🎯 Universal API Documentation** - Automatic Swagger + GraphQL schema generation
 - **🔄 Flexible Relations** - Easy configuration with circular import protection
-- **🛡️ Smart Validation** - Automatic class-validator application
+- **🛡️ Smart Validation** - Automatic class-validator application with type inference
 - **📦 Modular Architecture** - Clean separation with plugin-based adapter system
 - **🔄 Soft Delete Support** - Built-in soft delete functionality with recovery operations
 - **🔄 Bulk Operations** - Efficient bulk insert, update, delete, and remove operations
@@ -101,9 +102,11 @@ export class Product {
 
 ## 🎉 What's NEW in v0.2.8
 
-#### ✨ SOLID Decorators - RELEASED!
+#### ✨ SOLID Decorators & Entity-to-DTO Generation - RELEASED!
 
 - ✅ **Unified Field Decorators** - Single decorators that automatically apply TypeORM, GraphQL, Swagger, and validation decorators
+- ✅ **Entity-to-DTO Generation** - **NEW!** Automatically generate DTOs from entities with intelligent property selection
+- ✅ **Automatic Validation Inference** - **NEW!** Infer validation decorators from TypeScript types (`string` → `@IsString()`, `number` → `@IsNumber()`)
 - ✅ **Automatic Type Inference** - Smart validation and documentation based on TypeScript types
 - ✅ **Plugin-Based Architecture** - Modular adapter system for different technologies
 - ✅ **70-80% Code Reduction** - Dramatically reduce boilerplate while maintaining functionality
@@ -174,26 +177,32 @@ npm install @solid-nestjs/common @solid-nestjs/typeorm @solid-nestjs/rest-api
 
 ```typescript
 // user.entity.ts
-import { SolidEntity, SolidId, SolidField, SolidCreatedAt, SolidUpdatedAt } from '@solid-nestjs/common';
+import {
+  SolidEntity,
+  SolidId,
+  SolidField,
+  SolidCreatedAt,
+  SolidUpdatedAt,
+} from '@solid-nestjs/common';
 
 @SolidEntity()
 export class User {
   @SolidId({
     generated: 'uuid',
-    description: 'User unique identifier'
+    description: 'User unique identifier',
   })
   id: string;
 
   @SolidField({
     description: 'User email address',
     email: true,
-    unique: true
+    unique: true,
   })
   email: string;
 
   @SolidField({
     description: 'User first name',
-    maxLength: 100
+    maxLength: 100,
   })
   firstName: string;
 
@@ -202,7 +211,7 @@ export class User {
     integer: true,
     min: 18,
     max: 120,
-    nullable: true
+    nullable: true,
   })
   age?: number;
 
@@ -224,13 +233,13 @@ import { SolidInput, SolidField } from '@solid-nestjs/common';
 export class CreateUserDto {
   @SolidField({
     description: 'User email address',
-    email: true
+    email: true,
   })
   email: string;
 
   @SolidField({
     description: 'User first name',
-    maxLength: 100
+    maxLength: 100,
   })
   firstName: string;
 
@@ -239,7 +248,7 @@ export class CreateUserDto {
     integer: true,
     min: 18,
     max: 120,
-    nullable: true
+    nullable: true,
   })
   age?: number;
 }
@@ -253,6 +262,138 @@ The SOLID Decorators automatically generate:
 - ✅ **GraphQL**: `@ObjectType()`, `@Field()`, `@InputType()`
 - ✅ **Swagger**: `@ApiProperty()`, complete OpenAPI documentation
 - ✅ **Validation**: `@IsEmail()`, `@IsString()`, `@Min()`, `@Max()`, `@IsOptional()`
+
+## 🏗️ NEW: Entity-to-DTO Generation (v0.2.8)
+
+### Revolutionary DTO Creation from Entities
+
+Transform your DTO creation process with automatic generation from entities:
+
+**Before (Manual DTOs):**
+
+```typescript
+// ❌ Traditional approach (30+ lines per DTO)
+export class CreateProductDto {
+  @ApiProperty({ description: 'Product name' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ description: 'Product description' })
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @ApiProperty({ description: 'Product price' })
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @ApiProperty({ description: 'Stock quantity' })
+  @IsNumber()
+  @Min(0)
+  stock: number;
+
+  // ... more repetitive code
+}
+```
+
+**After (Entity-to-DTO Generation):**
+
+```typescript
+// ✅ SOLID approach (3 lines + custom fields)
+export class CreateProductDto extends GenerateDtoFromEntity(Product, [
+  'name',
+  'description',
+  'price',
+  'stock',
+]) {
+  // Only custom fields need manual definition
+  @ApiProperty({ description: 'Supplier reference' })
+  @ValidateNested()
+  supplier: SupplierDto;
+}
+```
+
+### 🧠 Automatic Validation Inference
+
+The framework automatically infers validation decorators based on TypeScript types:
+
+| TypeScript Type | Auto-Applied Decorators         | Example             |
+| --------------- | ------------------------------- | ------------------- |
+| `string`        | `@IsString()` + `@IsNotEmpty()` | `name: string`      |
+| `number`        | `@IsNumber()`                   | `price: number`     |
+| `boolean`       | `@IsBoolean()`                  | `isActive: boolean` |
+| `Date`          | `@IsDate()`                     | `createdAt: Date`   |
+| `string[]`      | `@IsArray()`                    | `tags: string[]`    |
+| `string?`       | `@IsOptional()` + `@IsString()` | `phone?: string`    |
+
+### 🎯 Multiple Property Selection Modes
+
+```typescript
+// 1. Array format - explicit property selection
+export class CreateDto extends GenerateDtoFromEntity(Entity, [
+  'name',
+  'description',
+  'price',
+]) {}
+
+// 2. Object format - boolean configuration
+export class UpdateDto extends GenerateDtoFromEntity(Entity, {
+  name: true, // Include
+  description: true, // Include
+  price: false, // Exclude
+  id: false, // Exclude
+}) {}
+
+// 3. Default selection - automatic smart filtering
+export class EntityDto extends GenerateDtoFromEntity(Entity) {
+  // Automatically includes all primitive properties
+  // Excludes: system fields (id, timestamps), relations, complex objects
+}
+```
+
+### 🌐 Framework Integration
+
+```typescript
+// REST API Bundle
+import { GenerateDtoFromEntity } from '@solid-nestjs/typeorm-crud';
+
+// GraphQL Bundle
+import { GenerateDtoFromEntity } from '@solid-nestjs/typeorm-graphql-crud';
+
+// Hybrid Bundle (REST + GraphQL)
+import { GenerateDtoFromEntity } from '@solid-nestjs/typeorm-hybrid-crud';
+```
+
+### 🎨 Works with Standard TypeORM Entities
+
+```typescript
+// Standard TypeORM entity (no SOLID decorators required)
+@Entity()
+export class Product {
+  @ApiProperty({ description: 'Product ID' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @ApiProperty({ description: 'Product name' })
+  @Column()
+  name: string; // Auto-inferred: @IsString() @IsNotEmpty()
+
+  @ApiProperty({ description: 'Product price' })
+  @Column('decimal', { precision: 10, scale: 2 })
+  price: number; // Auto-inferred: @IsNumber()
+}
+
+// Generated DTO with automatic validation
+export class CreateProductDto extends GenerateDtoFromEntity(Product, [
+  'name',
+  'price',
+]) {}
+// Result: Full validation + Swagger docs automatically applied!
+```
+
+For complete documentation, see [Entity-to-DTO Generation Guide](docs/DTO_GENERATION_FROM_ENTITIES.md).
 
 ### 🚀 Try Complete Examples
 
@@ -311,6 +452,7 @@ One of the most powerful features of the SOLID NestJS Framework is the **Args He
 ### 🚀 Before vs After Comparison
 
 **Traditional DTO Creation (80+ lines):**
+
 ```typescript
 // Manual implementation with repetitive decorators
 class FindProductWhere {
@@ -327,20 +469,21 @@ class FindProductWhere {
   @ValidateNested()
   @Type(() => NumberFilter)
   price?: NumberFilter;
-  
+
   // ... 60+ more lines for other fields and relations
 }
 ```
 
 **Args Helpers Approach (25 lines):**
+
 ```typescript
 // Automatic generation with type inference
 const ProductWhere = createWhereFields(
   Product,
   {
-    name: true,    // Auto-infers StringFilter + all decorators
-    price: true,   // Auto-infers NumberFilter + all decorators
-    stock: true,   // Auto-infers NumberFilter + all decorators
+    name: true, // Auto-infers StringFilter + all decorators
+    price: true, // Auto-infers NumberFilter + all decorators
+    stock: true, // Auto-infers NumberFilter + all decorators
     supplier: getWhereClass(FindSupplierArgs), // Reuses existing DTO
   },
   {
@@ -352,8 +495,8 @@ const ProductWhere = createWhereFields(
 const ProductOrderBy = createOrderByFields(
   Product,
   {
-    name: true,        // Enables ordering + applies decorators
-    price: true,       // Enables ordering + applies decorators
+    name: true, // Enables ordering + applies decorators
+    price: true, // Enables ordering + applies decorators
     supplier: getOrderByClass(FindSupplierArgs), // Relation ordering
   },
   {
@@ -367,7 +510,7 @@ const ProductOrderBy = createOrderByFields(
 
 - **60-80% Code Reduction** - Dramatically less boilerplate code
 - **Automatic Type Inference** - Framework automatically determines filter types (StringFilter, NumberFilter, etc.)
-- **Protocol Agnostic** - Same helpers work for REST API, GraphQL, and hybrid applications  
+- **Protocol Agnostic** - Same helpers work for REST API, GraphQL, and hybrid applications
 - **Type Safety** - Full TypeScript support with IntelliSense
 - **Circular Reference Prevention** - Built-in protection against relation loops
 
@@ -377,20 +520,25 @@ const ProductOrderBy = createOrderByFields(
 // REST API (@solid-nestjs/rest-api)
 import { createWhereFields, createOrderByFields } from '@solid-nestjs/rest-api';
 
-// GraphQL (@solid-nestjs/graphql) 
+// GraphQL (@solid-nestjs/graphql)
 import { createWhereFields, createOrderByFields } from '@solid-nestjs/graphql';
 
 // Hybrid (@solid-nestjs/rest-graphql)
-import { createWhereFields, createOrderByFields } from '@solid-nestjs/rest-graphql';
+import {
+  createWhereFields,
+  createOrderByFields,
+} from '@solid-nestjs/rest-graphql';
 ```
 
 ### 🧪 See It In Action
 
 **Apps with Args Helpers:**
+
 - **`apps-examples/composite-key-graphql-app`** - GraphQL helpers implementation
 - **`apps-examples/simple-crud-app`** - REST API helpers implementation
 
 **Apps with Traditional Implementation:**
+
 - **`apps-examples/advanced-hybrid-crud-app`** - Manual DTO implementation for comparison
 
 For complete documentation, see [Args Helpers Guide](docs/ARGS_HELPERS.md).
@@ -441,30 +589,24 @@ export class Product {
 }
 ```
 
-### 2. Create DTOs
+### 2. Create DTOs with Entity-to-DTO Generation (NEW!)
 
 ```typescript
 // create-product.dto.ts
-import { IsString, IsNumber, IsUUID, IsOptional } from 'class-validator';
+import { GenerateDtoFromEntity } from '@solid-nestjs/typeorm-crud';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { Product } from './entities/product.entity';
 
-export class CreateProductDto {
-  @ApiProperty()
-  @IsString()
-  name: string;
-
-  @ApiProperty()
-  @IsString()
-  description: string;
-
-  @ApiProperty()
-  @IsNumber()
-  price: number;
-
-  @ApiProperty()
-  @IsNumber()
-  stock: number;
-
+// Generate DTO from entity with automatic validation inference
+export class CreateProductDto extends GenerateDtoFromEntity(Product, [
+  'name', // Auto: @IsString() @IsNotEmpty()
+  'description', // Auto: @IsString() @IsNotEmpty()
+  'price', // Auto: @IsNumber()
+  'stock', // Auto: @IsNumber()
+]) {
+  // Add custom fields as needed
   @ApiProperty({ required: false })
   @IsOptional()
   @IsUUID()
@@ -482,16 +624,20 @@ import { ArgsType, Field } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FindArgsMixin, createWhereFields, createOrderByFields } from '@solid-nestjs/rest-api';
+import {
+  FindArgsMixin,
+  createWhereFields,
+  createOrderByFields,
+} from '@solid-nestjs/rest-api';
 import { Product } from '../entities/product.entity';
 
 // Generate filtering DTO with automatic type inference
 const ProductWhere = createWhereFields(
   Product,
   {
-    name: true,      // Auto-infers StringFilter + applies decorators
-    price: true,     // Auto-infers NumberFilter + applies decorators
-    stock: true,     // Auto-infers NumberFilter + applies decorators
+    name: true, // Auto-infers StringFilter + applies decorators
+    price: true, // Auto-infers NumberFilter + applies decorators
+    stock: true, // Auto-infers NumberFilter + applies decorators
   },
   { name: 'FindProductWhere' },
 );
@@ -500,9 +646,9 @@ const ProductWhere = createWhereFields(
 const ProductOrderBy = createOrderByFields(
   Product,
   {
-    name: true,      // Enables ordering + applies decorators
-    price: true,     // Enables ordering + applies decorators
-    stock: true,     // Enables ordering + applies decorators
+    name: true, // Enables ordering + applies decorators
+    price: true, // Enables ordering + applies decorators
+    stock: true, // Enables ordering + applies decorators
   },
   { name: 'FindProductOrderBy' },
 );
@@ -625,15 +771,16 @@ GET /products/grouped?groupBy={"fields":{"supplier":{"name":true}},"aggregates":
 ```
 
 **Response:**
+
 ```json
 {
   "groups": [
     {
-      "key": {"supplier_name": "TechCorp"},
-      "aggregates": {"avgPrice": 1250.50, "totalStock": 45}
+      "key": { "supplier_name": "TechCorp" },
+      "aggregates": { "avgPrice": 1250.5, "totalStock": 45 }
     }
   ],
-  "pagination": {"total": 1, "count": 1, "page": 1}
+  "pagination": { "total": 1, "count": 1, "page": 1 }
 }
 ```
 
@@ -663,17 +810,18 @@ query {
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
     "productsGrouped": {
       "groups": [
         {
-          "key": {"supplier_name": "TechCorp"},
-          "aggregates": {"avgPrice": 1250.50, "totalStock": 45}
+          "key": { "supplier_name": "TechCorp" },
+          "aggregates": { "avgPrice": 1250.5, "totalStock": 45 }
         }
       ],
-      "pagination": {"total": 1, "count": 1, "page": 1}
+      "pagination": { "total": 1, "count": 1, "page": 1 }
     }
   }
 }

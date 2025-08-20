@@ -1,71 +1,17 @@
 import { SolidInput, SolidField } from '@solid-nestjs/common';
-import { Float, Int, ID } from '@nestjs/graphql';
-import { IsFlexibleUUID } from '../../../common/validators/is-flexible-uuid.validator';
+import { GenerateDtoFromEntity, PartialType } from '@solid-nestjs/rest-graphql';
+import { Client } from '../../../clients/entities/client.entity';
+import { CreateInvoiceDetailDto } from './create-invoice.dto';
 
 @SolidInput()
-export class UpdateInvoiceClientDto {
-  @SolidField({
-    description: 'client id',
-    adapters: {
-      graphql: {
-        type: () => ID,
-      },
-      validation: {
-        validators: [IsFlexibleUUID],
-      },
-    },
-  })
-  id: string;
-}
+export class UpdateInvoiceClientDto extends GenerateDtoFromEntity(Client, [
+  'id',
+]) {}
 
 @SolidInput()
-export class UpdateInvoiceDetailDto {
-  @SolidField({
-    description: 'detail id for updating existing detail',
-    nullable: true,
-    adapters: {
-      graphql: {
-        type: () => ID,
-      },
-    },
-  })
-  id?: number;
-
-  @SolidField({
-    description: 'product id',
-    adapters: {
-      graphql: {
-        type: () => ID,
-      },
-      validation: {
-        validators: [IsFlexibleUUID],
-      },
-    },
-  })
-  productId: string;
-
-  @SolidField({
-    description: 'The quantity of the product',
-    min: 1,
-    adapters: {
-      graphql: {
-        type: () => Int,
-      },
-    },
-  })
-  quantity: number;
-
-  @SolidField({
-    description: 'The unit price of the product',
-    min: 0,
-    adapters: {
-      graphql: {
-        type: () => Float,
-      },
-    },
-  })
-  unitPrice: number;
-}
+export class UpdateInvoiceDetailDto extends PartialType(
+  CreateInvoiceDetailDto,
+) {}
 
 @SolidInput()
 export class UpdateInvoiceDto {

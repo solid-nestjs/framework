@@ -23,6 +23,9 @@ export {
   createGroupByFields,
 } from '@solid-nestjs/rest-api';
 
+//DTO Generation
+export { GenerateDtoFromEntity } from '@solid-nestjs/rest-api';
+
 //Crud Controller
 export {
   DataControllerFrom,

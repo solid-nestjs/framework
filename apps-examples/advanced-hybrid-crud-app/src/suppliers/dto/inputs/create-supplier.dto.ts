@@ -1,54 +1,34 @@
 import { SolidInput, SolidField } from '@solid-nestjs/common';
 import { Float, Int } from '@nestjs/graphql';
+import { GenerateDtoFromEntity, PropertyInclusionConfig } from '@solid-nestjs/rest-graphql';
+import { Supplier } from '../../entities/supplier.entity';
+import { Product } from '../../../products/entities/product.entity';
 
+// Using GenerateDtoFromEntity with Product entity (default rules)
+// This will include: name, description, price, stock (flat properties, excluding system fields and relations)
 @SolidInput()
-export class SupplierProductDto {
-  @SolidField({
-    description: 'The name of the product',
-  })
-  name: string;
+export class SupplierProductDto extends GenerateDtoFromEntity(Product) {}
 
-  @SolidField({
-    description: 'The description of the product',
-  })
-  description: string;
+// Alternative: Using object format for fine control
+// const productConfig: PropertyInclusionConfig<Product> = {
+//   name: true,        // Always include
+//   description: true, // Always include
+//   price: true,       // Always include
+//   stock: true,       // Always include
+//   id: false,         // Always exclude
+//   supplier: false,   // Always exclude (relation)
+//   createdAt: false,  // Always exclude
+//   updatedAt: false,  // Always exclude
+//   deletedAt: false,  // Always exclude
+// };
+// @SolidInput()
+// export class SupplierProductDto extends GenerateDtoFromEntity(Product, productConfig) {}
 
-  @SolidField({
-    description: 'The price of the product',
-    positive: true,
-    adapters: {
-      graphql: {
-        type: () => Float,
-      },
-    },
-  })
-  price: number;
-
-  @SolidField({
-    description: 'The stock quantity of the product',
-    min: 0,
-    adapters: {
-      graphql: {
-        type: () => Int,
-      },
-    },
-  })
-  stock: number;
-}
-
+// Example 1: Using default rules (no configuration) 
+// This will include: name, contactEmail (flat properties, excluding system fields and relations)
 @SolidInput()
-export class CreateSupplierDto {
-  @SolidField({
-    description: 'The name of the supplier',
-  })
-  name: string;
-
-  @SolidField({
-    description: 'The email of the supplier',
-    email: true,
-  })
-  contactEmail: string;
-
+export class CreateSupplierDto extends GenerateDtoFromEntity(Supplier) {
+  // Custom field: products array with nested DTOs
   @SolidField({
     description: 'Supplier`s products',
     nullable: true,
@@ -57,3 +37,38 @@ export class CreateSupplierDto {
   })
   products?: SupplierProductDto[];
 }
+
+// Example 2: Using legacy array format (backward compatibility)
+// @SolidInput()
+// export class CreateSupplierDto extends GenerateDtoFromEntity(Supplier, [
+//   'name', 'contactEmail'
+// ]) {
+//   @SolidField({
+//     description: 'Supplier`s products',
+//     nullable: true,
+//     array: true,
+//     arrayType: () => SupplierProductDto
+//   })
+//   products?: SupplierProductDto[];
+// }
+
+// Example 3: Using new object format for fine control
+// const supplierConfig: PropertyInclusionConfig<Supplier> = {
+//   name: true,         // Always include
+//   contactEmail: true, // Always include  
+//   id: false,          // Always exclude
+//   products: false,    // Always exclude (we'll add it manually)
+//   createdAt: false,   // Always exclude
+//   updatedAt: false,   // Always exclude
+//   deletedAt: false,   // Always exclude
+// };
+// @SolidInput()
+// export class CreateSupplierDto extends GenerateDtoFromEntity(Supplier, supplierConfig) {
+//   @SolidField({
+//     description: 'Supplier`s products',
+//     nullable: true,
+//     array: true,
+//     arrayType: () => SupplierProductDto
+//   })
+//   products?: SupplierProductDto[];
+// }

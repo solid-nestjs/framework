@@ -5,3 +5,4 @@ export * from './find-args.type';
 export * from './group-by.type';
 export * from './prettify.type';
 export * from './union-to-intersection.type';
+export * from './dto-generation.types';

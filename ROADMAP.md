@@ -2,7 +2,7 @@
 
 This document outlines the planned development roadmap for the SOLID NestJS Framework, including upcoming features, improvements, and long-term vision.
 
-## 📅 Current Version: 0.2.8
+## 📅 Current Version: 0.2.9
 
 The framework currently provides:
 
@@ -18,6 +18,7 @@ The framework currently provides:
 - ✅ Transaction support with configurable isolation levels
 - ✅ Type-safe DTOs and validation
 - ✅ **SOLID Decorators** - Unified decorator system with 70-80% code reduction and automatic inference
+- ✅ **Entity-to-DTO Generation** - Automatic DTO generation from entities with validation inference
 - ✅ Modular architecture following SOLID principles
 
 ---
@@ -40,7 +41,7 @@ The framework currently provides:
 - ✅ **Circular Reference Prevention** - Built-in protection against infinite relation loops in DTOs
 - ✅ **SOLID Decorators** - Unified decorator system that combines common patterns like `@ApiProperty`, `@IsString`, `@IsNotEmpty`, etc.
 - ✅ **Automatic Validation Inference** - Framework automatically applies appropriate validation decorators based on TypeScript types
-- 🔲 **Entity-to-DTO Code Generation** - Generate DTOs automatically from entity definitions with configurable validation rules
+- ✅ **Entity-to-DTO Code Generation** - Generate DTOs automatically from entity definitions with configurable validation rules
 
 #### 🔐 Advanced Authentication & Authorization
 
@@ -200,9 +201,10 @@ _This roadmap is subject to change based on community feedback and development p
 
 ## 📋 Recent Accomplishments
 
-### ✅ Completed in Version 0.2.8
+### ✅ Completed in Version 0.2.9
 
 - **SOLID Decorators System** - Revolutionary unified decorator system that transforms developer experience
+
   - **70-80% Code Reduction** - Dramatic reduction in boilerplate code for entities and DTOs
   - **Automatic Type Inference** - Framework automatically applies appropriate decorators based on TypeScript types
   - **Plugin-Based Architecture** - Extensible adapter system for TypeORM, Swagger, GraphQL, and validation
@@ -221,7 +223,31 @@ _This roadmap is subject to change based on community feedback and development p
   - **Comprehensive Documentation** - Complete guides, examples, and migration instructions
   - **Multi-Database Testing** - Validated across SQLite, PostgreSQL, MySQL, and SQL Server
 
-### ✅ Completed in Version 0.2.9
+- **Entity-to-DTO Generation System** - Revolutionary DTO creation from entities with automatic validation inference
+  - **80% Code Reduction** - Transform 30+ line manual DTOs into 3-line generated DTOs
+  - **Automatic Validation Inference** - Infer validation decorators from TypeScript types (string → @IsString() + @IsNotEmpty())
+  - **Multiple Selection Modes** - Array format, object format, and automatic smart filtering
+  - **Framework Integration** - Available in all bundles (@solid-nestjs/typeorm-crud, typeorm-graphql-crud, typeorm-hybrid-crud)
+  - **Standard Entity Support** - Works with regular TypeORM entities (no SOLID decorators required)
+  - **TypeScript Type Safety** - Full type inference and IntelliSense support
+  - **Property Selection Strategies**:
+    - Array format: `GenerateDtoFromEntity(Entity, ['name', 'price'])`
+    - Object format: `GenerateDtoFromEntity(Entity, {name: true, price: false})`
+    - Default selection: `GenerateDtoFromEntity(Entity)` - auto-excludes system fields and relations
+  - **Validation Mapping Table**:
+    - `string` → `@IsString()` + `@IsNotEmpty()`
+    - `number` → `@IsNumber()`
+    - `boolean` → `@IsBoolean()`
+    - `Date` → `@IsDate()`
+    - `string[]` → `@IsArray()`
+    - `string?` → `@IsOptional()` + `@IsString()`
+  - **Universal Protocol Support** - Same API works for REST, GraphQL, and hybrid applications
+  - **Swagger Documentation Preservation** - Automatically copies @ApiProperty decorators from entities
+  - **Custom Field Extension** - Easy addition of custom fields to generated DTOs
+  - **Production Testing** - All E2E tests passing with automatic validation inference
+  - **Complete Documentation** - Comprehensive guide with examples and migration strategies
+
+### ✅ Completed in Version 0.2.8
 
 - **Args Helpers Revolution** - Revolutionary DTO creation system that transforms developer experience
   - **60-80% Code Reduction** - Dramatic reduction in boilerplate code for filtering, ordering, and grouping DTOs
