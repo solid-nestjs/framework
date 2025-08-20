@@ -1,4 +1,4 @@
-# Task: Phase 3 - Advanced Generators
+# Task: Phase 3 - Advanced NestJS Generators
 
 ## Task Information
 - **Phase**: 3
@@ -12,7 +12,7 @@
 - **Previous Task**: [202508192101 - Phase 2 Basic Generators.md](202508192101%20-%20Phase%202%20Basic%20Generators.md)
 
 ## Objective
-Implement advanced generators for DTOs with Args helpers, GraphQL resolvers, hybrid controllers, and complete resource generation with all components.
+Complete the SOLID framework capabilities by implementing advanced generators for DTOs with Args helpers, GraphQL resolvers, hybrid controllers, and complete resource generation. Focus on core NestJS functionality integration.
 
 ## Subtasks
 

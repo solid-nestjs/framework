@@ -16,35 +16,65 @@ Implement interactive wizard mode, configuration management, enhanced error hand
 
 ## Subtasks
 
-### 4.1 Interactive Wizard System
+### 4.1 Context-Aware Interactive Wizard System
 - [ ] Create InteractiveMode class
-- [ ] Implement main wizard flow
-- [ ] Add context-aware prompts
-- [ ] Support multi-step wizards
+- [ ] Implement ProjectAnalyzer for dependency detection
+- [ ] Add package.json analysis system
+- [ ] Create project structure scanner
+- [ ] Implement database configuration detection
+- [ ] Add existing code analysis (entities, services, controllers)
+- [ ] Create context-aware prompt filtering
+- [ ] Implement smart default selection based on context
+- [ ] Add project capability detection
+- [ ] Support multi-step wizards with context
 - [ ] Add validation for each step
 - [ ] Implement back navigation
 - [ ] Add preview before generation
 - [ ] Support wizard state persistence
-- [ ] Create help text for each prompt
+- [ ] Create context-aware help text
 
-**Interactive Flow Architecture:**
+**Context-Aware Flow Architecture:**
 ```typescript
 interface WizardStep {
   name: string;
   prompt: PromptObject;
   validate?: (input: any) => boolean | string;
   transform?: (input: any) => any;
-  when?: (answers: any) => boolean;
+  when?: (answers: any, context: ProjectContext) => boolean;
+  contextFilter?: (context: ProjectContext) => PromptChoice[];
 }
 
-class InteractiveWizard {
+interface ProjectContext {
+  hasSolidNestjs: boolean;
+  solidVersion: string;
+  hasGraphQL: boolean;
+  hasSwagger: boolean;
+  hasTypeORM: boolean;
+  databaseType: 'sqlite' | 'postgres' | 'mysql' | 'mssql';
+  existingEntities: string[];
+  existingServices: string[];
+  existingControllers: string[];
+  hasSolidDecorators: boolean;
+  hasArgsHelpers: boolean;
+  hasEntityGeneration: boolean;
+}
+
+class ContextAwareWizard {
   private steps: WizardStep[];
-  private state: WizardState;
+  private context: ProjectContext;
   
   async run(): Promise<GenerationOptions> {
-    // Step through wizard
-    // Validate inputs
-    // Return generation options
+    // 1. Analyze project context
+    this.context = await this.analyzer.analyzeProject(process.cwd());
+    
+    // 2. Filter prompts based on context
+    const contextualSteps = this.filterStepsByContext(this.steps, this.context);
+    
+    // 3. Pre-select defaults based on detected capabilities
+    const preselectedAnswers = this.getContextDefaults(this.context);
+    
+    // 4. Run wizard with context awareness
+    return await this.runWizardWithContext(contextualSteps, preselectedAnswers);
   }
 }
 ```
@@ -166,18 +196,29 @@ class ConfigurationError extends SnestError {}
 
 ## Interactive Mode Examples
 
-### Basic Interactive Flow
+### Context-Aware Interactive Flow Example
 ```bash
 $ snest generate --interactive
 
-? What would you like to generate? (Use arrow keys)
+🔍 Analyzing project context...
+✓ Found SOLID NestJS v0.2.9
+✓ GraphQL support detected (@nestjs/graphql)
+✓ Swagger support detected (@nestjs/swagger)
+✓ SOLID decorators available (@solid-nestjs/common)
+✓ Args helpers available (@solid-nestjs/rest-graphql)
+✓ Entity generation available
+✓ Database: PostgreSQL (detected from .env)
+✓ Found 3 existing entities: User, Category, Supplier
+
+? What would you like to generate? (Smart: Options filtered by capabilities)
 ❯ Complete Resource (Entity + Service + Controller + DTOs)
   Entity
-  Service  
-  Controller
+  Service (for existing entity)
+  REST Controller               ← Available: Swagger detected
+  GraphQL Resolver             ← Available: GraphQL detected  
+  Hybrid Controller            ← Available: Both REST + GraphQL
   Module
-  DTO
-  Custom
+  DTO (with Args helpers)      ← Smart: Args helpers available
 
 ? Resource name: Product
 

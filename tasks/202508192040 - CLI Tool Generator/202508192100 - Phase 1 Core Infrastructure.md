@@ -15,13 +15,16 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 
 ## Subtasks
 
-### 1.1 Package Setup and Configuration
-- [ ] Create new package `@solid-nestjs/snest-cli`
-- [ ] Configure TypeScript with strict mode
-- [ ] Set up build scripts and compilation
-- [ ] Configure ESLint and Prettier
-- [ ] Create package.json with proper bin configuration
-- [ ] Set up Jest for testing
+### 1.1 Monorepo Integration and Package Setup
+- [ ] Create `packages-tools/snest-cli` directory in monorepo
+- [ ] Update root package.json to include `packages-tools/*` in workspaces array
+- [ ] Create new package `@solid-nestjs/snest-cli` with proper npm name
+- [ ] Configure TypeScript with strict mode inheriting from root config
+- [ ] Set up build scripts and compilation using monorepo patterns
+- [ ] Configure ESLint and Prettier to inherit from root
+- [ ] Create package.json with proper bin configuration for global CLI
+- [ ] Set up Jest for testing using monorepo Jest config
+- [ ] Add CLI package to lerna configuration for versioning
 
 ### 1.2 CLI Core Architecture
 - [ ] Implement main CLI entry point (`src/cli.ts`)
@@ -104,9 +107,9 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 }
 ```
 
-### File Structure
+### File Structure (Within Monorepo)
 ```
-@solid-nestjs/snest-cli/
+packages-tools/snest-cli/
 ├── bin/
 │   └── snest.js
 ├── src/
