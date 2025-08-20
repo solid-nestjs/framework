@@ -28,6 +28,9 @@ export {
   createGroupByFields,
 } from '@solid-nestjs/rest-graphql';
 
+//DTO Generation
+export { GenerateDtoFromEntity } from '@solid-nestjs/rest-graphql';
+
 //Crud Controller
 export {
   DataControllerStructure,

@@ -1,44 +1,35 @@
-import { SolidInput, SolidField } from '@solid-nestjs/common';
+import { SolidInput } from '@solid-nestjs/typeorm-hybrid-crud';
+import { GenerateDtoFromEntity } from '@solid-nestjs/rest-graphql';
+import { Client } from '../../entities/client.entity';
 
+// Example 1: Using default rules (no configuration)
+// This will include all flat properties (string, number, boolean, Date) except system fields
 @SolidInput()
-export class CreateClientDto {
-  @SolidField({
-    description: 'The first name of the client'
-  })
-  firstName: string;
+export class CreateClientDto extends GenerateDtoFromEntity(Client) {}
 
-  @SolidField({
-    description: 'The last name of the client'
-  })
-  lastName: string;
+// Example 2: Using legacy array format (backward compatibility)
+// @SolidInput()
+// export class CreateClientDto extends GenerateDtoFromEntity(Client, [
+//   'firstName',
+//   'lastName',
+//   'email',
+//   'phone',
+//   'address',
+//   'city',
+//   'country',
+// ]) {}
 
-  @SolidField({
-    description: 'The email address of the client',
-    email: true
-  })
-  email: string;
-
-  @SolidField({
-    description: 'The phone number of the client',
-    nullable: true
-  })
-  phone?: string;
-
-  @SolidField({
-    description: 'The address of the client',
-    nullable: true
-  })
-  address?: string;
-
-  @SolidField({
-    description: 'The city of the client',
-    nullable: true
-  })
-  city?: string;
-
-  @SolidField({
-    description: 'The country of the client',
-    nullable: true
-  })
-  country?: string;
-}
+// Example 3: Using new object format for fine control
+// @SolidInput()
+// export class CreateClientDto extends GenerateDtoFromEntity(Client, {
+//   firstName: true, // Always include
+//   lastName: true, // Always include
+//   email: true, // Always include
+//   phone: false, // Always exclude
+//   address: undefined, // Use default rules (include if flat type)
+//   city: true, // Always include
+//   country: true, // Always include
+//   id: false, // Always exclude
+//   invoices: false, // Always exclude
+//   // Properties not listed here will use default rules
+// }) {}
