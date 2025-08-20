@@ -1,0 +1,51 @@
+{{#if hasValidation}}
+import { IsString, IsNumber, IsBoolean, IsOptional, IsEmail, MaxLength } from 'class-validator';
+{{/if}}
+{{#if hasSwagger}}
+import { ApiProperty } from '@nestjs/swagger';
+{{/if}}
+{{#if hasGraphQL}}
+import { InputType, Field } from '@nestjs/graphql';
+{{/if}}
+
+{{#if hasSwagger}}
+{{#if hasGraphQL}}
+@InputType()
+{{/if}}
+{{/if}}
+export class Create{{pascalCase name}}Dto {
+{{#each fields}}
+  {{#if ../hasSwagger}}
+  @ApiProperty({
+    description: '{{this.description}}{{#unless this.description}}The {{this.name}} of the {{../entityName}}{{/unless}}',
+    {{#if this.nullable}}required: false,{{/if}}
+    {{#if (eq this.type "string")}}type: 'string',{{/if}}
+    {{#if (eq this.type "number")}}type: 'number',{{/if}}
+    {{#if (eq this.type "boolean")}}type: 'boolean',{{/if}}
+  })
+  {{/if}}
+  {{#if ../hasGraphQL}}
+  @Field({{#if this.nullable}}{ nullable: true }{{/if}})
+  {{/if}}
+  {{#if ../hasValidation}}
+  {{#if this.nullable}}
+  @IsOptional()
+  {{/if}}
+  {{#if (eq this.type "string")}}
+  @IsString()
+  {{#if (includes this.name "email")}}
+  @IsEmail()
+  {{/if}}
+  @MaxLength(255)
+  {{/if}}
+  {{#if (eq this.type "number")}}
+  @IsNumber()
+  {{/if}}
+  {{#if (eq this.type "boolean")}}
+  @IsBoolean()
+  {{/if}}
+  {{/if}}
+  {{this.name}}{{#if this.nullable}}?{{/if}}: {{typeScriptType this.type}};
+
+{{/each}}
+}

@@ -1,9 +1,10 @@
 import * as path from 'path';
 import { TemplateEngine } from '../utils/template-engine';
-import { GenerationOptions, CommandResult, ProjectContext, RelationDefinition } from '../types';
-import { writeFile } from '../utils/file-utils';
-import { createNameVariations } from '../utils/string-utils';
+import { GenerationOptions, CommandResult, ProjectContext, RelationDefinition, FieldDefinition } from '../types';
+import { writeFile, ensureDirectory } from '../utils/file-utils';
+import { createNameVariations, getSolidBundle } from '../utils/string-utils';
 import { ModuleUpdater } from '../utils/module-updater';
+import { DTOGenerator } from './dto.generator';
 
 /**
  * Generator for SOLID NestJS services with CRUD operations
@@ -26,8 +27,8 @@ export class ServiceGenerator {
     try {
       const nameVariations = createNameVariations(name);
       
-      // Determine entity name (default to same as service name)
-      const entityName = options.entityName || name;
+      // Determine entity name (default to singular form of service name)
+      const entityName = options.entityName || this.singularize(name);
       const entityVariations = createNameVariations(entityName);
       
       // Determine features based on context and options
@@ -35,7 +36,7 @@ export class ServiceGenerator {
       const hasArgsHelpers = options.withArgsHelpers ?? context?.hasArgsHelpers ?? false;
       const withSoftDelete = options.withSoftDelete ?? false;
       const withBulkOperations = options.withBulkOperations ?? false;
-      const databaseType = context?.databaseType || 'typeorm';
+      const databaseType = context?.databaseType || 'typeorm-hybrid-crud';
       
       // Parse relations if provided
       const relations = this.parseRelations(options.relations || []);
@@ -55,6 +56,7 @@ export class ServiceGenerator {
         withBulkOperations,
         hasCustomMethods: options.customMethods && options.customMethods.length > 0,
         customMethods: options.customMethods || [],
+        solidBundle: getSolidBundle(context?.apiType),
       });
 
       // Generate service content
@@ -64,7 +66,23 @@ export class ServiceGenerator {
       const outputDir = options.path || (context?.paths?.services || 'src/services');
       const outputPath = path.join(process.cwd(), outputDir, `${nameVariations.kebabCase}.service.ts`);
       
-      // Write file
+      // Generate DTOs automatically
+      const generatedFiles: string[] = [];
+      
+      try {
+        // Ensure DTO directories exist
+        await ensureDirectory(path.join(process.cwd(), 'src/dto/inputs'));
+        
+        // Generate DTOs based on entity fields if we can find them
+        const createDtoPath = await DTOGenerator.generateCreateDTO(entityName, this.getBasicFields(entityName));
+        const updateDtoPath = await DTOGenerator.generateUpdateDTO(entityName);
+        
+        generatedFiles.push(createDtoPath, updateDtoPath);
+      } catch (error) {
+        console.warn('Could not generate DTOs automatically:', error);
+      }
+
+      // Write service file
       const result = await writeFile(outputPath, serviceContent, options.overwrite);
       
       if (!result.success) {
@@ -73,6 +91,8 @@ export class ServiceGenerator {
           message: `Failed to create service: ${result.error}`,
         };
       }
+      
+      generatedFiles.push(result.path);
 
       // Prepare next steps
       const nextSteps = [
@@ -105,7 +125,7 @@ export class ServiceGenerator {
       return {
         success: true,
         message: `Service '${nameVariations.pascalCase}' generated successfully`,
-        generatedFiles: [result.path],
+        generatedFiles: generatedFiles.map(file => path.relative(process.cwd(), file)),
         nextSteps,
       };
     } catch (error) {
@@ -274,5 +294,56 @@ export class ServiceGenerator {
     };
 
     return this.generate(serviceOptions.name, serviceOptions);
+  }
+
+  /**
+   * Simple singularization method for common English patterns
+   */
+  private singularize(word: string): string {
+    const singular = word.toLowerCase();
+    
+    // Common patterns
+    if (singular.endsWith('ies')) {
+      return word.slice(0, -3) + 'y'; // Companies -> Company
+    } else if (singular.endsWith('ves')) {
+      return word.slice(0, -3) + 'f'; // Lives -> Life
+    } else if (singular.endsWith('es') && singular.length > 3) {
+      return word.slice(0, -2); // Classes -> Class
+    } else if (singular.endsWith('s') && singular.length > 1) {
+      return word.slice(0, -1); // Users -> User
+    }
+    
+    return word; // Return as-is if no pattern matches
+  }
+
+  /**
+   * Get basic fields for common entities to generate DTOs
+   */
+  private getBasicFields(entityName: string): FieldDefinition[] {
+    const entityLower = entityName.toLowerCase();
+    
+    // Common field patterns based on entity name
+    const commonFields: FieldDefinition[] = [];
+    
+    if (entityLower.includes('user')) {
+      commonFields.push(
+        { name: 'email', type: 'string', required: true, nullable: false },
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'password', type: 'string', required: true, nullable: false }
+      );
+    } else if (entityLower.includes('product')) {
+      commonFields.push(
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'price', type: 'number', required: true, nullable: false },
+        { name: 'description', type: 'string', required: false, nullable: true }
+      );
+    } else {
+      // Default fields for unknown entities
+      commonFields.push(
+        { name: 'name', type: 'string', required: true, nullable: false }
+      );
+    }
+    
+    return commonFields;
   }
 }

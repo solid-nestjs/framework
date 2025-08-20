@@ -157,7 +157,7 @@ export class ModuleUpdater {
     }
 
     // Re-parse with updated imports
-    const updatedSourceFile = AstUtils.parseFile(moduleFilePath) || sourceFile;
+    let updatedSourceFile = AstUtils.parseFromContent(content) || sourceFile;
 
     // Handle entity registration
     if (component.type === 'entity') {
@@ -167,6 +167,8 @@ export class ModuleUpdater {
       if (entityContent !== content) {
         content = entityContent;
         hasUpdates = true;
+        // Re-parse with updated entity
+        updatedSourceFile = AstUtils.parseFromContent(content) || updatedSourceFile;
       }
     }
 
@@ -179,6 +181,8 @@ export class ModuleUpdater {
       if (serviceContent !== content) {
         content = serviceContent;
         hasUpdates = true;
+        // Re-parse with updated providers
+        updatedSourceFile = AstUtils.parseFromContent(content) || updatedSourceFile;
       }
 
       // Also add to exports

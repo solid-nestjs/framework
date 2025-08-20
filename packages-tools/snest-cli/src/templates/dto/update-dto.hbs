@@ -1,0 +1,11 @@
+import { PartialType } from '@nestjs/swagger';
+{{#if hasGraphQL}}
+import { PartialType as GraphQLPartialType } from '@nestjs/graphql';
+{{/if}}
+import { Create{{pascalCase name}}Dto } from './create-{{kebabCase name}}.dto';
+
+{{#if hasGraphQL}}
+export class Update{{pascalCase name}}Dto extends GraphQLPartialType(Create{{pascalCase name}}Dto) {}
+{{else}}
+export class Update{{pascalCase name}}Dto extends PartialType(Create{{pascalCase name}}Dto) {}
+{{/if}}

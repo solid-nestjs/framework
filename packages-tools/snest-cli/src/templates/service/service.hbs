@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 {{#if useSolidDecorators}}
-import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/{{databaseType}}';
+import { CrudServiceFrom, CrudServiceStructure } from '{{solidBundle}}';
 {{#if hasArgsHelpers}}
-import { Context } from '@solid-nestjs/common';
+import { Context } from '{{solidBundle}}';
 {{/if}}
 {{else}}
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,10 +10,10 @@ import { Repository } from 'typeorm';
 {{/if}}
 import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
 {{#if hasCreateDto}}
-import { Create{{pascalCase name}}Dto } from '../dto/inputs/create-{{kebabCase name}}.dto';
+import { Create{{pascalCase entityName}}Dto } from '../dto/inputs/create-{{kebabCase entityName}}.dto';
 {{/if}}
 {{#if hasUpdateDto}}
-import { Update{{pascalCase name}}Dto } from '../dto/inputs/update-{{kebabCase name}}.dto';
+import { Update{{pascalCase entityName}}Dto } from '../dto/inputs/update-{{kebabCase entityName}}.dto';
 {{/if}}
 {{#if hasFindArgs}}
 import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}.args';
@@ -26,10 +26,10 @@ import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}
 export const {{camelCase name}}ServiceStructure = CrudServiceStructure({
   entityType: {{pascalCase entityName}},
   {{#if hasCreateDto}}
-  createInputType: Create{{pascalCase name}}Dto,
+  createInputType: Create{{pascalCase entityName}}Dto,
   {{/if}}
   {{#if hasUpdateDto}}
-  updateInputType: Update{{pascalCase name}}Dto,
+  updateInputType: Update{{pascalCase entityName}}Dto,
   {{/if}}
   {{#if hasFindArgs}}
   findArgsType: Find{{pascalCase name}}Args,

@@ -2,7 +2,7 @@ import * as path from 'path';
 import { TemplateEngine } from '../utils/template-engine';
 import { FieldDefinition, GenerationOptions, CommandResult, ProjectContext } from '../types';
 import { writeFile } from '../utils/file-utils';
-import { createNameVariations } from '../utils/string-utils';
+import { createNameVariations, getSolidBundle } from '../utils/string-utils';
 import { ModuleUpdater } from '../utils/module-updater';
 
 /**
@@ -45,6 +45,7 @@ export class EntityGenerator {
         withSoftDelete,
         withTimestamps: true, // Always include timestamps
         relationImports: this.buildRelationImports(fields),
+        solidBundle: getSolidBundle(context?.apiType),
       });
 
       // Generate entity content
@@ -174,7 +175,7 @@ export class EntityGenerator {
   }
 
   /**
-   * Build TypeORM column options
+   * Build SOLID column options
    */
   private buildColumnOptions(field: FieldDefinition): any {
     const options: any = {};
@@ -184,26 +185,27 @@ export class EntityGenerator {
       options.nullable = true;
     }
 
-    // Set type-specific options
+    // Set SOLID-specific options (no 'type' property)
     switch (field.type) {
       case 'string':
-        options.type = 'varchar';
         if (field.name.toLowerCase().includes('email')) {
-          options.length = 255;
+          options.maxLength = 255;
+          options.email = true;
+        } else {
+          options.maxLength = 255;
         }
         break;
       
       case 'number':
-        options.type = 'integer';
+        // No specific options for numbers in SOLID
         break;
       
       case 'boolean':
-        options.type = 'boolean';
         options.default = false;
         break;
       
       case 'Date':
-        options.type = 'timestamp';
+        // Dates are handled by specific decorators in SOLID
         break;
     }
 

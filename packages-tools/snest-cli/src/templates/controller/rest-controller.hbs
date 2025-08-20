@@ -1,8 +1,8 @@
 import { Controller{{#if hasValidation}}, ValidationPipe{{/if}} } from '@nestjs/common';
 {{#if useSolidDecorators}}
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/{{#if hasGraphQL}}rest-graphql{{else}}rest-api{{/if}}';
+import { CrudControllerFrom, CrudControllerStructure } from '{{solidBundle}}';
 {{#if hasArgsHelpers}}
-import { Context } from '@solid-nestjs/common';
+import { Context } from '{{solidBundle}}';
 {{/if}}
 {{else}}
 import { Get, Post, Body, Patch, Param, Delete{{#if hasValidation}}, UsePipes{{/if}} } from '@nestjs/common';
@@ -10,13 +10,13 @@ import { Get, Post, Body, Patch, Param, Delete{{#if hasValidation}}, UsePipes{{/
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 {{/if}}
 {{/if}}
-import { {{pascalCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}} } from '../services/{{kebabCase serviceName}}.service';
+import { {{pascalCase name}}Service } from '../services/{{kebabCase name}}.service';
 import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
 {{#if hasCreateDto}}
-import { Create{{pascalCase name}}Dto } from '../dto/inputs/create-{{kebabCase name}}.dto';
+import { Create{{pascalCase entityName}}Dto } from '../dto/inputs/create-{{kebabCase entityName}}.dto';
 {{/if}}
 {{#if hasUpdateDto}}
-import { Update{{pascalCase name}}Dto } from '../dto/inputs/update-{{kebabCase name}}.dto';
+import { Update{{pascalCase entityName}}Dto } from '../dto/inputs/update-{{kebabCase entityName}}.dto';
 {{/if}}
 {{#if hasFindArgs}}
 import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}.args';
@@ -33,12 +33,12 @@ import { {{this.name}} } from '{{this.path}}';
  */
 export const {{camelCase name}}ControllerStructure = CrudControllerStructure({
   entityType: {{pascalCase entityName}},
-  serviceType: {{pascalCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}},
+  serviceType: {{pascalCase name}}Service,
   {{#if hasCreateDto}}
-  createInputType: Create{{pascalCase name}}Dto,
+  createInputType: Create{{pascalCase entityName}}Dto,
   {{/if}}
   {{#if hasUpdateDto}}
-  updateInputType: Update{{pascalCase name}}Dto,
+  updateInputType: Update{{pascalCase entityName}}Dto,
   {{/if}}
   {{#if hasFindArgs}}
   findArgsType: Find{{pascalCase name}}Args,
@@ -81,7 +81,7 @@ export const {{camelCase name}}ControllerStructure = CrudControllerStructure({
 {{/if}}
 export class {{pascalCase name}}Controller{{#if useSolidDecorators}} extends CrudControllerFrom({{camelCase name}}ControllerStructure){{/if}} {
   {{#unless useSolidDecorators}}
-  constructor(private readonly {{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}: {{pascalCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}) {}
+  constructor(private readonly {{camelCase name}}Service: {{pascalCase name}}Service) {}
 
   /**
    * Get all {{pluralize (camelCase name)}}
@@ -92,7 +92,7 @@ export class {{pascalCase name}}Controller{{#if useSolidDecorators}} extends Cru
   {{/if}}
   @Get()
   async findAll(): Promise<{{pascalCase entityName}}[]> {
-    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.findAll();
+    return this.{{camelCase name}}Service.findAll();
   }
 
   /**
@@ -106,7 +106,7 @@ export class {{pascalCase name}}Controller{{#if useSolidDecorators}} extends Cru
   {{/if}}
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<{{pascalCase entityName}}> {
-    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.findOne(+id);
+    return this.{{camelCase name}}Service.findOne(+id);
   }
 
   /**
@@ -119,12 +119,12 @@ export class {{pascalCase name}}Controller{{#if useSolidDecorators}} extends Cru
   {{/if}}
   @Post()
   {{#if hasCreateDto}}
-  async create(@Body() createDto: Create{{pascalCase name}}Dto): Promise<{{pascalCase entityName}}> {
-    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.create(createDto);
+  async create(@Body() createDto: Create{{pascalCase entityName}}Dto): Promise<{{pascalCase entityName}}> {
+    return this.{{camelCase name}}Service.create(createDto);
   }
   {{else}}
   async create(@Body() {{camelCase name}}Data: Partial<{{pascalCase entityName}}>): Promise<{{pascalCase entityName}}> {
-    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.create({{camelCase name}}Data);
+    return this.{{camelCase name}}Service.create({{camelCase name}}Data);
   }
   {{/if}}
 
@@ -139,12 +139,12 @@ export class {{pascalCase name}}Controller{{#if useSolidDecorators}} extends Cru
   {{/if}}
   @Patch(':id')
   {{#if hasUpdateDto}}
-  async update(@Param('id') id: string, @Body() updateDto: Update{{pascalCase name}}Dto): Promise<{{pascalCase entityName}}> {
-    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.update(+id, updateDto);
+  async update(@Param('id') id: string, @Body() updateDto: Update{{pascalCase entityName}}Dto): Promise<{{pascalCase entityName}}> {
+    return this.{{camelCase name}}Service.update(+id, updateDto);
   }
   {{else}}
   async update(@Param('id') id: string, @Body() {{camelCase name}}Data: Partial<{{pascalCase entityName}}>): Promise<{{pascalCase entityName}}> {
-    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.update(+id, {{camelCase name}}Data);
+    return this.{{camelCase name}}Service.update(+id, {{camelCase name}}Data);
   }
   {{/if}}
 
@@ -159,7 +159,7 @@ export class {{pascalCase name}}Controller{{#if useSolidDecorators}} extends Cru
   {{/if}}
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
-    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.remove(+id);
+    return this.{{camelCase name}}Service.remove(+id);
   }
   {{/unless}}
 

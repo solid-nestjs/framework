@@ -6,6 +6,7 @@ import { EntityGenerator } from '../generators/entity.generator';
 import { ServiceGenerator } from '../generators/service.generator';
 import { ControllerGenerator } from '../generators/controller.generator';
 import { ModuleGenerator } from '../generators/module.generator';
+import { getProjectContext } from '../utils/config-reader';
 
 interface GenerateCommandOptions {
   fields?: string;
@@ -182,7 +183,8 @@ export class GenerateCommand extends BaseCommand {
         };
       }
 
-      const result = await this.entityGenerator.generate(name, generationOptions);
+      const context = getProjectContext();
+      const result = await this.entityGenerator.generate(name, generationOptions, context);
       
       if (result.success) {
         this.succeedSpinner(`Entity '${name}' generated successfully`);
@@ -231,7 +233,8 @@ export class GenerateCommand extends BaseCommand {
         };
       }
 
-      const result = await this.serviceGenerator.generate(name, generationOptions);
+      const context = getProjectContext();
+      const result = await this.serviceGenerator.generate(name, generationOptions, context);
       
       if (result.success) {
         this.succeedSpinner(`Service '${name}' generated successfully`);
@@ -289,7 +292,8 @@ export class GenerateCommand extends BaseCommand {
         };
       }
 
-      const result = await this.controllerGenerator.generate(name, generationOptions);
+      const context = getProjectContext();
+      const result = await this.controllerGenerator.generate(name, generationOptions, context);
       
       if (result.success) {
         this.succeedSpinner(`Controller '${name}' generated successfully`);

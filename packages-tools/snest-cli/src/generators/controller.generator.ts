@@ -2,7 +2,7 @@ import * as path from 'path';
 import { TemplateEngine } from '../utils/template-engine';
 import { GenerationOptions, CommandResult, ProjectContext } from '../types';
 import { writeFile } from '../utils/file-utils';
-import { createNameVariations } from '../utils/string-utils';
+import { createNameVariations, getSolidBundle } from '../utils/string-utils';
 import { ModuleUpdater } from '../utils/module-updater';
 
 /**
@@ -49,9 +49,9 @@ export class ControllerGenerator {
     try {
       const nameVariations = createNameVariations(name);
       
-      // Determine entity and service names
-      const entityName = options.entityName || name;
-      const serviceName = options.serviceName || `${entityName}s`;
+      // Determine entity and service names (with auto-singularization)
+      const entityName = options.entityName || this.detectEntityName(name);
+      const serviceName = options.serviceName || name; // Service name is usually plural (Users, Products)
       const entityVariations = createNameVariations(entityName);
       const serviceVariations = createNameVariations(serviceName);
       
@@ -87,6 +87,7 @@ export class ControllerGenerator {
         withGuards: options.withGuards || false,
         guards: options.guards || [],
         apiType,
+        solidBundle: getSolidBundle(context?.apiType),
       });
 
       // Generate controller content
@@ -320,5 +321,15 @@ export class ControllerGenerator {
     };
 
     return this.generate(controllerOptions.name, controllerOptions);
+  }
+
+  /**
+   * Detect entity name from service name (singularize if needed)
+   */
+  private detectEntityName(serviceName: string): string {
+    // Convert service name to singular for entity
+    // Common patterns: Users -> User, Products -> Product, etc.
+    const pluralize = require('pluralize');
+    return pluralize.singular(serviceName);
   }
 }

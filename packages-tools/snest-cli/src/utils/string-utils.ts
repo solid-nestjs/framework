@@ -123,3 +123,19 @@ export function createNameVariations(name: string) {
     },
   };
 }
+
+/**
+ * Get the correct SOLID bundle package name based on API type
+ */
+export function getSolidBundle(apiType?: 'rest' | 'graphql' | 'hybrid'): string {
+  switch (apiType) {
+    case 'rest':
+      return '@solid-nestjs/typeorm-crud';
+    case 'graphql':
+      return '@solid-nestjs/typeorm-graphql-crud';
+    case 'hybrid':
+      return '@solid-nestjs/typeorm-hybrid-crud';
+    default:
+      return '@solid-nestjs/typeorm-hybrid-crud'; // default to hybrid
+  }
+}

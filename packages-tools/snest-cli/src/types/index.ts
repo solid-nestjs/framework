@@ -33,6 +33,7 @@ export interface ProjectContext {
   solidVersion: string;
   
   // API capabilities
+  apiType?: 'rest' | 'graphql' | 'hybrid';
   hasGraphQL: boolean;
   hasSwagger: boolean;
   hasTypeORM: boolean;

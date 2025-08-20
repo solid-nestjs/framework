@@ -1,7 +1,7 @@
 {{#if useSolidDecorators}}
-import { SolidEntity, SolidId, SolidField } from '@solid-nestjs/common';
+import { SolidEntity, SolidId, SolidField{{#if withTimestamps}}, SolidCreatedAt, SolidUpdatedAt{{/if}}{{#if withSoftDelete}}, SolidDeletedAt{{/if}} } from '{{solidBundle}}';
 {{#if hasRelations}}
-import { SolidOneToMany, SolidManyToOne, SolidOneToOne, SolidManyToMany } from '@solid-nestjs/common';
+import { SolidOneToMany, SolidManyToOne, SolidOneToOne, SolidManyToMany } from '{{solidBundle}}';
 {{/if}}
 {{else}}
 import { Entity, PrimaryGeneratedColumn, Column{{#if hasRelations}}, OneToMany, ManyToOne, OneToOne, ManyToMany, JoinColumn{{/if}} } from 'typeorm';
@@ -47,6 +47,7 @@ export class {{pascalCase name}} {
   id: number;
 
 {{#each fields}}
+{{#unless (or (eq this.name "createdAt") (eq this.name "updatedAt"))}}
   {{#if this.isRelation}}
   {{#if ../useSolidDecorators}}
   @Solid{{pascalCase this.relationType}}(() => {{pascalCase this.relationTarget}}{{#if this.relationOptions}}, {{json this.relationOptions}}{{/if}})
@@ -79,10 +80,11 @@ export class {{pascalCase name}} {
   {{this.name}}{{#unless this.required}}?{{/unless}}: {{typeScriptType this.type}};
 
   {{/if}}
+{{/unless}}
 {{/each}}
 {{#if withSoftDelete}}
   {{#if useSolidDecorators}}
-  @SolidField({ type: 'timestamp', nullable: true })
+  @SolidDeletedAt()
   {{else}}
   {{#if hasSwagger}}
   @ApiProperty({ description: 'Soft deletion timestamp', required: false })
@@ -96,30 +98,10 @@ export class {{pascalCase name}} {
 {{/if}}
 
 {{#if withTimestamps}}
-  {{#if useSolidDecorators}}
-  @SolidField({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  {{else}}
-  {{#if hasSwagger}}
-  @ApiProperty({ description: 'Creation timestamp' })
-  {{/if}}
-  {{#if hasGraphQL}}
-  @Field()
-  {{/if}}
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  {{/if}}
+  @SolidCreatedAt()
   createdAt: Date;
 
-  {{#if useSolidDecorators}}
-  @SolidField({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-  {{else}}
-  {{#if hasSwagger}}
-  @ApiProperty({ description: 'Last update timestamp' })
-  {{/if}}
-  {{#if hasGraphQL}}
-  @Field()
-  {{/if}}
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-  {{/if}}
+  @SolidUpdatedAt()
   updatedAt: Date;
 {{/if}}
 }

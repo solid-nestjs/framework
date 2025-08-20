@@ -107,6 +107,16 @@ export class NewCommand extends BaseCommand {
         generatedFiles.push(nestCliResult.path);
       }
 
+      // Generate snest.config.json
+      const snestConfigContent = this.generateSnestConfig(options);
+      const snestConfigResult = await writeFile(
+        path.join(projectPath, 'snest.config.json'),
+        snestConfigContent
+      );
+      if (snestConfigResult.success) {
+        generatedFiles.push(snestConfigResult.path);
+      }
+
       // Generate .env.example
       const envContent = this.generateEnvExample(options.database);
       const envResult = await writeFile(
@@ -232,13 +242,16 @@ export class NewCommand extends BaseCommand {
 
   private getDependencies(options: NewCommandOptions): Record<string, string> {
     const base: Record<string, string> = {
-      '@nestjs/common': '^10.0.0',
-      '@nestjs/core': '^10.0.0',
-      '@nestjs/platform-express': '^10.0.0',
-      '@nestjs/typeorm': '^10.0.0',
-      '@solid-nestjs/common': '^0.2.9',
-      typeorm: '^0.3.17',
-      'reflect-metadata': '^0.1.13',
+      '@nestjs/common': '^11.0.1',
+      '@nestjs/core': '^11.0.1',
+      '@nestjs/platform-express': '^11.0.1',
+      '@nestjs/typeorm': '^11.0.0',
+      '@nestjs/config': '^4.0.0',
+      'class-transformer': '^0.5.1',
+      'class-validator': '^0.14.1',
+      dotenv: '^16.4.7',
+      typeorm: '^0.3.22',
+      'reflect-metadata': '^0.2.2',
       rxjs: '^7.8.1',
     };
 
@@ -260,22 +273,29 @@ export class NewCommand extends BaseCommand {
         break;
     }
 
-    // Add API-specific dependencies
-    if (options.type === 'rest' || options.type === 'hybrid') {
-      base['@nestjs/swagger'] = '^7.1.8';
-      base['@solid-nestjs/rest-api'] = '^0.2.9';
-    }
-
-    if (options.type === 'graphql' || options.type === 'hybrid') {
-      base['@nestjs/graphql'] = '^12.0.8';
-      base['@nestjs/apollo'] = '^12.0.7';
-      base['apollo-server-express'] = '^3.12.0';
-      base['graphql'] = '^16.7.1';
-      base['@solid-nestjs/graphql'] = '^0.2.9';
-    }
-
-    if (options.type === 'hybrid') {
-      base['@solid-nestjs/rest-graphql'] = '^0.2.9';
+    // Add API-specific bundle dependencies
+    switch (options.type) {
+      case 'rest':
+        base['@nestjs/swagger'] = '^11.1.4';
+        base['@solid-nestjs/typeorm-crud'] = '^0.2.9';
+        break;
+      
+      case 'graphql':
+        base['@nestjs/graphql'] = '^13.1.0';
+        base['@nestjs/apollo'] = '^13.1.0';
+        base['@apollo/server'] = '^4.12.1';
+        base['graphql'] = '^16.11.0';
+        base['@solid-nestjs/typeorm-graphql-crud'] = '^0.2.9';
+        break;
+      
+      case 'hybrid':
+        base['@nestjs/swagger'] = '^11.1.4';
+        base['@nestjs/graphql'] = '^13.1.0';
+        base['@nestjs/apollo'] = '^13.1.0';
+        base['@apollo/server'] = '^4.12.1';
+        base['graphql'] = '^16.11.0';
+        base['@solid-nestjs/typeorm-hybrid-crud'] = '^0.2.9';
+        break;
     }
 
     return base;
@@ -283,27 +303,25 @@ export class NewCommand extends BaseCommand {
 
   private getDevDependencies(options: NewCommandOptions): Record<string, string> {
     return {
-      '@nestjs/cli': '^10.0.0',
-      '@nestjs/schematics': '^10.0.0',
-      '@nestjs/testing': '^10.0.0',
-      '@types/express': '^4.17.17',
-      '@types/jest': '^29.5.2',
-      '@types/node': '^20.3.1',
-      '@types/supertest': '^2.0.12',
-      '@typescript-eslint/eslint-plugin': '^6.0.0',
-      '@typescript-eslint/parser': '^6.0.0',
-      eslint: '^8.42.0',
-      'eslint-config-prettier': '^9.0.0',
-      'eslint-plugin-prettier': '^5.0.0',
-      jest: '^29.5.0',
-      prettier: '^3.0.0',
+      '@nestjs/cli': '^11.0.0',
+      '@nestjs/schematics': '^11.0.0',
+      '@nestjs/testing': '^11.0.1',
+      '@types/express': '^5.0.0',
+      '@types/jest': '^29.5.14',
+      '@types/node': '^22.10.7',
+      '@types/supertest': '^6.0.2',
+      eslint: '^9.18.0',
+      'eslint-config-prettier': '^10.0.1',
+      'eslint-plugin-prettier': '^5.2.2',
+      jest: '^29.7.0',
+      prettier: '^3.4.2',
       'source-map-support': '^0.5.21',
-      supertest: '^6.3.3',
-      'ts-jest': '^29.1.0',
-      'ts-loader': '^9.4.3',
-      'ts-node': '^10.9.1',
+      supertest: '^7.0.0',
+      'ts-jest': '^29.2.5',
+      'ts-loader': '^9.5.2',
+      'ts-node': '^10.9.2',
       'tsconfig-paths': '^4.2.0',
-      typescript: '^5.1.3',
+      typescript: '^5.7.3',
     };
   }
 
@@ -572,11 +590,12 @@ bootstrap();
     ];
 
     if (options.type === 'graphql' || options.type === 'hybrid') {
-      moduleImports.push(`GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: true,
-      playground: true,
-    })`);
+      moduleImports.push(`// GraphQL disabled until resolvers are added
+    // GraphQLModule.forRoot<ApolloDriverConfig>({
+    //   driver: ApolloDriver,
+    //   autoSchemaFile: true,
+    //   playground: true,
+    // })`);
     }
 
     const appModuleContent = `${imports.join('\n')}
@@ -640,24 +659,28 @@ export class AppService {
 
   private generateDatabaseConfig(options: NewCommandOptions): string {
     return `import { ConfigService } from '@nestjs/config';
-import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
+import { TypeOrmModuleAsyncOptions, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const databaseConfig: TypeOrmModuleAsyncOptions = {
-  useFactory: (configService: ConfigService) => ({
-    type: configService.get('DB_TYPE') || '${options.database}',
-    ${options.database === 'sqlite' 
-      ? "database: configService.get('DB_DATABASE') || 'database.sqlite'," 
-      : `host: configService.get('DB_HOST') || 'localhost',
-    port: parseInt(configService.get('DB_PORT')) || ${this.getDefaultPort(options.database)},
-    username: configService.get('DB_USERNAME'),
-    password: configService.get('DB_PASSWORD'),
-    database: configService.get('DB_DATABASE'),`}
-    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-    synchronize: configService.get('NODE_ENV') !== 'production',
-    logging: configService.get('NODE_ENV') === 'development',
-    migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-    migrationsRun: false,
-  }),
+  useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
+    const dbType = configService.get('DB_TYPE') || '${options.database}';
+    
+    return {
+      type: dbType as any,
+      ${options.database === 'sqlite' 
+        ? "database: configService.get('DB_DATABASE') || 'database.sqlite'," 
+        : `host: configService.get('DB_HOST') || 'localhost',
+      port: parseInt(configService.get('DB_PORT')) || ${this.getDefaultPort(options.database)},
+      username: configService.get('DB_USERNAME'),
+      password: configService.get('DB_PASSWORD'),
+      database: configService.get('DB_DATABASE'),`}
+      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+      synchronize: configService.get('NODE_ENV') !== 'production',
+      logging: configService.get('NODE_ENV') === 'development',
+      migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+      migrationsRun: false,
+    } as TypeOrmModuleOptions;
+  },
   inject: [ConfigService],
 };
 `;
@@ -669,6 +692,46 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
       case 'mysql': return 3306;
       case 'mssql': return 1433;
       default: return 5432;
+    }
+  }
+
+  private generateSnestConfig(options: NewCommandOptions): string {
+    const config = {
+      $schema: './node_modules/@solid-nestjs/typeorm-hybrid-crud/schemas/snest.config.json',
+      version: '1.0',
+      project: {
+        type: options.type,
+        database: options.database,
+        features: {
+          hasSwagger: options.type === 'rest' || options.type === 'hybrid',
+          hasGraphQL: options.type === 'graphql' || options.type === 'hybrid',
+          hasTypeORM: true,
+          hasSolidDecorators: true,
+        },
+        bundle: this.getSolidBundleForType(options.type),
+      },
+      generators: {
+        defaultEntityPath: 'src/entities',
+        defaultServicePath: 'src/services',
+        defaultControllerPath: 'src/controllers',
+        defaultModulePath: 'src',
+        autoUpdateModules: true,
+      },
+    };
+
+    return JSON.stringify(config, null, 2);
+  }
+
+  private getSolidBundleForType(type: 'rest' | 'graphql' | 'hybrid'): string {
+    switch (type) {
+      case 'rest':
+        return '@solid-nestjs/typeorm-crud';
+      case 'graphql':
+        return '@solid-nestjs/typeorm-graphql-crud';
+      case 'hybrid':
+        return '@solid-nestjs/typeorm-hybrid-crud';
+      default:
+        return '@solid-nestjs/typeorm-hybrid-crud';
     }
   }
 

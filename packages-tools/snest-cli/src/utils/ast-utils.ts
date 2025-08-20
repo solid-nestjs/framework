@@ -32,6 +32,23 @@ export interface TypeOrmEntity {
 export class AstUtils {
   
   /**
+   * Parse TypeScript content and return AST
+   */
+  static parseFromContent(content: string, fileName: string = 'temp.ts'): ts.SourceFile | null {
+    try {
+      return ts.createSourceFile(
+        fileName,
+        content,
+        ts.ScriptTarget.Latest,
+        true
+      );
+    } catch (error) {
+      console.error('Error parsing TypeScript content:', error);
+      return null;
+    }
+  }
+
+  /**
    * Parse TypeScript file and return AST
    */
   static parseFile(filePath: string): ts.SourceFile | null {
@@ -113,6 +130,29 @@ export class AstUtils {
     
     visit(sourceFile);
     return hasItem;
+  }
+
+  /**
+   * Check if TypeORM forFeature exists
+   */
+  static hasTypeOrmForFeature(sourceFile: ts.SourceFile): boolean {
+    let hasForFeature = false;
+    
+    const visitor = (node: ts.Node): void => {
+      if (ts.isCallExpression(node) && 
+          ts.isPropertyAccessExpression(node.expression) &&
+          ts.isIdentifier(node.expression.expression) &&
+          node.expression.expression.text === 'TypeOrmModule' &&
+          ts.isIdentifier(node.expression.name) &&
+          node.expression.name.text === 'forFeature') {
+        hasForFeature = true;
+        return;
+      }
+      ts.forEachChild(node, visitor);
+    };
+    
+    visitor(sourceFile);
+    return hasForFeature;
   }
 
   /**
@@ -266,43 +306,55 @@ export class AstUtils {
       return this.printSourceFile(sourceFile, printer);
     }
 
-    const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
-      return (sourceFile) => {
-        const visitor: ts.Visitor = (node) => {
-          if (ts.isCallExpression(node) && 
-              ts.isPropertyAccessExpression(node.expression) &&
-              ts.isIdentifier(node.expression.expression) &&
-              node.expression.expression.text === 'TypeOrmModule' &&
-              ts.isIdentifier(node.expression.name) &&
-              node.expression.name.text === 'forFeature') {
-            
-            const entitiesArray = node.arguments[0];
-            if (entitiesArray && ts.isArrayLiteralExpression(entitiesArray)) {
-              const newElements = [
-                ...entitiesArray.elements,
-                ts.factory.createIdentifier(entity.name)
-              ];
+    // Check if there's already a forFeature call
+    const hasForFeature = this.hasTypeOrmForFeature(sourceFile);
+    
+    if (hasForFeature) {
+      // Add to existing forFeature call
+      const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
+        return (sourceFile) => {
+          const visitor: ts.Visitor = (node) => {
+            if (ts.isCallExpression(node) && 
+                ts.isPropertyAccessExpression(node.expression) &&
+                ts.isIdentifier(node.expression.expression) &&
+                node.expression.expression.text === 'TypeOrmModule' &&
+                ts.isIdentifier(node.expression.name) &&
+                node.expression.name.text === 'forFeature') {
               
-              const newArray = ts.factory.createArrayLiteralExpression(newElements, true);
-              return ts.factory.updateCallExpression(
-                node,
-                node.expression,
-                node.typeArguments,
-                [newArray, ...node.arguments.slice(1)]
-              );
+              const entitiesArray = node.arguments[0];
+              if (entitiesArray && ts.isArrayLiteralExpression(entitiesArray)) {
+                const newElements = [
+                  ...entitiesArray.elements,
+                  ts.factory.createIdentifier(entity.name)
+                ];
+                
+                const newArray = ts.factory.createArrayLiteralExpression(newElements, true);
+                return ts.factory.updateCallExpression(
+                  node,
+                  node.expression,
+                  node.typeArguments,
+                  [newArray, ...node.arguments.slice(1)]
+                );
+              }
             }
-          }
-          return ts.visitEachChild(node, visitor, context);
+            return ts.visitEachChild(node, visitor, context);
+          };
+          return ts.visitNode(sourceFile, visitor) as ts.SourceFile;
         };
-        return ts.visitNode(sourceFile, visitor) as ts.SourceFile;
       };
-    };
 
-    const result = ts.transform(sourceFile, [transformer]);
-    const transformedSourceFile = result.transformed[0];
-    result.dispose();
+      const result = ts.transform(sourceFile, [transformer]);
+      const transformedSourceFile = result.transformed[0];
+      result.dispose();
 
-    return this.printSourceFile(transformedSourceFile, printer);
+      return this.printSourceFile(transformedSourceFile, printer);
+    } else {
+      // Create new forFeature call
+      return this.addModuleArrayItem(sourceFile, {
+        name: `TypeOrmModule.forFeature([${entity.name}])`,
+        arrayType: 'imports'
+      });
+    }
   }
 
   /**
