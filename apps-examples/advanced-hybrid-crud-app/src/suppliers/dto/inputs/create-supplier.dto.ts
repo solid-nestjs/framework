@@ -1,6 +1,5 @@
 import { SolidInput, SolidField } from '@solid-nestjs/common';
-import { Float, Int } from '@nestjs/graphql';
-import { GenerateDtoFromEntity, PropertyInclusionConfig } from '@solid-nestjs/rest-graphql';
+import { GenerateDtoFromEntity } from '@solid-nestjs/rest-graphql';
 import { Supplier } from '../../entities/supplier.entity';
 import { Product } from '../../../products/entities/product.entity';
 
@@ -24,7 +23,7 @@ export class SupplierProductDto extends GenerateDtoFromEntity(Product) {}
 // @SolidInput()
 // export class SupplierProductDto extends GenerateDtoFromEntity(Product, productConfig) {}
 
-// Example 1: Using default rules (no configuration) 
+// Example 1: Using default rules (no configuration)
 // This will include: name, contactEmail (flat properties, excluding system fields and relations)
 @SolidInput()
 export class CreateSupplierDto extends GenerateDtoFromEntity(Supplier) {
@@ -33,7 +32,7 @@ export class CreateSupplierDto extends GenerateDtoFromEntity(Supplier) {
     description: 'Supplier`s products',
     nullable: true,
     array: true,
-    arrayType: () => SupplierProductDto
+    arrayType: () => SupplierProductDto,
   })
   products?: SupplierProductDto[];
 }
@@ -55,7 +54,7 @@ export class CreateSupplierDto extends GenerateDtoFromEntity(Supplier) {
 // Example 3: Using new object format for fine control
 // const supplierConfig: PropertyInclusionConfig<Supplier> = {
 //   name: true,         // Always include
-//   contactEmail: true, // Always include  
+//   contactEmail: true, // Always include
 //   id: false,          // Always exclude
 //   products: false,    // Always exclude (we'll add it manually)
 //   createdAt: false,   // Always exclude
