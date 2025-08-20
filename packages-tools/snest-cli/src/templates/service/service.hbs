@@ -1,0 +1,138 @@
+import { Injectable } from '@nestjs/common';
+{{#if useSolidDecorators}}
+import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/{{databaseType}}';
+{{#if hasArgsHelpers}}
+import { Context } from '@solid-nestjs/common';
+{{/if}}
+{{else}}
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+{{/if}}
+import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
+{{#if hasCreateDto}}
+import { Create{{pascalCase name}}Dto } from '../dto/inputs/create-{{kebabCase name}}.dto';
+{{/if}}
+{{#if hasUpdateDto}}
+import { Update{{pascalCase name}}Dto } from '../dto/inputs/update-{{kebabCase name}}.dto';
+{{/if}}
+{{#if hasFindArgs}}
+import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}.args';
+{{/if}}
+
+{{#if useSolidDecorators}}
+/**
+ * Service structure configuration for {{pascalCase name}}
+ */
+export const {{camelCase name}}ServiceStructure = CrudServiceStructure({
+  entityType: {{pascalCase entityName}},
+  {{#if hasCreateDto}}
+  createInputType: Create{{pascalCase name}}Dto,
+  {{/if}}
+  {{#if hasUpdateDto}}
+  updateInputType: Update{{pascalCase name}}Dto,
+  {{/if}}
+  {{#if hasFindArgs}}
+  findArgsType: Find{{pascalCase name}}Args,
+  {{/if}}
+  {{#if hasRelations}}
+  relationsConfig: {
+    relations: {
+      {{#each relations}}
+      {{this.name}}: {{this.eager}},
+      {{/each}}
+    },
+  },
+  {{/if}}
+  {{#if withSoftDelete}}
+  softDelete: true,
+  {{/if}}
+  {{#if withBulkOperations}}
+  enableBulkOperations: true,
+  {{/if}}
+});
+
+{{/if}}
+/**
+ * Service for {{pascalCase name}} entity operations
+ * 
+ * This service provides CRUD operations and business logic for {{pascalCase name}} entities.
+ * {{#if useSolidDecorators}}It extends the SOLID framework's CrudService with automatic CRUD operations.{{/if}}
+ */
+@Injectable()
+export class {{pascalCase name}}Service{{#if useSolidDecorators}} extends CrudServiceFrom({{camelCase name}}ServiceStructure){{/if}} {
+  {{#unless useSolidDecorators}}
+  constructor(
+    @InjectRepository({{pascalCase entityName}})
+    private readonly {{camelCase entityName}}Repository: Repository<{{pascalCase entityName}}>,
+  ) {}
+
+  /**
+   * Find all {{pluralize (camelCase name)}}
+   */
+  async findAll(): Promise<{{pascalCase entityName}}[]> {
+    return this.{{camelCase entityName}}Repository.find();
+  }
+
+  /**
+   * Find {{camelCase name}} by ID
+   */
+  async findOne(id: number): Promise<{{pascalCase entityName}} | null> {
+    return this.{{camelCase entityName}}Repository.findOne({ where: { id } });
+  }
+
+  /**
+   * Create new {{camelCase name}}
+   */
+  {{#if hasCreateDto}}
+  async create(createDto: Create{{pascalCase name}}Dto): Promise<{{pascalCase entityName}}> {
+    const {{camelCase name}} = this.{{camelCase entityName}}Repository.create(createDto);
+    return this.{{camelCase entityName}}Repository.save({{camelCase name}});
+  }
+  {{else}}
+  async create({{camelCase name}}Data: Partial<{{pascalCase entityName}}>): Promise<{{pascalCase entityName}}> {
+    const {{camelCase name}} = this.{{camelCase entityName}}Repository.create({{camelCase name}}Data);
+    return this.{{camelCase entityName}}Repository.save({{camelCase name}});
+  }
+  {{/if}}
+
+  /**
+   * Update {{camelCase name}}
+   */
+  {{#if hasUpdateDto}}
+  async update(id: number, updateDto: Update{{pascalCase name}}Dto): Promise<{{pascalCase entityName}} | null> {
+    await this.{{camelCase entityName}}Repository.update(id, updateDto);
+    return this.findOne(id);
+  }
+  {{else}}
+  async update(id: number, {{camelCase name}}Data: Partial<{{pascalCase entityName}}>): Promise<{{pascalCase entityName}} | null> {
+    await this.{{camelCase entityName}}Repository.update(id, {{camelCase name}}Data);
+    return this.findOne(id);
+  }
+  {{/if}}
+
+  /**
+   * Remove {{camelCase name}}
+   */
+  async remove(id: number): Promise<void> {
+    {{#if withSoftDelete}}
+    await this.{{camelCase entityName}}Repository.softDelete(id);
+    {{else}}
+    await this.{{camelCase entityName}}Repository.delete(id);
+    {{/if}}
+  }
+  {{/unless}}
+
+  // Custom business logic methods can be added here
+  {{#if hasCustomMethods}}
+  {{#each customMethods}}
+
+  /**
+   * {{this.description}}
+   */
+  async {{this.name}}({{#each this.parameters}}{{this.name}}: {{this.type}}{{#unless @last}}, {{/unless}}{{/each}}): Promise<{{this.returnType}}> {
+    // TODO: Implement custom logic
+    throw new Error('Method not implemented.');
+  }
+  {{/each}}
+  {{/if}}
+}

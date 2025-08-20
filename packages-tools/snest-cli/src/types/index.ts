@@ -54,6 +54,15 @@ export interface ProjectContext {
   // Project info
   projectRoot: string;
   packageJson: any;
+  
+  // Path configuration
+  paths?: {
+    entities: string;
+    services: string;
+    controllers: string;
+    modules: string;
+    dto: string;
+  };
 }
 
 /**
@@ -63,13 +72,30 @@ export interface GenerationOptions {
   name: string;
   type: 'entity' | 'service' | 'controller' | 'module' | 'dto' | 'resource';
   apiType?: 'rest' | 'graphql' | 'hybrid';
-  fields?: FieldDefinition[];
+  fields?: FieldDefinition[] | string[];
+  entityName?: string;
+  serviceName?: string;
+  relations?: string[];
+  customMethods?: CustomMethodDefinition[];
+  customEndpoints?: any[];
+  // Module-specific options
+  entities?: string[] | string;
+  services?: string[] | string;
+  controllers?: string[] | string;
+  customProviders?: any[];
+  moduleImports?: any[];
+  customExports?: any[];
+  withExports?: boolean;
   path?: string;
   withTests?: boolean;
   withSolid?: boolean;
+  withValidation?: boolean;
   withArgsHelpers?: boolean;
   withBulkOperations?: boolean;
   withSoftDelete?: boolean;
+  withGuards?: boolean;
+  guards?: any[];
+  skipModuleUpdate?: boolean;
   overwrite?: boolean;
 }
 
@@ -84,6 +110,28 @@ export interface FieldDefinition {
   relationType?: 'oneToMany' | 'manyToOne' | 'oneToOne' | 'manyToMany';
   relationTarget?: string;
   options?: Record<string, any>;
+}
+
+/**
+ * Relation definition for services
+ */
+export interface RelationDefinition {
+  name: string;
+  type: 'oneToMany' | 'manyToOne' | 'oneToOne' | 'manyToMany';
+  target: string;
+  eager?: boolean;
+  cascade?: boolean;
+  options?: Record<string, any>;
+}
+
+/**
+ * Custom method definition for services
+ */
+export interface CustomMethodDefinition {
+  name: string;
+  description: string;
+  parameters: Array<{ name: string; type: string }>;
+  returnType: string;
 }
 
 /**
@@ -113,6 +161,7 @@ export interface CommandResult {
   message: string;
   generatedFiles?: string[];
   errors?: string[];
+  nextSteps?: string[];
 }
 
 /**

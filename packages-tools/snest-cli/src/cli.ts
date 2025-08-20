@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { CliConfig } from './types';
 import { NewCommand } from './commands/new.command';
+import { GenerateCommand } from './commands/generate.command';
 
 /**
  * Default CLI configuration
@@ -58,6 +59,9 @@ For more information, visit: ${chalk.blue('https://github.com/solid-nestjs/frame
   // Register commands
   const newCommand = new NewCommand(defaultConfig);
   newCommand.register(program);
+
+  const generateCommand = new GenerateCommand(defaultConfig);
+  generateCommand.register(program);
 
   // Handle unknown commands
   program.on('command:*', () => {

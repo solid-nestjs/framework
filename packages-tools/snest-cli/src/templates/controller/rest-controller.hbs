@@ -1,0 +1,187 @@
+import { Controller{{#if hasValidation}}, ValidationPipe{{/if}} } from '@nestjs/common';
+{{#if useSolidDecorators}}
+import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/{{#if hasGraphQL}}rest-graphql{{else}}rest-api{{/if}}';
+{{#if hasArgsHelpers}}
+import { Context } from '@solid-nestjs/common';
+{{/if}}
+{{else}}
+import { Get, Post, Body, Patch, Param, Delete{{#if hasValidation}}, UsePipes{{/if}} } from '@nestjs/common';
+{{#if hasSwagger}}
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+{{/if}}
+{{/if}}
+import { {{pascalCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}} } from '../services/{{kebabCase serviceName}}.service';
+import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
+{{#if hasCreateDto}}
+import { Create{{pascalCase name}}Dto } from '../dto/inputs/create-{{kebabCase name}}.dto';
+{{/if}}
+{{#if hasUpdateDto}}
+import { Update{{pascalCase name}}Dto } from '../dto/inputs/update-{{kebabCase name}}.dto';
+{{/if}}
+{{#if hasFindArgs}}
+import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}.args';
+{{/if}}
+{{#if withGuards}}
+{{#each guards}}
+import { {{this.name}} } from '{{this.path}}';
+{{/each}}
+{{/if}}
+
+{{#if useSolidDecorators}}
+/**
+ * Controller structure configuration for {{pascalCase name}}
+ */
+export const {{camelCase name}}ControllerStructure = CrudControllerStructure({
+  entityType: {{pascalCase entityName}},
+  serviceType: {{pascalCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}},
+  {{#if hasCreateDto}}
+  createInputType: Create{{pascalCase name}}Dto,
+  {{/if}}
+  {{#if hasUpdateDto}}
+  updateInputType: Update{{pascalCase name}}Dto,
+  {{/if}}
+  {{#if hasFindArgs}}
+  findArgsType: Find{{pascalCase name}}Args,
+  {{/if}}
+  operations: {
+    {{#each operations}}
+    {{this.name}}: {{#if this.enabled}}{{#if this.config}}{{json this.config}}{{else}}true{{/if}}{{else}}false{{/if}},
+    {{/each}}
+  },
+  {{#if customEndpoints}}
+  customEndpoints: {
+    {{#each customEndpoints}}
+    {{this.name}}: {
+      method: '{{this.method}}',
+      path: '{{this.path}}',
+      {{#if this.decorators}}
+      decorators: [{{#each this.decorators}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}],
+      {{/if}}
+    },
+    {{/each}}
+  },
+  {{/if}}
+});
+
+{{/if}}
+/**
+ * Controller for {{pascalCase name}} entity operations
+ * 
+ * This controller provides REST API endpoints for {{pascalCase name}} entities.
+ * {{#if useSolidDecorators}}It extends the SOLID framework's CrudController with automatic CRUD endpoints.{{/if}}
+ */
+{{#if hasSwagger}}
+@ApiTags('{{kebabCase name}}')
+{{/if}}
+@Controller('{{kebabCase name}}')
+{{#if hasValidation}}
+{{#unless useSolidDecorators}}
+@UsePipes(new ValidationPipe())
+{{/unless}}
+{{/if}}
+export class {{pascalCase name}}Controller{{#if useSolidDecorators}} extends CrudControllerFrom({{camelCase name}}ControllerStructure){{/if}} {
+  {{#unless useSolidDecorators}}
+  constructor(private readonly {{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}: {{pascalCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}) {}
+
+  /**
+   * Get all {{pluralize (camelCase name)}}
+   */
+  {{#if hasSwagger}}
+  @ApiOperation({ summary: 'Get all {{pluralize (camelCase name)}}' })
+  @ApiResponse({ status: 200, description: 'List of {{pluralize (camelCase name)}}', type: [{{pascalCase entityName}}] })
+  {{/if}}
+  @Get()
+  async findAll(): Promise<{{pascalCase entityName}}[]> {
+    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.findAll();
+  }
+
+  /**
+   * Get {{camelCase name}} by ID
+   */
+  {{#if hasSwagger}}
+  @ApiOperation({ summary: 'Get {{camelCase name}} by ID' })
+  @ApiParam({ name: 'id', type: 'number', description: '{{pascalCase name}} ID' })
+  @ApiResponse({ status: 200, description: 'The {{camelCase name}}', type: {{pascalCase entityName}} })
+  @ApiResponse({ status: 404, description: '{{pascalCase name}} not found' })
+  {{/if}}
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<{{pascalCase entityName}}> {
+    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.findOne(+id);
+  }
+
+  /**
+   * Create new {{camelCase name}}
+   */
+  {{#if hasSwagger}}
+  @ApiOperation({ summary: 'Create new {{camelCase name}}' })
+  @ApiResponse({ status: 201, description: 'The {{camelCase name}} has been created', type: {{pascalCase entityName}} })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  {{/if}}
+  @Post()
+  {{#if hasCreateDto}}
+  async create(@Body() createDto: Create{{pascalCase name}}Dto): Promise<{{pascalCase entityName}}> {
+    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.create(createDto);
+  }
+  {{else}}
+  async create(@Body() {{camelCase name}}Data: Partial<{{pascalCase entityName}}>): Promise<{{pascalCase entityName}}> {
+    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.create({{camelCase name}}Data);
+  }
+  {{/if}}
+
+  /**
+   * Update {{camelCase name}}
+   */
+  {{#if hasSwagger}}
+  @ApiOperation({ summary: 'Update {{camelCase name}}' })
+  @ApiParam({ name: 'id', type: 'number', description: '{{pascalCase name}} ID' })
+  @ApiResponse({ status: 200, description: 'The {{camelCase name}} has been updated', type: {{pascalCase entityName}} })
+  @ApiResponse({ status: 404, description: '{{pascalCase name}} not found' })
+  {{/if}}
+  @Patch(':id')
+  {{#if hasUpdateDto}}
+  async update(@Param('id') id: string, @Body() updateDto: Update{{pascalCase name}}Dto): Promise<{{pascalCase entityName}}> {
+    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.update(+id, updateDto);
+  }
+  {{else}}
+  async update(@Param('id') id: string, @Body() {{camelCase name}}Data: Partial<{{pascalCase entityName}}>): Promise<{{pascalCase entityName}}> {
+    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.update(+id, {{camelCase name}}Data);
+  }
+  {{/if}}
+
+  /**
+   * Remove {{camelCase name}}
+   */
+  {{#if hasSwagger}}
+  @ApiOperation({ summary: 'Remove {{camelCase name}}' }}
+  @ApiParam({ name: 'id', type: 'number', description: '{{pascalCase name}} ID' }}
+  @ApiResponse({ status: 200, description: 'The {{camelCase name}} has been removed' }}
+  @ApiResponse({ status: 404, description: '{{pascalCase name}} not found' }}
+  {{/if}}
+  @Delete(':id')
+  async remove(@Param('id') id: string): Promise<void> {
+    return this.{{camelCase serviceName}}{{#unless (eq serviceName entityName)}}Service{{/unless}}.remove(+id);
+  }
+  {{/unless}}
+
+  // Custom endpoints can be added here
+  {{#if hasCustomEndpoints}}
+  {{#each customEndpoints}}
+
+  /**
+   * {{this.description}}
+   */
+  {{#if this.swagger}}
+  {{#each this.swagger}}
+  @{{this.decorator}}({{#if this.config}}{{json this.config}}{{/if}})
+  {{/each}}
+  {{/if}}
+  {{#each this.decorators}}
+  @{{this}}
+  {{/each}}
+  async {{this.name}}({{#each this.parameters}}{{this.name}}: {{this.type}}{{#unless @last}}, {{/unless}}{{/each}}): Promise<{{this.returnType}}> {
+    // TODO: Implement custom endpoint logic
+    throw new Error('Method not implemented.');
+  }
+  {{/each}}
+  {{/if}}
+}
