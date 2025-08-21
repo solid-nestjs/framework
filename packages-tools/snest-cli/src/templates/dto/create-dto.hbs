@@ -1,3 +1,9 @@
+{{#if useGenerateDtoFromEntity}}
+import { GenerateDtoFromEntity } from '{{solidBundle}}';
+import { {{pascalCase entityName}} } from '../../entities/{{kebabCase entityName}}.entity';
+
+export class Create{{pascalCase entityName}}Dto extends GenerateDtoFromEntity({{pascalCase entityName}}) {}
+{{else}}
 {{#if hasValidation}}
 import { IsString, IsNumber, IsBoolean, IsOptional, IsEmail, MaxLength } from 'class-validator';
 {{/if}}
@@ -13,7 +19,7 @@ import { InputType, Field } from '@nestjs/graphql';
 @InputType()
 {{/if}}
 {{/if}}
-export class Create{{pascalCase name}}Dto {
+export class Create{{pascalCase entityName}}Dto {
 {{#each fields}}
   {{#if ../hasSwagger}}
   @ApiProperty({
@@ -49,3 +55,4 @@ export class Create{{pascalCase name}}Dto {
 
 {{/each}}
 }
+{{/if}}

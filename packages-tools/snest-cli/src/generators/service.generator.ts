@@ -32,7 +32,8 @@ export class ServiceGenerator {
       const entityVariations = createNameVariations(entityName);
       
       // Determine features based on context and options
-      const useSolidDecorators = options.withSolid ?? context?.hasSolidDecorators ?? true;
+      const useSolidDecorators = options.withSolid ?? context?.useSolidDecorators ?? context?.hasSolidDecorators ?? true;
+      const useGenerateDtoFromEntity = context?.useGenerateDtoFromEntity ?? false;
       const hasArgsHelpers = options.withArgsHelpers ?? context?.hasArgsHelpers ?? false;
       const withSoftDelete = options.withSoftDelete ?? false;
       const withBulkOperations = options.withBulkOperations ?? false;
@@ -41,10 +42,14 @@ export class ServiceGenerator {
       // Parse relations if provided
       const relations = this.parseRelations(options.relations || []);
       
+      // Get basic fields for entity (for GenerateDtoFromEntity)
+      const entityFields = this.getBasicFields(entityName);
+      
       // Build template data
       const templateData = TemplateEngine.createTemplateData(name, {
         entityName: entityVariations.pascalCase,
         useSolidDecorators,
+        useGenerateDtoFromEntity,
         hasArgsHelpers,
         databaseType,
         hasCreateDto: true, // Assume DTOs exist for SOLID apps
@@ -57,6 +62,10 @@ export class ServiceGenerator {
         hasCustomMethods: options.customMethods && options.customMethods.length > 0,
         customMethods: options.customMethods || [],
         solidBundle: getSolidBundle(context?.apiType),
+        hasSwagger: context?.hasSwagger ?? false,
+        hasGraphQL: context?.hasGraphQL ?? false,
+        hasValidation: true, // Always include validation for DTOs
+        fields: entityFields, // Add fields for template use
       });
 
       // Generate service content
@@ -66,18 +75,28 @@ export class ServiceGenerator {
       const outputDir = options.path || (context?.paths?.services || 'src/services');
       const outputPath = path.join(process.cwd(), outputDir, `${nameVariations.kebabCase}.service.ts`);
       
-      // Generate DTOs automatically
+      // Generate DTOs automatically using templates
       const generatedFiles: string[] = [];
       
       try {
         // Ensure DTO directories exist
         await ensureDirectory(path.join(process.cwd(), 'src/dto/inputs'));
         
-        // Generate DTOs based on entity fields if we can find them
-        const createDtoPath = await DTOGenerator.generateCreateDTO(entityName, this.getBasicFields(entityName));
-        const updateDtoPath = await DTOGenerator.generateUpdateDTO(entityName);
+        // Generate create DTO
+        const createDtoContent = await this.templateEngine.render('dto/create-dto', templateData);
+        const createDtoPath = path.join(process.cwd(), 'src/dto/inputs', `create-${entityVariations.kebabCase}.dto.ts`);
+        const createResult = await writeFile(createDtoPath, createDtoContent);
+        if (createResult.success) {
+          generatedFiles.push(createResult.path);
+        }
         
-        generatedFiles.push(createDtoPath, updateDtoPath);
+        // Generate update DTO
+        const updateDtoContent = await this.templateEngine.render('dto/update-dto', templateData);
+        const updateDtoPath = path.join(process.cwd(), 'src/dto/inputs', `update-${entityVariations.kebabCase}.dto.ts`);
+        const updateResult = await writeFile(updateDtoPath, updateDtoContent);
+        if (updateResult.success) {
+          generatedFiles.push(updateResult.path);
+        }
       } catch (error) {
         console.warn('Could not generate DTOs automatically:', error);
       }
@@ -335,7 +354,7 @@ export class ServiceGenerator {
       commonFields.push(
         { name: 'name', type: 'string', required: true, nullable: false },
         { name: 'price', type: 'number', required: true, nullable: false },
-        { name: 'description', type: 'string', required: false, nullable: true }
+        { name: 'category', type: 'string', required: true, nullable: false }
       );
     } else {
       // Default fields for unknown entities

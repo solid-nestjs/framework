@@ -16,6 +16,8 @@ export interface SnestConfig {
       hasGraphQL: boolean;
       hasTypeORM: boolean;
       hasSolidDecorators: boolean;
+      useSolidDecorators?: boolean;
+      useGenerateDtoFromEntity?: boolean;
     };
     bundle: string;
   };
@@ -25,6 +27,8 @@ export interface SnestConfig {
     defaultControllerPath: string;
     defaultModulePath: string;
     autoUpdateModules: boolean;
+    useSolidDecorators?: boolean;
+    useGenerateDtoFromEntity?: boolean;
   };
 }
 
@@ -75,6 +79,8 @@ export function createProjectContextFromConfig(config: SnestConfig): ProjectCont
     hasSolidDecorators: config.project.features.hasSolidDecorators,
     hasArgsHelpers: false, // Default
     hasEntityGeneration: true,
+    useSolidDecorators: config.project.features.useSolidDecorators ?? config.generators.useSolidDecorators ?? true,
+    useGenerateDtoFromEntity: config.project.features.useGenerateDtoFromEntity ?? config.generators.useGenerateDtoFromEntity ?? false,
     
     // Project info
     projectRoot: process.cwd(),
@@ -118,6 +124,8 @@ export function getProjectContext(): ProjectContext {
     hasSolidDecorators: true,
     hasArgsHelpers: false,
     hasEntityGeneration: true,
+    useSolidDecorators: true,
+    useGenerateDtoFromEntity: false,
     projectRoot: process.cwd(),
     packageJson: {},
     paths: {

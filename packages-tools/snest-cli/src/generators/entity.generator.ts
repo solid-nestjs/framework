@@ -2,7 +2,7 @@ import * as path from 'path';
 import { TemplateEngine } from '../utils/template-engine';
 import { FieldDefinition, GenerationOptions, CommandResult, ProjectContext } from '../types';
 import { writeFile } from '../utils/file-utils';
-import { createNameVariations, getSolidBundle } from '../utils/string-utils';
+import { createNameVariations, getSolidBundle, objectToJSFormat } from '../utils/string-utils';
 import { ModuleUpdater } from '../utils/module-updater';
 
 /**
@@ -13,6 +13,31 @@ export class EntityGenerator {
 
   constructor() {
     this.templateEngine = new TemplateEngine();
+    this.registerHelpers();
+  }
+
+  /**
+   * Register Handlebars helpers for entity generation
+   */
+  private registerHelpers(): void {
+    this.templateEngine.registerHelper('jsonOptions', (options: any) => {
+      if (!options || typeof options !== 'object') {
+        return '';
+      }
+      
+      const formatted = objectToJSFormat(options);
+      return formatted === undefined ? '' : formatted;
+    });
+
+    this.templateEngine.registerHelper('typeScriptType', (type: string) => {
+      switch (type) {
+        case 'string': return 'string';
+        case 'number': return 'number'; 
+        case 'boolean': return 'boolean';
+        case 'Date': return 'Date';
+        default: return 'any';
+      }
+    });
   }
 
   /**
@@ -29,8 +54,9 @@ export class EntityGenerator {
       // Parse fields if provided
       const fields = this.parseFields(options.fields || []);
       
-      // Determine features based on context
-      const useSolidDecorators = options.withSolid ?? context?.hasSolidDecorators ?? true;
+      // Determine features based on context and configuration
+      const useSolidDecorators = options.withSolid ?? context?.useSolidDecorators ?? context?.hasSolidDecorators ?? true;
+      const useGenerateDtoFromEntity = context?.useGenerateDtoFromEntity ?? false;
       const hasSwagger = context?.hasSwagger ?? false;
       const hasGraphQL = context?.hasGraphQL ?? false;
       const withSoftDelete = options.withSoftDelete ?? false;
@@ -40,6 +66,7 @@ export class EntityGenerator {
         fields,
         hasRelations: fields.some(f => f.type === 'relation'),
         useSolidDecorators,
+        useGenerateDtoFromEntity,
         hasSwagger: hasSwagger && !useSolidDecorators, // SOLID decorators handle Swagger
         hasGraphQL: hasGraphQL && !useSolidDecorators, // SOLID decorators handle GraphQL
         withSoftDelete,
@@ -175,7 +202,7 @@ export class EntityGenerator {
   }
 
   /**
-   * Build SOLID column options
+   * Build SOLID column options - no size specifications
    */
   private buildColumnOptions(field: FieldDefinition): any {
     const options: any = {};
@@ -185,15 +212,13 @@ export class EntityGenerator {
       options.nullable = true;
     }
 
-    // Set SOLID-specific options (no 'type' property)
+    // Set SOLID-specific options (no size specifications)
     switch (field.type) {
       case 'string':
         if (field.name.toLowerCase().includes('email')) {
-          options.maxLength = 255;
           options.email = true;
-        } else {
-          options.maxLength = 255;
         }
+        // No maxLength - let developer specify manually if needed
         break;
       
       case 'number':

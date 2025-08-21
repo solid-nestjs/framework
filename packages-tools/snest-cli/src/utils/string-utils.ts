@@ -139,3 +139,49 @@ export function getSolidBundle(apiType?: 'rest' | 'graphql' | 'hybrid'): string 
       return '@solid-nestjs/typeorm-hybrid-crud'; // default to hybrid
   }
 }
+
+/**
+ * Convert an object to JavaScript object literal format (not JSON)
+ * Removes quotes from property names and removes size specifications
+ */
+export function objectToJSFormat(obj: Record<string, any>): string | undefined {
+  if (!obj || typeof obj !== 'object') {
+    return undefined;
+  }
+
+  // Filter out size-related properties
+  const filteredObj = Object.fromEntries(
+    Object.entries(obj).filter(([key]) => 
+      !['length', 'maxLength', 'minLength', 'size', 'precision', 'scale'].includes(key)
+    )
+  );
+
+  if (Object.keys(filteredObj).length === 0) {
+    return undefined; // Return undefined so template can handle it properly
+  }
+
+  const pairs = Object.entries(filteredObj).map(([key, value]) => {
+    let formattedValue: string;
+    
+    if (typeof value === 'string') {
+      formattedValue = `'${value}'`;
+    } else if (typeof value === 'boolean') {
+      formattedValue = value.toString();
+    } else if (typeof value === 'number') {
+      formattedValue = value.toString();
+    } else if (Array.isArray(value)) {
+      formattedValue = `[${value.map(v => typeof v === 'string' ? `'${v}'` : v).join(', ')}]`;
+    } else if (value === null) {
+      formattedValue = 'null';
+    } else if (typeof value === 'object') {
+      const nestedResult = objectToJSFormat(value);
+      formattedValue = nestedResult || '{}';
+    } else {
+      formattedValue = JSON.stringify(value);
+    }
+
+    return `${key}: ${formattedValue}`;
+  });
+
+  return `{${pairs.join(', ')}}`;
+}

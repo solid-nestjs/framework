@@ -136,6 +136,13 @@ export class TemplateEngine {
   }
 
   /**
+   * Register additional custom helper
+   */
+  registerHelper(name: string, helper: (...args: any[]) => any): void {
+    this.handlebars.registerHelper(name, helper);
+  }
+
+  /**
    * Load and compile a template
    */
   private async loadTemplate(templateName: string): Promise<HandlebarsTemplateDelegate> {

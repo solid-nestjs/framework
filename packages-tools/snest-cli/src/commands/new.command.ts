@@ -13,6 +13,8 @@ interface NewCommandOptions {
   type: 'rest' | 'graphql' | 'hybrid';
   skipInstall: boolean;
   skipGit: boolean;
+  useSolidDecorators: boolean;
+  useGenerateDtoFromEntity: boolean;
 }
 
 /**
@@ -38,6 +40,9 @@ export class NewCommand extends BaseCommand {
         'API type (rest, graphql, hybrid)',
         this.config.defaultApiType
       )
+      .option('--use-solid-decorators', 'Use SOLID decorators by default (default: true)', true)
+      .option('--no-use-solid-decorators', 'Do not use SOLID decorators by default')
+      .option('--use-generate-dto-from-entity', 'Use GenerateDtoFromEntity by default (default: false)', false)
       .option('--skip-install', 'Skip package installation', false)
       .option('--skip-git', 'Skip git initialization', false)
       .action(async (projectName: string, options: NewCommandOptions) => {
@@ -707,6 +712,8 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
           hasGraphQL: options.type === 'graphql' || options.type === 'hybrid',
           hasTypeORM: true,
           hasSolidDecorators: true,
+          useSolidDecorators: options.useSolidDecorators,
+          useGenerateDtoFromEntity: options.useGenerateDtoFromEntity,
         },
         bundle: this.getSolidBundleForType(options.type),
       },
@@ -716,6 +723,8 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
         defaultControllerPath: 'src/controllers',
         defaultModulePath: 'src',
         autoUpdateModules: true,
+        useSolidDecorators: options.useSolidDecorators,
+        useGenerateDtoFromEntity: options.useGenerateDtoFromEntity,
       },
     };
 

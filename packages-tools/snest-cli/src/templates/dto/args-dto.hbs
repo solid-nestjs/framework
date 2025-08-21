@@ -1,3 +1,9 @@
+{{#if useGenerateDtoFromEntity}}
+import { GenerateDtoFromEntity } from '{{solidBundle}}';
+import { {{pascalCase entityName}} } from '../../entities/{{kebabCase entityName}}.entity';
+
+export class Find{{pascalCase entityName}}Args extends GenerateDtoFromEntity({{pascalCase entityName}}) {}
+{{else}}
 {{#if hasValidation}}
 import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
 {{/if}}
@@ -11,7 +17,7 @@ import { ArgsType, Field } from '@nestjs/graphql';
 {{#if hasGraphQL}}
 @ArgsType()
 {{/if}}
-export class Find{{pascalCase name}}Args {
+export class Find{{pascalCase entityName}}Args {
   {{#if hasSwagger}}
   @ApiProperty({ description: 'Page number for pagination', required: false })
   {{/if}}
@@ -72,3 +78,4 @@ export class Find{{pascalCase name}}Args {
   {{/if}}
   sortOrder?: 'ASC' | 'DESC';
 }
+{{/if}}

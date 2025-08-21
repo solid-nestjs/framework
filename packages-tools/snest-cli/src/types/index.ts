@@ -51,6 +51,8 @@ export interface ProjectContext {
   hasSolidDecorators: boolean;
   hasArgsHelpers: boolean;
   hasEntityGeneration: boolean;
+  useSolidDecorators: boolean;
+  useGenerateDtoFromEntity: boolean;
   
   // Project info
   projectRoot: string;
@@ -149,6 +151,7 @@ export interface TemplateData {
   hasRelations?: boolean;
   useSolidDecorators?: boolean;
   useArgsHelpers?: boolean;
+  useGenerateDtoFromEntity?: boolean;
   apiType?: 'rest' | 'graphql' | 'hybrid';
   databaseType?: string;
   [key: string]: any;
