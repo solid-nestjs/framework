@@ -6,6 +6,7 @@ import { EntityGenerator } from '../generators/entity.generator';
 import { ServiceGenerator } from '../generators/service.generator';
 import { ControllerGenerator } from '../generators/controller.generator';
 import { ModuleGenerator } from '../generators/module.generator';
+import { ResourceGenerator } from '../generators/resource.generator';
 import { getProjectContext } from '../utils/config-reader';
 
 interface GenerateCommandOptions {
@@ -29,6 +30,12 @@ interface GenerateCommandOptions {
   skipModuleUpdate?: boolean;
   overwrite?: boolean;
   interactive?: boolean;
+  // Resource-specific options
+  modulePath?: string;
+  generateModule?: boolean;
+  skipEntity?: boolean;
+  skipService?: boolean;
+  skipController?: boolean;
 }
 
 /**
@@ -39,6 +46,7 @@ export class GenerateCommand extends BaseCommand {
   private serviceGenerator: ServiceGenerator;
   private controllerGenerator: ControllerGenerator;
   private moduleGenerator: ModuleGenerator;
+  private resourceGenerator: ResourceGenerator;
 
   constructor(config: any) {
     super(config);
@@ -46,6 +54,7 @@ export class GenerateCommand extends BaseCommand {
     this.serviceGenerator = new ServiceGenerator();
     this.controllerGenerator = new ControllerGenerator();
     this.moduleGenerator = new ModuleGenerator();
+    this.resourceGenerator = new ResourceGenerator();
   }
 
   register(program: Command): void {
@@ -121,6 +130,25 @@ export class GenerateCommand extends BaseCommand {
       .option('--overwrite', 'Overwrite existing files', false)
       .action(async (name: string, options: GenerateCommandOptions) => {
         await this.handleExecution(() => this.generateModule(name, options));
+      });
+
+    // Resource subcommand
+    generateCmd
+      .command('resource <name>')
+      .alias('r')
+      .description('Generate a complete resource (entity + service + controller + module)')
+      .option('--fields <fields>', 'Entity fields (format: name:type:required,price:number)')
+      .option('--module-path <modulePath>', 'Module path for nested modules (e.g., "users/profile")')
+      .option('--skip-entity', 'Skip entity generation', false)
+      .option('--skip-service', 'Skip service generation', false)
+      .option('--skip-controller', 'Skip controller generation', false)
+      .option('--no-module', 'Skip module generation')
+      .option('--with-soft-delete', 'Enable soft deletion', false)
+      .option('--with-bulk-operations', 'Enable bulk operations', false)
+      .option('--path <path>', 'Custom output path (only when not using modules)')
+      .option('--overwrite', 'Overwrite existing files', false)
+      .action(async (name: string, options: GenerateCommandOptions) => {
+        await this.handleExecution(() => this.generateResource(name, options));
       });
 
     // Interactive mode
@@ -369,6 +397,74 @@ export class GenerateCommand extends BaseCommand {
   }
 
   /**
+   * Generate complete resource
+   */
+  async generateResource(name: string, options: GenerateCommandOptions): Promise<CommandResult> {
+    this.startSpinner(`Generating resource '${name}'...`);
+
+    try {
+      const fieldStrings = options.fields ? options.fields.split(',').map(f => f.trim()) : [];
+
+      const generationOptions: GenerationOptions = {
+        name,
+        type: 'resource',
+        fields: fieldStrings,
+        modulePath: options.modulePath,
+        generateModule: options.generateModule !== false, // Default to true unless --no-module
+        skipEntity: options.skipEntity,
+        skipService: options.skipService,
+        skipController: options.skipController,
+        withSoftDelete: options.withSoftDelete,
+        withBulkOperations: options.withBulkOperations,
+        path: options.path,
+        overwrite: options.overwrite,
+      };
+
+      // Validate options
+      const validationErrors = this.resourceGenerator.validateOptions(generationOptions);
+      if (validationErrors.length > 0) {
+        this.failSpinner('Validation failed');
+        return {
+          success: false,
+          message: 'Invalid options',
+          errors: validationErrors,
+        };
+      }
+
+      const context = getProjectContext();
+      const result = await this.resourceGenerator.generate(name, generationOptions, context);
+      
+      if (result.success) {
+        this.succeedSpinner(`Resource '${name}' generated successfully`);
+        
+        // Show files generated
+        if (result.generatedFiles && result.generatedFiles.length > 0) {
+          console.log('\n📄 Generated files:');
+          result.generatedFiles.forEach(file => {
+            const relativePath = file.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
+            console.log(`  - ${relativePath}`);
+          });
+        }
+
+        // Show next steps if provided
+        if (result.nextSteps && result.nextSteps.length > 0) {
+          console.log('\n📋 Next steps:');
+          result.nextSteps.forEach((step, index) => {
+            console.log(`  ${index + 1}. ${step}`);
+          });
+        }
+      } else {
+        this.failSpinner('Failed to generate resource');
+      }
+
+      return result;
+    } catch (error) {
+      this.failSpinner('Failed to generate resource');
+      throw error;
+    }
+  }
+
+  /**
    * Interactive generation mode
    */
   async interactiveGeneration(): Promise<CommandResult> {
@@ -383,16 +479,19 @@ export class GenerateCommand extends BaseCommand {
           name: 'componentType',
           message: 'What would you like to generate?',
           choices: [
+            { name: 'Resource - Complete resource (Entity + Service + Controller + Module)', value: 'resource' },
             { name: 'Entity - Database entity with SOLID decorators', value: 'entity' },
             { name: 'Service - CRUD service with operations', value: 'service' },
             { name: 'Controller - REST API controller', value: 'controller' },
             { name: 'Module - NestJS module', value: 'module' },
-            { name: 'Resource - Complete resource (Entity + Service + Controller)', value: 'resource', disabled: 'Coming soon' },
           ],
         },
       ]);
 
       switch (componentType) {
+        case 'resource':
+          return await this.resourceGenerator.generateInteractive();
+
         case 'entity':
           return await this.entityGenerator.generateInteractive();
         
@@ -424,11 +523,11 @@ export class GenerateCommand extends BaseCommand {
    */
   private showAvailableGenerators(): void {
     console.log(chalk.blue('\n📋 Available Generators:\n'));
+    console.log('  ✅', chalk.green('resource'), '   - Complete resource (entity + service + controller + module)');
     console.log('  ✅', chalk.green('entity'), '     - Database entity with SOLID decorators');
     console.log('  ✅', chalk.green('service'), '    - CRUD service with operations');
     console.log('  ✅', chalk.green('controller'), ' - REST API controller');
     console.log('  ✅', chalk.green('module'), '     - NestJS module');
-    console.log('  🚧', chalk.yellow('resource'), '   - Complete resource (coming soon)');
     console.log('\n  Use', chalk.cyan('snest generate <type> <name>'), 'to generate components');
     console.log('  Use', chalk.cyan('snest generate --interactive'), 'for guided generation\n');
   }

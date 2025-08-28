@@ -317,6 +317,11 @@ export class ModuleUpdater {
    */
   static isModuleUpdatingEnabled(projectRoot: string = process.cwd()): boolean {
     try {
+      // Check for a temporary flag to disable module updating during resource generation
+      if (process.env.SKIP_MODULE_UPDATE === 'true') {
+        return false;
+      }
+      
       // Check for a configuration flag or just return true for now
       // This could be extended to read from package.json, .snestrc, etc.
       return true;

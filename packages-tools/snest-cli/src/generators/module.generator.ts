@@ -173,13 +173,37 @@ export class ModuleGenerator {
    */
   private buildFilePath(baseName: string, type: 'entity' | 'service' | 'controller' | 'provider', basePath: string): string {
     const suffix = type === 'entity' ? 'entity' : type;
-    return path.posix.join(basePath, `${baseName}.${suffix}`);
+    const fileName = `${baseName}.${suffix}`;
+    
+    // Handle relative paths properly for module imports
+    if (basePath.startsWith('./')) {
+      return `${basePath}/${fileName}`;
+    }
+    
+    return path.posix.join(basePath, fileName);
   }
 
   /**
    * Get base path for component type
    */
   private getBasePath(type: 'entity' | 'service' | 'controller' | 'provider', context?: ProjectContext): string {
+    // For modular structure, components are in the same module directory
+    if (context?.isModularStructure) {
+      switch (type) {
+        case 'entity':
+          return './entities';
+        case 'service':
+          return './services';
+        case 'controller':
+          return './controllers';
+        case 'provider':
+          return './providers';
+        default:
+          return '.';
+      }
+    }
+    
+    // For classic structure, components are in separate directories
     switch (type) {
       case 'entity':
         return '../entities';

@@ -1,6 +1,6 @@
 # CLI Testing Guide - SOLID NestJS Framework
 
-Esta guía te mostrará cómo probar el CLI del framework SOLID NestJS para crear aplicaciones completas con entidades, DTOs, servicios y controladores usando el estándar SOLID.
+Esta guía te mostrará cómo probar el CLI del framework SOLID NestJS para crear aplicaciones completas con entidades, DTOs, servicios y controladores usando el estándar SOLID, incluyendo soporte para módulos y generación completa de recursos.
 
 ## 🚀 Comandos para Probar el CLI
 
@@ -63,7 +63,32 @@ npm install
 "D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate controller Orders
 ```
 
-### **6. Compilar y Ejecutar**
+### **6. Generar Recursos Completos (🆕 NUEVO)**
+
+El comando `resource` genera todo de una vez (entity + service + controller + module):
+
+```bash
+# Generar recurso completo en módulo separado (recomendado)
+"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Product --fields "name:string,price:number,description:string:optional"
+
+# Generar recurso con módulo anidado
+"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Order --fields "total:number,status:string,customerEmail:string" --module-path "e-commerce/orders"
+
+# Generar recurso con opciones avanzadas
+"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource User --fields "email:string,name:string,active:boolean" --with-soft-delete --with-bulk-operations --module-path "auth/users"
+```
+
+### **7. Generar Solo Módulos (🆕 NUEVO)**
+
+```bash
+# Generar módulo para agrupar componentes existentes
+"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate module Inventory --entities "Product,Category" --services "Products,Categories" --controllers "Products,Categories"
+
+# Generar módulo básico
+"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate module Auth
+```
+
+### **8. Compilar y Ejecutar**
 
 ```bash
 # Compilar la aplicación
@@ -75,7 +100,53 @@ npm run start:dev
 
 ## 📁 Estructura de Archivos Generada
 
-Después de ejecutar todos los comandos, tendrás esta estructura:
+### **🆕 Nueva Estructura Modular (Recomendada)**
+
+Con el comando `resource`, obtienes una estructura organizadas por módulos:
+
+```
+mi-tienda/
+├── src/
+│   ├── modules/
+│   │   ├── product/                          # Módulo Product
+│   │   │   ├── entities/
+│   │   │   │   └── product.entity.ts         # @SolidEntity con decoradores SOLID
+│   │   │   ├── dto/
+│   │   │   │   └── inputs/
+│   │   │   │       ├── create-product.dto.ts # extends GenerateDtoFromEntity(Product)
+│   │   │   │       └── update-product.dto.ts # extends PartialType(CreateProductDto)
+│   │   │   ├── services/
+│   │   │   │   └── products.service.ts       # extends CrudServiceFrom(productsServiceStructure)
+│   │   │   ├── controllers/
+│   │   │   │   └── products.controller.ts    # extends CrudControllerFrom(productsControllerStructure)
+│   │   │   └── product.module.ts             # Módulo NestJS completo
+│   │   ├── e-commerce/                       # Módulos anidados
+│   │   │   └── orders/
+│   │   │       ├── entities/
+│   │   │       │   └── order.entity.ts
+│   │   │       ├── dto/
+│   │   │       │   └── inputs/
+│   │   │       │       ├── create-order.dto.ts
+│   │   │       │       └── update-order.dto.ts
+│   │   │       ├── services/
+│   │   │       │   └── orders.service.ts
+│   │   │       ├── controllers/
+│   │   │       │   └── orders.controller.ts
+│   │   │       └── order.module.ts
+│   │   └── auth/                            # Módulos por dominio
+│   │       └── users/
+│   │           ├── entities/
+│   │           │   └── user.entity.ts
+│   │           ├── dto/...
+│   │           ├── services/...
+│   │           ├── controllers/...
+│   │           └── user.module.ts
+│   └── app.module.ts                        # Imports: ProductModule, OrderModule, etc.
+```
+
+### **📂 Estructura Clásica (Para compatibilidad)**
+
+Si usas comandos individuales sin módulos:
 
 ```
 mi-tienda/

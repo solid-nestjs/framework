@@ -64,8 +64,12 @@ export interface ProjectContext {
     services: string;
     controllers: string;
     modules: string;
-    dto: string;
+    dto: string | { inputs: string; args: string };
   };
+  
+  // Module support
+  isModularStructure?: boolean;
+  moduleBasePath?: string;
 }
 
 /**
@@ -100,6 +104,12 @@ export interface GenerationOptions {
   guards?: any[];
   skipModuleUpdate?: boolean;
   overwrite?: boolean;
+  // Resource-specific options
+  modulePath?: string;
+  generateModule?: boolean;
+  skipEntity?: boolean;
+  skipService?: boolean;
+  skipController?: boolean;
 }
 
 /**
