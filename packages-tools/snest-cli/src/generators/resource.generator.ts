@@ -200,15 +200,28 @@ export class ResourceGenerator {
         };
       }
 
-      // 5. Update app.module.ts to import the generated module
+      // 5. Update parent module or app.module.ts to import the generated module
       if (generateModule && results.module?.success) {
         try {
-          await this.updateAppModule(nameVariations.pascalCase, moduleBasePath);
-          console.log(`✅ Updated app.module.ts with ${nameVariations.pascalCase}Module import`);
+          // Check for parent module info from either explicit modulePath or detected moduleBasePath
+          const modulePathForParent = options.modulePath || this.extractModulePathFromBasePath(moduleBasePath);
+          const parentInfo = this.getParentModuleInfo(modulePathForParent);
+          if (parentInfo) {
+            // Create parent module if it doesn't exist and update it
+            await this.ensureParentModule(parentInfo, nameVariations.pascalCase, moduleBasePath);
+            console.log(`✅ Updated ${parentInfo.moduleName} with ${nameVariations.pascalCase}Module import`);
+            // Ensure parent module is imported in app.module.ts
+            await this.ensureParentInAppModule(parentInfo);
+            console.log(`✅ Ensured ${parentInfo.moduleName} is imported in app.module.ts`);
+          } else {
+            // No parent module, import directly in app.module.ts
+            await this.updateAppModule(nameVariations.pascalCase, moduleBasePath);
+            console.log(`✅ Updated app.module.ts with ${nameVariations.pascalCase}Module import`);
+          }
           allNextSteps = allNextSteps.filter(step => !step.includes('Import this module in your app.module.ts'));
         } catch (error) {
-          // Don't fail the generation if app.module.ts update fails
-          console.log(`⚠️ Could not auto-update app.module.ts: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          // Don't fail the generation if module update fails
+          console.log(`⚠️ Could not auto-update modules: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
 
@@ -234,13 +247,21 @@ export class ResourceGenerator {
   }
 
   /**
-   * Build module path based on options
+   * Build module path based on options or current directory context
    */
   private buildModulePath(name: string, modulePath?: string): string {
     if (modulePath) {
-      // Support nested modules like "users/profile" or "e-commerce/products"
+      // Explicit module path provided
       const normalizedPath = modulePath.replace(/\\/g, '/');
       return path.join('src', 'modules', normalizedPath);
+    }
+    
+    // Auto-detect module path from current directory
+    const autoDetectedPath = this.detectModulePathFromCurrentDirectory(name);
+    if (autoDetectedPath) {
+      const fullPath = path.join('src', 'modules', autoDetectedPath);
+      console.log(`🔍 Auto-detected module path: ${fullPath}`);
+      return fullPath;
     }
     
     // Default single module
@@ -256,6 +277,8 @@ export class ResourceGenerator {
     moduleBasePath: string,
     options: GenerationOptions
   ): ProjectContext {
+    const detectedProjectRoot = this.findProjectRoot(process.cwd()) || process.cwd();
+    
     const defaultContext: ProjectContext = {
       hasSolidNestjs: true,
       solidVersion: '1.0.0',
@@ -272,7 +295,7 @@ export class ResourceGenerator {
       hasEntityGeneration: true,
       useSolidDecorators: true,
       useGenerateDtoFromEntity: true,
-      projectRoot: process.cwd(),
+      projectRoot: detectedProjectRoot,
       packageJson: {},
     };
 
@@ -429,10 +452,17 @@ export class ResourceGenerator {
    */
   private async updateAppModule(moduleName: string, moduleBasePath: string): Promise<void> {
     const fs = await import('fs-extra');
-    const appModulePath = path.join(process.cwd(), 'src', 'app.module.ts');
+    
+    // Find the project root from current directory
+    const projectRoot = this.findProjectRoot(process.cwd());
+    if (!projectRoot) {
+      throw new Error('Could not find project root. Make sure you are in a NestJS project directory.');
+    }
+    
+    const appModulePath = path.join(projectRoot, 'src', 'app.module.ts');
     
     // Build relative import path from src to module
-    const srcDir = path.join(process.cwd(), 'src');
+    const srcDir = path.join(projectRoot, 'src');
     const relativePath = path.relative(srcDir, moduleBasePath).replace(/\\/g, '/');
     const moduleFileName = createNameVariations(moduleName).kebabCase;
     const importPath = `./${relativePath}/${moduleFileName}.module`;
@@ -461,6 +491,278 @@ export class ResourceGenerator {
     // Add to imports array in @Module decorator
     const moduleArrayItem = {
       name: moduleClassName,
+      arrayType: 'imports' as const,
+    };
+
+    updatedContent = AstUtils.addModuleArrayItem(updatedSourceFile, moduleArrayItem);
+
+    // Write the updated content back to the file
+    AstUtils.writeFile(appModulePath, updatedContent);
+  }
+
+  /**
+   * Detect module path from current working directory
+   */
+  private detectModulePathFromCurrentDirectory(resourceName: string): string | null {
+    const currentDir = process.cwd();
+    const projectRoot = this.findProjectRoot(currentDir);
+    
+    if (!projectRoot) {
+      return null; // Not in a project
+    }
+
+    // Get relative path from project root to current directory
+    const relativePath = path.relative(projectRoot, currentDir).replace(/\\/g, '/');
+    
+    // Check if we're inside src/modules/...
+    if (relativePath.startsWith('src/modules/')) {
+      // Extract the module path part
+      const modulePath = relativePath.replace('src/modules/', '');
+      
+      if (modulePath) {
+        // We're inside a module directory
+        const nameVariations = createNameVariations(resourceName);
+        
+        // Check if we're in a directory that matches the resource name (single module)
+        // or in a parent directory that should contain multiple submodules
+        if (modulePath.toLowerCase() === nameVariations.kebabCase.toLowerCase()) {
+          // We're in a directory named exactly like the resource, use just the parent
+          return modulePath;
+        } else {
+          // We're in a parent directory, create nested path
+          const fullModulePath = `${modulePath}/${nameVariations.kebabCase}`;
+          return fullModulePath;
+        }
+      }
+    }
+    
+    // Check if we're in project root and modules directory exists
+    if (relativePath === '' || relativePath === '.') {
+      const modulesDir = path.join(projectRoot, 'src', 'modules');
+      try {
+        const fs = require('fs');
+        if (fs.existsSync(modulesDir)) {
+          // We're in project root and modules exist, use default behavior
+          return null;
+        }
+      } catch {
+        // If fs check fails, continue with default behavior
+      }
+    }
+    
+    return null; // No auto-detection possible
+  }
+
+  /**
+   * Find the project root by looking for package.json or nest-cli.json
+   */
+  private findProjectRoot(startPath: string): string | null {
+    let currentPath = startPath;
+    const fs = require('fs');
+    
+    while (currentPath !== path.dirname(currentPath)) {
+      // Check for project markers
+      if (fs.existsSync(path.join(currentPath, 'package.json')) ||
+          fs.existsSync(path.join(currentPath, 'nest-cli.json')) ||
+          fs.existsSync(path.join(currentPath, 'snest.config.json'))) {
+        return currentPath;
+      }
+      
+      currentPath = path.dirname(currentPath);
+    }
+    
+    return null; // No project root found
+  }
+
+  /**
+   * Extract module path from base path for parent module detection
+   */
+  private extractModulePathFromBasePath(moduleBasePath: string): string | undefined {
+    // Convert "src/modules/ecommerce/products" to "ecommerce/products"
+    const normalizedPath = moduleBasePath.replace(/\\/g, '/');
+    const match = normalizedPath.match(/^src\/modules\/(.+)$/);
+    return match ? match[1] : undefined;
+  }
+
+  /**
+   * Get parent module information from module path
+   */
+  private getParentModuleInfo(modulePath?: string): { 
+    moduleName: string; 
+    moduleClassName: string; 
+    moduleBasePath: string; 
+    childPath: string; 
+  } | null {
+    if (!modulePath) return null;
+    
+    const pathParts = modulePath.split('/').filter(p => p.length > 0);
+    if (pathParts.length < 2) return null; // No parent if only one level
+    
+    // For "contabilidad/facturas" -> parent is "contabilidad"
+    const parentPath = pathParts.slice(0, -1).join('/');
+    const parentName = pathParts[pathParts.length - 2]; // "contabilidad"
+    const parentVariations = createNameVariations(parentName);
+    
+    return {
+      moduleName: `${parentVariations.pascalCase}Module`,
+      moduleClassName: `${parentVariations.pascalCase}Module`,
+      moduleBasePath: path.join('src', 'modules', parentPath),
+      childPath: pathParts[pathParts.length - 1], // "facturas"
+    };
+  }
+
+  /**
+   * Ensure parent module exists and update it with child module
+   */
+  private async ensureParentModule(
+    parentInfo: { moduleName: string; moduleClassName: string; moduleBasePath: string; childPath: string },
+    childModuleName: string,
+    childModuleBasePath: string
+  ): Promise<void> {
+    const projectRoot = this.findProjectRoot(process.cwd());
+    if (!projectRoot) {
+      throw new Error('Could not find project root. Make sure you are in a NestJS project directory.');
+    }
+    
+    const parentModulePath = path.join(projectRoot, parentInfo.moduleBasePath, `${createNameVariations(parentInfo.moduleName.replace('Module', '')).kebabCase}.module.ts`);
+    
+    // Check if parent module exists
+    const fs = await import('fs-extra');
+    if (!(await fs.pathExists(parentModulePath))) {
+      // Create parent module
+      await this.createParentModule(parentInfo, parentModulePath);
+      console.log(`✅ Created parent module ${parentInfo.moduleName}`);
+    }
+    
+    // Update parent module to import child module
+    await this.updateParentModule(parentModulePath, childModuleName, childModuleBasePath, parentInfo.moduleBasePath);
+  }
+
+  /**
+   * Create parent module file
+   */
+  private async createParentModule(
+    parentInfo: { moduleName: string; moduleClassName: string; moduleBasePath: string; childPath: string },
+    parentModulePath: string
+  ): Promise<void> {
+    const fs = await import('fs-extra');
+    const parentName = parentInfo.moduleName.replace('Module', '');
+    
+    // Ensure directory exists
+    await fs.ensureDir(path.dirname(parentModulePath));
+    
+    const content = `import { Module } from '@nestjs/common';
+
+/**
+ * ${parentName} Module
+ * 
+ * This module encapsulates all ${parentName.toLowerCase()}-related functionality
+ */
+@Module({
+  imports: [],
+  controllers: [],
+  providers: [],
+})
+export class ${parentInfo.moduleClassName} {}
+`;
+    
+    await fs.writeFile(parentModulePath, content, 'utf-8');
+  }
+
+  /**
+   * Update parent module to import child module
+   */
+  private async updateParentModule(
+    parentModulePath: string,
+    childModuleName: string,
+    childModuleBasePath: string,
+    parentModuleBasePath: string
+  ): Promise<void> {
+    // Build relative import path from parent to child
+    const relativePath = path.relative(parentModuleBasePath, childModuleBasePath).replace(/\\/g, '/');
+    const childFileName = createNameVariations(childModuleName).kebabCase;
+    const importPath = `./${relativePath}/${childFileName}.module`;
+    const childModuleClassName = `${childModuleName}Module`;
+
+    // Parse the existing parent module file
+    const sourceFile = AstUtils.parseFile(parentModulePath);
+    if (!sourceFile) {
+      throw new Error(`Could not parse ${parentModulePath}`);
+    }
+
+    // Add import statement
+    const moduleImport = {
+      name: childModuleClassName,
+      path: importPath,
+    };
+
+    let updatedContent = AstUtils.addImport(sourceFile, moduleImport);
+
+    // Parse the updated content to add to imports array
+    const updatedSourceFile = AstUtils.parseFromContent(updatedContent, path.basename(parentModulePath));
+    if (!updatedSourceFile) {
+      throw new Error('Could not parse updated parent module content');
+    }
+
+    // Add to imports array in @Module decorator
+    const moduleArrayItem = {
+      name: childModuleClassName,
+      arrayType: 'imports' as const,
+    };
+
+    updatedContent = AstUtils.addModuleArrayItem(updatedSourceFile, moduleArrayItem);
+
+    // Write the updated content back to the file
+    AstUtils.writeFile(parentModulePath, updatedContent);
+  }
+
+  /**
+   * Ensure parent module is imported in app.module.ts
+   */
+  private async ensureParentInAppModule(
+    parentInfo: { moduleName: string; moduleClassName: string; moduleBasePath: string; childPath: string }
+  ): Promise<void> {
+    const projectRoot = this.findProjectRoot(process.cwd());
+    if (!projectRoot) {
+      throw new Error('Could not find project root. Make sure you are in a NestJS project directory.');
+    }
+    
+    const appModulePath = path.join(projectRoot, 'src', 'app.module.ts');
+    
+    // Build relative import path from src to parent module
+    const srcDir = path.join(projectRoot, 'src');
+    const relativePath = path.relative(srcDir, parentInfo.moduleBasePath).replace(/\\/g, '/');
+    const moduleFileName = createNameVariations(parentInfo.moduleName.replace('Module', '')).kebabCase;
+    const importPath = `./${relativePath}/${moduleFileName}.module`;
+
+    // Parse the existing app.module.ts file
+    const sourceFile = AstUtils.parseFile(appModulePath);
+    if (!sourceFile) {
+      throw new Error(`Could not parse ${appModulePath}`);
+    }
+
+    // Check if parent module is already imported
+    if (AstUtils.hasImport(sourceFile, parentInfo.moduleClassName)) {
+      return; // Already imported, nothing to do
+    }
+
+    // Add import statement
+    const moduleImport = {
+      name: parentInfo.moduleClassName,
+      path: importPath,
+    };
+
+    let updatedContent = AstUtils.addImport(sourceFile, moduleImport);
+
+    // Parse the updated content to add to imports array
+    const updatedSourceFile = AstUtils.parseFromContent(updatedContent, 'app.module.ts');
+    if (!updatedSourceFile) {
+      throw new Error('Could not parse updated app module content');
+    }
+
+    // Add to imports array in @Module decorator
+    const moduleArrayItem = {
+      name: parentInfo.moduleClassName,
       arrayType: 'imports' as const,
     };
 

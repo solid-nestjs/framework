@@ -73,7 +73,8 @@ export class EntityGenerator {
       
       // Determine output path
       const outputDir = options.path || (context?.paths?.entities || 'src/entities');
-      const outputPath = path.join(process.cwd(), outputDir, `${nameVariations.kebabCase}.entity.ts`);
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(projectRoot, outputDir, `${nameVariations.kebabCase}.entity.ts`);
       
       // Write file
       const result = await writeFile(outputPath, entityContent, options.overwrite);

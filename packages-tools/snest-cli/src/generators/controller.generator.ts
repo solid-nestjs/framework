@@ -95,7 +95,8 @@ export class ControllerGenerator {
       
       // Determine output path
       const outputDir = options.path || (context?.paths?.controllers || 'src/controllers');
-      const outputPath = path.join(process.cwd(), outputDir, `${nameVariations.kebabCase}.controller.ts`);
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(projectRoot, outputDir, `${nameVariations.kebabCase}.controller.ts`);
       
       // Write file
       const result = await writeFile(outputPath, controllerContent, options.overwrite);

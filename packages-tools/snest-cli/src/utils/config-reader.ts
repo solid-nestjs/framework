@@ -3,6 +3,26 @@ import * as path from 'path';
 import { ProjectContext } from '../types';
 
 /**
+ * Find the project root by looking for package.json, nest-cli.json, or snest.config.json
+ */
+function findProjectRoot(startPath: string = process.cwd()): string | null {
+  let currentPath = startPath;
+  
+  while (currentPath !== path.dirname(currentPath)) {
+    // Check for project markers
+    if (fs.existsSync(path.join(currentPath, 'package.json')) ||
+        fs.existsSync(path.join(currentPath, 'nest-cli.json')) ||
+        fs.existsSync(path.join(currentPath, 'snest.config.json'))) {
+      return currentPath;
+    }
+    
+    currentPath = path.dirname(currentPath);
+  }
+  
+  return null; // No project root found
+}
+
+/**
  * Configuration interface for snest.config.json
  */
 export interface SnestConfig {
@@ -33,11 +53,17 @@ export interface SnestConfig {
 }
 
 /**
- * Read and parse snest.config.json from the current working directory
+ * Read and parse snest.config.json from the project root
  */
 export function readSnestConfig(): SnestConfig | null {
   try {
-    const configPath = path.join(process.cwd(), 'snest.config.json');
+    // Find the project root first, then look for the config file there
+    const projectRoot = findProjectRoot(process.cwd());
+    if (!projectRoot) {
+      return null;
+    }
+    
+    const configPath = path.join(projectRoot, 'snest.config.json');
     
     if (!fs.existsSync(configPath)) {
       return null;
@@ -83,7 +109,7 @@ export function createProjectContextFromConfig(config: SnestConfig): ProjectCont
     useGenerateDtoFromEntity: config.project.features.useGenerateDtoFromEntity ?? config.generators.useGenerateDtoFromEntity ?? false,
     
     // Project info
-    projectRoot: process.cwd(),
+    projectRoot: findProjectRoot() || process.cwd(),
     packageJson: {}, // Would need to be loaded
     
     // Path configuration
@@ -126,7 +152,7 @@ export function getProjectContext(): ProjectContext {
     hasEntityGeneration: true,
     useSolidDecorators: true,
     useGenerateDtoFromEntity: false,
-    projectRoot: process.cwd(),
+    projectRoot: findProjectRoot() || process.cwd(),
     packageJson: {},
     paths: {
       entities: 'src/entities',

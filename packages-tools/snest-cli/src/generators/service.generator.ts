@@ -69,7 +69,8 @@ export class ServiceGenerator {
       
       // Determine output path
       const outputDir = options.path || (context?.paths?.services || 'src/services');
-      const outputPath = path.join(process.cwd(), outputDir, `${nameVariations.kebabCase}.service.ts`);
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(projectRoot, outputDir, `${nameVariations.kebabCase}.service.ts`);
       
       // Generate DTOs automatically using templates
       const generatedFiles: string[] = [];
@@ -81,11 +82,11 @@ export class ServiceGenerator {
           : context?.paths?.dto?.inputs || 'src/dto/inputs';
           
         // Ensure DTO directories exist
-        await ensureDirectory(path.join(process.cwd(), dtoInputsPath));
+        await ensureDirectory(path.join(projectRoot, dtoInputsPath));
         
         // Generate create DTO
         const createDtoContent = await this.templateEngine.render('dto/create-dto', templateData);
-        const createDtoPath = path.join(process.cwd(), dtoInputsPath, `create-${entityVariations.kebabCase}.dto.ts`);
+        const createDtoPath = path.join(projectRoot, dtoInputsPath, `create-${entityVariations.kebabCase}.dto.ts`);
         const createResult = await writeFile(createDtoPath, createDtoContent);
         if (createResult.success) {
           generatedFiles.push(createResult.path);
@@ -93,7 +94,7 @@ export class ServiceGenerator {
         
         // Generate update DTO
         const updateDtoContent = await this.templateEngine.render('dto/update-dto', templateData);
-        const updateDtoPath = path.join(process.cwd(), dtoInputsPath, `update-${entityVariations.kebabCase}.dto.ts`);
+        const updateDtoPath = path.join(projectRoot, dtoInputsPath, `update-${entityVariations.kebabCase}.dto.ts`);
         const updateResult = await writeFile(updateDtoPath, updateDtoContent);
         if (updateResult.success) {
           generatedFiles.push(updateResult.path);

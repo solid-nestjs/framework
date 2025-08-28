@@ -84,7 +84,8 @@ export class ModuleGenerator {
       
       // Determine output path
       const outputDir = options.path || (context?.paths?.modules || 'src/modules');
-      const outputPath = path.join(process.cwd(), outputDir, `${nameVariations.kebabCase}.module.ts`);
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(projectRoot, outputDir, `${nameVariations.kebabCase}.module.ts`);
       
       // Write file
       const result = await writeFile(outputPath, moduleContent, options.overwrite);
