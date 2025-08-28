@@ -31,9 +31,7 @@ export class ServiceGenerator {
       const entityName = options.entityName || this.singularize(name);
       const entityVariations = createNameVariations(entityName);
       
-      // Determine features based on context and options
-      const useSolidDecorators = options.withSolid ?? context?.useSolidDecorators ?? context?.hasSolidDecorators ?? true;
-      const useGenerateDtoFromEntity = context?.useGenerateDtoFromEntity ?? false;
+      // Always use SOLID decorators and GenerateDtoFromEntity
       const hasArgsHelpers = options.withArgsHelpers ?? context?.hasArgsHelpers ?? false;
       const withSoftDelete = options.withSoftDelete ?? false;
       const withBulkOperations = options.withBulkOperations ?? false;
@@ -48,8 +46,6 @@ export class ServiceGenerator {
       // Build template data
       const templateData = TemplateEngine.createTemplateData(name, {
         entityName: entityVariations.pascalCase,
-        useSolidDecorators,
-        useGenerateDtoFromEntity,
         hasArgsHelpers,
         databaseType,
         hasCreateDto: true, // Assume DTOs exist for SOLID apps

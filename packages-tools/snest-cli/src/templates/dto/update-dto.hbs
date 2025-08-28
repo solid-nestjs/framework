@@ -1,9 +1,3 @@
-{{#if useGenerateDtoFromEntity}}
-import { PartialType } from '@nestjs/swagger';
-import { Create{{pascalCase entityName}}Dto } from './create-{{kebabCase entityName}}.dto';
-
-export class Update{{pascalCase entityName}}Dto extends PartialType(Create{{pascalCase entityName}}Dto) {}
-{{else}}
 import { PartialType } from '@nestjs/swagger';
 {{#if hasGraphQL}}
 import { PartialType as GraphQLPartialType } from '@nestjs/graphql';
@@ -14,5 +8,4 @@ import { Create{{pascalCase entityName}}Dto } from './create-{{kebabCase entityN
 export class Update{{pascalCase entityName}}Dto extends GraphQLPartialType(Create{{pascalCase entityName}}Dto) {}
 {{else}}
 export class Update{{pascalCase entityName}}Dto extends PartialType(Create{{pascalCase entityName}}Dto) {}
-{{/if}}
 {{/if}}

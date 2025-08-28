@@ -1,99 +1,31 @@
-{{#if useSolidDecorators}}
 import { SolidEntity, SolidId, SolidField{{#if withTimestamps}}, SolidCreatedAt, SolidUpdatedAt{{/if}}{{#if withSoftDelete}}, SolidDeletedAt{{/if}} } from '{{solidBundle}}';
 {{#if hasRelations}}
 import { SolidOneToMany, SolidManyToOne, SolidOneToOne, SolidManyToMany } from '{{solidBundle}}';
-{{/if}}
-{{else}}
-import { Entity, PrimaryGeneratedColumn, Column{{#if hasRelations}}, OneToMany, ManyToOne, OneToOne, ManyToMany, JoinColumn{{/if}} } from 'typeorm';
-{{#if hasSwagger}}
-import { ApiProperty } from '@nestjs/swagger';
-{{/if}}
-{{#if hasGraphQL}}
-import { ObjectType, Field, ID } from '@nestjs/graphql';
-{{/if}}
-{{/if}}
-{{#if withSoftDelete}}
-{{#unless useSolidDecorators}}
-import { DeleteDateColumn } from 'typeorm';
-{{/unless}}
 {{/if}}
 {{#each relationImports}}
 import { {{this.className}} } from '{{this.path}}';
 {{/each}}
 
-{{#if useSolidDecorators}}
 @SolidEntity()
-{{else}}
-{{#if hasSwagger}}
-@ApiProperty()
-{{/if}}
-{{#if hasGraphQL}}
-@ObjectType()
-{{/if}}
-@Entity()
-{{/if}}
 export class {{pascalCase name}} {
-  {{#if useSolidDecorators}}
   @SolidId()
-  {{else}}
-  {{#if hasSwagger}}
-  @ApiProperty({ description: 'Unique identifier' })
-  {{/if}}
-  {{#if hasGraphQL}}
-  @Field(() => ID)
-  {{/if}}
-  @PrimaryGeneratedColumn()
-  {{/if}}
   id: number;
 
 {{#each fields}}
 {{#unless (or (eq this.name "createdAt") (eq this.name "updatedAt"))}}
   {{#if this.isRelation}}
-  {{#if ../useSolidDecorators}}
-  @Solid{{pascalCase this.relationType}}(() => {{pascalCase this.relationTarget}}{{#if this.relationOptions}}, {{json this.relationOptions}}{{/if}})
-  {{else}}
-  {{#if ../hasSwagger}}
-  @ApiProperty({{#if this.description}}{ description: '{{this.description}}' }{{/if}})
-  {{/if}}
-  {{#if ../hasGraphQL}}
-  @Field(() => {{#if (eq this.relationType "oneToMany")}}[{{pascalCase this.relationTarget}}]{{else}}{{pascalCase this.relationTarget}}{{/if}}{{#unless this.required}}, { nullable: true }{{/unless}})
-  {{/if}}
-  @{{pascalCase this.relationType}}(() => {{pascalCase this.relationTarget}}{{#if this.relationOptions}}, {{json this.relationOptions}}{{/if}})
-  {{#if this.joinColumn}}
-  @JoinColumn({{json this.joinColumn}})
-  {{/if}}
-  {{/if}}
+  @Solid{{pascalCase this.relationType}}(() => {{pascalCase this.relationTarget}}{{#if this.relationOptions}}, {{jsonOptions this.relationOptions}}{{/if}})
   {{this.name}}{{#unless this.required}}?{{/unless}}: {{#if (eq this.relationType "oneToMany")}}{{pascalCase this.relationTarget}}[]{{else}}{{pascalCase this.relationTarget}}{{/if}};
 
   {{else}}
-  {{#if ../useSolidDecorators}}
   @SolidField({{#if this.options}}{{jsonOptions this.options}}{{/if}})
-  {{else}}
-  {{#if ../hasSwagger}}
-  @ApiProperty({{#if this.description}}{ description: '{{this.description}}' }{{/if}})
-  {{/if}}
-  {{#if ../hasGraphQL}}
-  @Field({{#unless this.required}}, { nullable: true }{{/unless}})
-  {{/if}}
-  @Column({{#if this.options}}{{jsonOptions this.options}}{{/if}})
-  {{/if}}
   {{this.name}}{{#unless this.required}}?{{/unless}}: {{typeScriptType this.type}};
 
   {{/if}}
 {{/unless}}
 {{/each}}
 {{#if withSoftDelete}}
-  {{#if useSolidDecorators}}
   @SolidDeletedAt()
-  {{else}}
-  {{#if hasSwagger}}
-  @ApiProperty({ description: 'Soft deletion timestamp', required: false })
-  {{/if}}
-  {{#if hasGraphQL}}
-  @Field({ nullable: true })
-  {{/if}}
-  @DeleteDateColumn()
-  {{/if}}
   deletedAt?: Date;
 {{/if}}
 

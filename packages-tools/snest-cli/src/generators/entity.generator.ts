@@ -54,21 +54,14 @@ export class EntityGenerator {
       // Parse fields if provided
       const fields = this.parseFields(options.fields || []);
       
-      // Determine features based on context and configuration
-      const useSolidDecorators = options.withSolid ?? context?.useSolidDecorators ?? context?.hasSolidDecorators ?? true;
-      const useGenerateDtoFromEntity = context?.useGenerateDtoFromEntity ?? false;
-      const hasSwagger = context?.hasSwagger ?? false;
-      const hasGraphQL = context?.hasGraphQL ?? false;
+      // Always use SOLID decorators and determine features
+      const hasRelations = fields.some(f => f.type === 'relation');
       const withSoftDelete = options.withSoftDelete ?? false;
       
       // Build template data
       const templateData = TemplateEngine.createTemplateData(name, {
         fields,
-        hasRelations: fields.some(f => f.type === 'relation'),
-        useSolidDecorators,
-        useGenerateDtoFromEntity,
-        hasSwagger: hasSwagger && !useSolidDecorators, // SOLID decorators handle Swagger
-        hasGraphQL: hasGraphQL && !useSolidDecorators, // SOLID decorators handle GraphQL
+        hasRelations,
         withSoftDelete,
         withTimestamps: true, // Always include timestamps
         relationImports: this.buildRelationImports(fields),
@@ -226,7 +219,7 @@ export class EntityGenerator {
         break;
       
       case 'boolean':
-        options.default = false;
+        // No specific options for boolean in SOLID
         break;
       
       case 'Date':

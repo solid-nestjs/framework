@@ -55,8 +55,8 @@ export class ControllerGenerator {
       const entityVariations = createNameVariations(entityName);
       const serviceVariations = createNameVariations(serviceName);
       
-      // Determine features based on context and options
-      const useSolidDecorators = options.withSolid ?? context?.hasSolidDecorators ?? true;
+      // Always use SOLID decorators and determine features
+      const useSolidDecorators = true; // Always use SOLID framework mixins
       const hasSwagger = context?.hasSwagger ?? true; // Default to true for REST APIs
       const hasGraphQL = context?.hasGraphQL ?? false;
       const hasValidation = options.withValidation ?? true;
@@ -74,7 +74,7 @@ export class ControllerGenerator {
         entityName: entityVariations.pascalCase,
         serviceName: serviceVariations.pascalCase.replace(/Service$/, ''), // Remove Service suffix if present
         useSolidDecorators,
-        hasSwagger: hasSwagger && !useSolidDecorators, // SOLID decorators handle Swagger
+        hasSwagger: hasSwagger, // SOLID decorators provide Swagger integration
         hasGraphQL,
         hasValidation,
         hasArgsHelpers,
