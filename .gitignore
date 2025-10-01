@@ -69,6 +69,7 @@ apps-examples/**/coverage-e2e
 !.vscode/extensions.json
 
 .claude/*
+.codex/*
 
 # dotenv environment variable files
 .env
