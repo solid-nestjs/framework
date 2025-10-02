@@ -1,0 +1,79 @@
+import { Resolver } from '@nestjs/graphql';
+import { CrudResolverFrom, CrudResolverStructure } from '{{solidBundle}}';
+{{#if hasArgsHelpers}}
+import { Context } from '{{solidBundle}}';
+{{/if}}
+import { {{pascalCase name}}Service, {{camelCase name}}ServiceStructure } from '../services/{{kebabCase name}}.service';
+import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
+{{#if hasCreateDto}}
+import { Create{{pascalCase entityName}}Dto } from '../dto/inputs/create-{{kebabCase entityName}}.dto';
+{{/if}}
+{{#if hasUpdateDto}}
+import { Update{{pascalCase entityName}}Dto } from '../dto/inputs/update-{{kebabCase entityName}}.dto';
+{{/if}}
+{{#if hasFindArgs}}
+import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}.args';
+{{/if}}
+{{#if withGuards}}
+{{#each guards}}
+import { {{this.name}} } from '{{this.path}}';
+{{/each}}
+{{/if}}
+
+/**
+ * Resolver structure configuration for {{pascalCase name}}
+ */
+export const {{camelCase name}}ResolverStructure = CrudResolverStructure({
+  ...{{camelCase name}}ServiceStructure,
+  serviceType: {{pascalCase name}}Service,
+  operations: {
+    {{#each operations}}
+    {{this.name}}: {{#if this.enabled}}{{#if this.config}}{{json this.config}}{{else}}true{{/if}}{{else}}false{{/if}},
+    {{/each}}
+  },
+  {{#if customEndpoints}}
+  customEndpoints: {
+    {{#each customEndpoints}}
+    {{this.name}}: {
+      method: '{{this.method}}',
+      path: '{{this.path}}',
+      {{#if this.decorators}}
+      decorators: [{{#each this.decorators}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}],
+      {{/if}}
+    },
+    {{/each}}
+  },
+  {{/if}}
+});
+
+/**
+ * GraphQL Resolver for {{pascalCase name}} entities
+ *
+ * This resolver extends the SOLID framework's CrudResolver with automatic GraphQL queries and mutations.
+ * It provides type-safe CRUD operations for {{pascalCase entityName}} entities.
+ *
+ * Available operations:
+ {{#each operations}}
+ * - {{#if (eq this.name "findAll")}}Query: {{pluralize (kebabCase entityName)}}{{/if}}{{#if (eq this.name "findOne")}}Query: {{kebabCase entityName}}(id: ID!){{/if}}{{#if (eq this.name "create")}}Mutation: create{{pascalCase entityName}}(input: Create{{pascalCase entityName}}Input!){{/if}}{{#if (eq this.name "update")}}Mutation: update{{pascalCase entityName}}(id: ID!, input: Update{{pascalCase entityName}}Input!){{/if}}{{#if (eq this.name "remove")}}Mutation: remove{{pascalCase entityName}}(id: ID!){{/if}}{{#if (eq this.name "bulkCreate")}}Mutation: bulkCreate{{pluralize (pascalCase entityName)}}(inputs: [Create{{pascalCase entityName}}Input!]!){{/if}}{{#if (eq this.name "bulkUpdate")}}Mutation: bulkUpdate{{pluralize (pascalCase entityName)}}(updates: [BulkUpdate{{pascalCase entityName}}Input!]!){{/if}}{{#if (eq this.name "bulkRemove")}}Mutation: bulkRemove{{pluralize (pascalCase entityName)}}(ids: [ID!]!){{/if}}{{#if (eq this.name "recover")}}Mutation: recover{{pascalCase entityName}}(id: ID!){{/if}}{{#if (eq this.name "hardRemove")}}Mutation: hardRemove{{pascalCase entityName}}(id: ID!){{/if}} - {{this.name}}
+ {{/each}}
+ */
+@Resolver(() => {{pascalCase entityName}})
+export class {{pascalCase name}}Resolver extends CrudResolverFrom({{camelCase name}}ResolverStructure) {
+  {{#if hasCustomEndpoints}}
+  {{#each customEndpoints}}
+
+  /**
+   * {{this.description}}
+   */
+  {{#if this.decorators}}
+  {{#each this.decorators}}
+  @{{this}}
+  {{/each}}
+  {{/if}}
+  async {{this.name}}({{#each this.parameters}}{{this.name}}: {{this.type}}{{#unless @last}}, {{/unless}}{{/each}}): Promise<{{this.returnType}}> {
+    // TODO: Implement custom resolver method
+    throw new Error('Method not implemented.');
+  }
+  {{/each}}
+  {{/if}}
+}

@@ -11,7 +11,7 @@ interface ModuleComponent {
   name: string;
   className: string;
   path: string;
-  type: 'entity' | 'service' | 'controller' | 'provider';
+  type: 'entity' | 'service' | 'controller' | 'resolver' | 'provider';
 }
 
 /**
@@ -38,30 +38,64 @@ export class ModuleGenerator {
   async generate(
     name: string,
     options: GenerationOptions,
-    context?: ProjectContext
+    context?: ProjectContext,
   ): Promise<CommandResult> {
     try {
       const nameVariations = createNameVariations(name);
-      
+
       // Determine features based on context and options
       const hasTypeORM = context?.hasTypeORM ?? true;
       const hasGraphQL = context?.hasGraphQL ?? false;
       const withExports = options.withExports ?? true;
-      
+
       // Parse components from options
-      const entities = this.parseComponents(options.entities || [], 'entity', context);
-      const services = this.parseComponents(options.services || [], 'service', context);
-      const controllers = this.parseComponents(options.controllers || [], 'controller', context);
+      const entities = this.parseComponents(
+        options.entities || [],
+        'entity',
+        context,
+      );
+      const services = this.parseComponents(
+        options.services || [],
+        'service',
+        context,
+      );
+      const controllers = this.parseComponents(
+        options.controllers || [],
+        'controller',
+        context,
+      );
+      const resolvers = this.parseComponents(
+        options.resolvers || [],
+        'resolver',
+        context,
+      );
       const customProviders = options.customProviders || [];
       const moduleImports = options.moduleImports || [];
       const customExports = options.customExports || [];
-      
+
       // Build import statements
-      const entityImports = entities.map(e => ({ className: e.className, path: e.path }));
-      const serviceImports = services.map(s => ({ className: s.className, path: s.path }));
-      const controllerImports = controllers.map(c => ({ className: c.className, path: c.path }));
-      const customImports = this.buildCustomImports(customProviders, moduleImports, customExports);
-      
+      const entityImports = entities.map(e => ({
+        className: e.className,
+        path: e.path,
+      }));
+      const serviceImports = services.map(s => ({
+        className: s.className,
+        path: s.path,
+      }));
+      const controllerImports = controllers.map(c => ({
+        className: c.className,
+        path: c.path,
+      }));
+      const resolverImports = resolvers.map(r => ({
+        className: r.className,
+        path: r.path,
+      }));
+      const customImports = this.buildCustomImports(
+        customProviders,
+        moduleImports,
+        customExports,
+      );
+
       // Build template data
       const templateData = TemplateEngine.createTemplateData(name, {
         hasTypeORM,
@@ -69,6 +103,7 @@ export class ModuleGenerator {
         entities,
         services,
         controllers,
+        resolvers,
         customProviders,
         moduleImports,
         customExports,
@@ -76,20 +111,33 @@ export class ModuleGenerator {
         entityImports,
         serviceImports,
         controllerImports,
+        resolverImports,
         customImports,
       });
 
       // Generate module content
-      const moduleContent = await this.templateEngine.render('module/module', templateData);
-      
+      const moduleContent = await this.templateEngine.render(
+        'module/module',
+        templateData,
+      );
+
       // Determine output path
-      const outputDir = options.path || (context?.paths?.modules || 'src/modules');
+      const outputDir =
+        options.path || context?.paths?.modules || 'src/modules';
       const projectRoot = context?.projectRoot || process.cwd();
-      const outputPath = path.join(projectRoot, outputDir, `${nameVariations.kebabCase}.module.ts`);
-      
+      const outputPath = path.join(
+        projectRoot,
+        outputDir,
+        `${nameVariations.kebabCase}.module.ts`,
+      );
+
       // Write file
-      const result = await writeFile(outputPath, moduleContent, options.overwrite);
-      
+      const result = await writeFile(
+        outputPath,
+        moduleContent,
+        options.overwrite,
+      );
+
       if (!result.success) {
         return {
           success: false,
@@ -121,24 +169,29 @@ export class ModuleGenerator {
    * Format: "Product,Order,Invoice" or ["Product", "Order", "Invoice"]
    */
   private parseComponents(
-    componentDefinitions: string[] | string, 
-    type: 'entity' | 'service' | 'controller' | 'provider',
-    context?: ProjectContext
+    componentDefinitions: string[] | string,
+    type: 'entity' | 'service' | 'controller' | 'resolver' | 'provider',
+    context?: ProjectContext,
   ): ModuleComponent[] {
     const components: ModuleComponent[] = [];
     const basePath = this.getBasePath(type, context);
-    
+
     // Convert string to array if needed
-    const definitions = typeof componentDefinitions === 'string' 
-      ? componentDefinitions.split(',').map(d => d.trim())
-      : componentDefinitions;
-    
+    const definitions =
+      typeof componentDefinitions === 'string'
+        ? componentDefinitions.split(',').map(d => d.trim())
+        : componentDefinitions;
+
     for (const definition of definitions) {
       if (definition.trim()) {
         const nameVariations = createNameVariations(definition.trim());
         const className = this.buildClassName(nameVariations.pascalCase, type);
-        const filePath = this.buildFilePath(nameVariations.kebabCase, type, basePath);
-        
+        const filePath = this.buildFilePath(
+          nameVariations.kebabCase,
+          type,
+          basePath,
+        );
+
         components.push({
           name: definition.trim(),
           className,
@@ -147,14 +200,17 @@ export class ModuleGenerator {
         });
       }
     }
-    
+
     return components;
   }
 
   /**
    * Build class name based on type
    */
-  private buildClassName(baseName: string, type: 'entity' | 'service' | 'controller' | 'provider'): string {
+  private buildClassName(
+    baseName: string,
+    type: 'entity' | 'service' | 'controller' | 'resolver' | 'provider',
+  ): string {
     switch (type) {
       case 'entity':
         return baseName;
@@ -162,6 +218,8 @@ export class ModuleGenerator {
         return `${baseName}Service`;
       case 'controller':
         return `${baseName}Controller`;
+      case 'resolver':
+        return `${baseName}Resolver`;
       case 'provider':
         return baseName;
       default:
@@ -172,22 +230,29 @@ export class ModuleGenerator {
   /**
    * Build file path based on type
    */
-  private buildFilePath(baseName: string, type: 'entity' | 'service' | 'controller' | 'provider', basePath: string): string {
+  private buildFilePath(
+    baseName: string,
+    type: 'entity' | 'service' | 'controller' | 'resolver' | 'provider',
+    basePath: string,
+  ): string {
     const suffix = type === 'entity' ? 'entity' : type;
     const fileName = `${baseName}.${suffix}`;
-    
+
     // Handle relative paths properly for module imports
     if (basePath.startsWith('./')) {
       return `${basePath}/${fileName}`;
     }
-    
+
     return path.posix.join(basePath, fileName);
   }
 
   /**
    * Get base path for component type
    */
-  private getBasePath(type: 'entity' | 'service' | 'controller' | 'provider', context?: ProjectContext): string {
+  private getBasePath(
+    type: 'entity' | 'service' | 'controller' | 'resolver' | 'provider',
+    context?: ProjectContext,
+  ): string {
     // For modular structure, components are in the same module directory
     if (context?.isModularStructure) {
       switch (type) {
@@ -197,13 +262,15 @@ export class ModuleGenerator {
           return './services';
         case 'controller':
           return './controllers';
+        case 'resolver':
+          return './resolvers';
         case 'provider':
           return './providers';
         default:
           return '.';
       }
     }
-    
+
     // For classic structure, components are in separate directories
     switch (type) {
       case 'entity':
@@ -212,6 +279,8 @@ export class ModuleGenerator {
         return '../services';
       case 'controller':
         return '../controllers';
+      case 'resolver':
+        return '../resolvers';
       case 'provider':
         return '../providers';
       default:
@@ -223,16 +292,21 @@ export class ModuleGenerator {
    * Build custom imports from providers and modules
    */
   private buildCustomImports(
-    customProviders: any[] = [], 
-    moduleImports: any[] = [], 
-    customExports: any[] = []
+    customProviders: any[] = [],
+    moduleImports: any[] = [],
+    customExports: any[] = [],
   ): Array<{ className: string; path: string }> {
     const imports: Array<{ className: string; path: string }> = [];
     const seen = new Set<string>();
 
     // Process custom providers
     for (const provider of customProviders) {
-      if (typeof provider === 'object' && provider.name && provider.path && !seen.has(provider.name)) {
+      if (
+        typeof provider === 'object' &&
+        provider.name &&
+        provider.path &&
+        !seen.has(provider.name)
+      ) {
         imports.push({ className: provider.name, path: provider.path });
         seen.add(provider.name);
       }
@@ -240,7 +314,12 @@ export class ModuleGenerator {
 
     // Process module imports
     for (const moduleImport of moduleImports) {
-      if (typeof moduleImport === 'object' && moduleImport.name && moduleImport.path && !seen.has(moduleImport.name)) {
+      if (
+        typeof moduleImport === 'object' &&
+        moduleImport.name &&
+        moduleImport.path &&
+        !seen.has(moduleImport.name)
+      ) {
         imports.push({ className: moduleImport.name, path: moduleImport.path });
         seen.add(moduleImport.name);
       }
@@ -248,7 +327,12 @@ export class ModuleGenerator {
 
     // Process custom exports
     for (const customExport of customExports) {
-      if (typeof customExport === 'object' && customExport.name && customExport.path && !seen.has(customExport.name)) {
+      if (
+        typeof customExport === 'object' &&
+        customExport.name &&
+        customExport.path &&
+        !seen.has(customExport.name)
+      ) {
         imports.push({ className: customExport.name, path: customExport.path });
         seen.add(customExport.name);
       }
@@ -262,7 +346,7 @@ export class ModuleGenerator {
    */
   async generateInteractive(): Promise<CommandResult> {
     const inquirer = await import('inquirer');
-    
+
     const answers = await inquirer.default.prompt([
       {
         type: 'input',
@@ -278,19 +362,22 @@ export class ModuleGenerator {
       {
         type: 'input',
         name: 'entities',
-        message: 'Entities to include (comma-separated, e.g., "Product,Order"):',
+        message:
+          'Entities to include (comma-separated, e.g., "Product,Order"):',
         default: '',
       },
       {
         type: 'input',
         name: 'services',
-        message: 'Services to include (comma-separated, e.g., "Products,Orders"):',
+        message:
+          'Services to include (comma-separated, e.g., "Products,Orders"):',
         default: '',
       },
       {
         type: 'input',
         name: 'controllers',
-        message: 'Controllers to include (comma-separated, e.g., "Products,Orders"):',
+        message:
+          'Controllers to include (comma-separated, e.g., "Products,Orders"):',
         default: '',
       },
       {
@@ -310,9 +397,15 @@ export class ModuleGenerator {
     const options: GenerationOptions = {
       name: answers.name,
       type: 'module',
-      entities: answers.entities ? answers.entities.split(',').map((e: string) => e.trim()) : [],
-      services: answers.services ? answers.services.split(',').map((s: string) => s.trim()) : [],
-      controllers: answers.controllers ? answers.controllers.split(',').map((c: string) => c.trim()) : [],
+      entities: answers.entities
+        ? answers.entities.split(',').map((e: string) => e.trim())
+        : [],
+      services: answers.services
+        ? answers.services.split(',').map((s: string) => s.trim())
+        : [],
+      controllers: answers.controllers
+        ? answers.controllers.split(',').map((c: string) => c.trim())
+        : [],
       withExports: answers.withExports,
       path: answers.path || undefined,
     };
@@ -332,7 +425,9 @@ export class ModuleGenerator {
 
     // Validate module name format
     if (options.name && !/^[A-Za-z][A-Za-z0-9]*$/.test(options.name)) {
-      errors.push('Module name must be a valid identifier (letters and numbers only, starting with a letter)');
+      errors.push(
+        'Module name must be a valid identifier (letters and numbers only, starting with a letter)',
+      );
     }
 
     return errors;
@@ -343,10 +438,10 @@ export class ModuleGenerator {
    */
   async generateForResource(
     resourceName: string,
-    options: Partial<GenerationOptions> = {}
+    options: Partial<GenerationOptions> = {},
   ): Promise<CommandResult> {
     const nameVariations = createNameVariations(resourceName);
-    
+
     const moduleOptions: GenerationOptions = {
       name: options.name || nameVariations.pascalCase,
       type: 'module',

@@ -26,17 +26,17 @@ export class NewCommand extends BaseCommand {
       .option(
         '-p, --package-manager <manager>',
         'Package manager to use (npm, yarn, pnpm)',
-        this.config.defaultPackageManager
+        this.config.defaultPackageManager,
       )
       .option(
         '-d, --database <type>',
         'Database type (sqlite, postgres, mysql, mssql)',
-        this.config.defaultDatabase
+        this.config.defaultDatabase,
       )
       .option(
         '-t, --type <api-type>',
         'API type (rest, graphql, hybrid)',
-        this.config.defaultApiType
+        this.config.defaultApiType,
       )
       .option('--skip-install', 'Skip package installation', false)
       .option('--skip-git', 'Skip git initialization', false)
@@ -45,7 +45,10 @@ export class NewCommand extends BaseCommand {
       });
   }
 
-  async execute(projectName: string, options: NewCommandOptions): Promise<CommandResult> {
+  async execute(
+    projectName: string,
+    options: NewCommandOptions,
+  ): Promise<CommandResult> {
     // Validate project name
     const validationErrors = this.validateProjectName(projectName);
     if (validationErrors.length > 0) {
@@ -57,7 +60,7 @@ export class NewCommand extends BaseCommand {
     }
 
     const projectPath = path.resolve(process.cwd(), projectName);
-    
+
     // Check if directory already exists
     if (await fileExists(projectPath)) {
       return {
@@ -70,18 +73,21 @@ export class NewCommand extends BaseCommand {
 
     try {
       const generatedFiles: string[] = [];
-      
+
       // Create project directory
       await ensureDirectory(projectPath);
-      
+
       // Generate project files
       const nameVariations = createNameVariations(projectName);
-      
+
       // Generate package.json
-      const packageJsonContent = this.generatePackageJson(nameVariations, options);
+      const packageJsonContent = this.generatePackageJson(
+        nameVariations,
+        options,
+      );
       const packageJsonResult = await writeFile(
         path.join(projectPath, 'package.json'),
-        packageJsonContent
+        packageJsonContent,
       );
       if (packageJsonResult.success) {
         generatedFiles.push(packageJsonResult.path);
@@ -91,7 +97,7 @@ export class NewCommand extends BaseCommand {
       const tsconfigContent = this.generateTsConfig();
       const tsconfigResult = await writeFile(
         path.join(projectPath, 'tsconfig.json'),
-        tsconfigContent
+        tsconfigContent,
       );
       if (tsconfigResult.success) {
         generatedFiles.push(tsconfigResult.path);
@@ -101,7 +107,7 @@ export class NewCommand extends BaseCommand {
       const nestCliContent = this.generateNestCliConfig();
       const nestCliResult = await writeFile(
         path.join(projectPath, 'nest-cli.json'),
-        nestCliContent
+        nestCliContent,
       );
       if (nestCliResult.success) {
         generatedFiles.push(nestCliResult.path);
@@ -111,7 +117,7 @@ export class NewCommand extends BaseCommand {
       const snestConfigContent = this.generateSnestConfig(options);
       const snestConfigResult = await writeFile(
         path.join(projectPath, 'snest.config.json'),
-        snestConfigContent
+        snestConfigContent,
       );
       if (snestConfigResult.success) {
         generatedFiles.push(snestConfigResult.path);
@@ -121,7 +127,7 @@ export class NewCommand extends BaseCommand {
       const envContent = this.generateEnvExample(options.database);
       const envResult = await writeFile(
         path.join(projectPath, '.env.example'),
-        envContent
+        envContent,
       );
       if (envResult.success) {
         generatedFiles.push(envResult.path);
@@ -131,20 +137,25 @@ export class NewCommand extends BaseCommand {
       const gitignoreContent = this.generateGitignore();
       const gitignoreResult = await writeFile(
         path.join(projectPath, '.gitignore'),
-        gitignoreContent
+        gitignoreContent,
       );
       if (gitignoreResult.success) {
         generatedFiles.push(gitignoreResult.path);
       }
 
       // Create src directory structure
-      await this.createSrcStructure(projectPath, nameVariations, options, generatedFiles);
+      await this.createSrcStructure(
+        projectPath,
+        nameVariations,
+        options,
+        generatedFiles,
+      );
 
       // Create README.md
       const readmeContent = this.generateReadme(nameVariations, options);
       const readmeResult = await writeFile(
         path.join(projectPath, 'README.md'),
-        readmeContent
+        readmeContent,
       );
       if (readmeResult.success) {
         generatedFiles.push(readmeResult.path);
@@ -168,7 +179,9 @@ export class NewCommand extends BaseCommand {
       return {
         success: true,
         message: `Project '${projectName}' created successfully`,
-        generatedFiles: generatedFiles.map(file => path.relative(process.cwd(), file)),
+        generatedFiles: generatedFiles.map(file =>
+          path.relative(process.cwd(), file),
+        ),
       };
     } catch (error) {
       this.failSpinner('Failed to create project');
@@ -178,7 +191,7 @@ export class NewCommand extends BaseCommand {
 
   private validateProjectName(name: string): string[] {
     const errors: string[] = [];
-    
+
     if (!name || name.trim().length === 0) {
       errors.push('Project name is required');
       return errors;
@@ -197,7 +210,10 @@ export class NewCommand extends BaseCommand {
     return errors;
   }
 
-  private generatePackageJson(nameVariations: any, options: NewCommandOptions): string {
+  private generatePackageJson(
+    nameVariations: any,
+    options: NewCommandOptions,
+  ): string {
     const dependencies = this.getDependencies(options);
     const devDependencies = this.getDevDependencies(options);
 
@@ -219,7 +235,8 @@ export class NewCommand extends BaseCommand {
         test: 'jest',
         'test:watch': 'jest --watch',
         'test:cov': 'jest --coverage',
-        'test:debug': 'node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand',
+        'test:debug':
+          'node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand',
         'test:e2e': 'jest --config ./test/jest-e2e.json',
       },
       dependencies,
@@ -253,6 +270,7 @@ export class NewCommand extends BaseCommand {
       typeorm: '^0.3.22',
       'reflect-metadata': '^0.2.2',
       rxjs: '^7.8.1',
+      multer: '^2.0.1',
     };
 
     // Add database driver
@@ -269,7 +287,7 @@ export class NewCommand extends BaseCommand {
         base['@types/mssql'] = '^8.1.2';
         break;
       case 'sqlite':
-        base['sqlite3'] = '^5.1.6';
+        base['sqlite3'] = '^5.1.7';
         break;
     }
 
@@ -279,20 +297,20 @@ export class NewCommand extends BaseCommand {
         base['@nestjs/swagger'] = '^11.1.4';
         base['@solid-nestjs/typeorm-crud'] = '^0.2.9';
         break;
-      
+
       case 'graphql':
         base['@nestjs/graphql'] = '^13.1.0';
         base['@nestjs/apollo'] = '^13.1.0';
-        base['@apollo/server'] = '^4.12.1';
+        base['@apollo/server'] = '^5.0.0';
         base['graphql'] = '^16.11.0';
         base['@solid-nestjs/typeorm-graphql-crud'] = '^0.2.9';
         break;
-      
+
       case 'hybrid':
         base['@nestjs/swagger'] = '^11.1.4';
         base['@nestjs/graphql'] = '^13.1.0';
         base['@nestjs/apollo'] = '^13.1.0';
-        base['@apollo/server'] = '^4.12.1';
+        base['@apollo/server'] = '^5.0.0';
         base['graphql'] = '^16.11.0';
         base['@solid-nestjs/typeorm-hybrid-crud'] = '^0.2.9';
         break;
@@ -301,11 +319,17 @@ export class NewCommand extends BaseCommand {
     return base;
   }
 
-  private getDevDependencies(options: NewCommandOptions): Record<string, string> {
+  private getDevDependencies(
+    options: NewCommandOptions,
+  ): Record<string, string> {
     return {
+      '@eslint/eslintrc': '^3.2.0',
+      '@eslint/js': '^9.18.0',
       '@nestjs/cli': '^11.0.0',
       '@nestjs/schematics': '^11.0.0',
       '@nestjs/testing': '^11.0.1',
+      '@swc/cli': '^0.6.0',
+      '@swc/core': '^1.10.7',
       '@types/express': '^5.0.0',
       '@types/jest': '^29.5.14',
       '@types/node': '^22.10.7',
@@ -313,7 +337,9 @@ export class NewCommand extends BaseCommand {
       eslint: '^9.18.0',
       'eslint-config-prettier': '^10.0.1',
       'eslint-plugin-prettier': '^5.2.2',
+      globals: '^15.14.0',
       jest: '^29.7.0',
+      multer: '^2.0.1',
       prettier: '^3.4.2',
       'source-map-support': '^0.5.21',
       supertest: '^7.0.0',
@@ -321,6 +347,7 @@ export class NewCommand extends BaseCommand {
       'ts-loader': '^9.5.2',
       'ts-node': '^10.9.2',
       'tsconfig-paths': '^4.2.0',
+      'typescript-eslint': '^8.20.0',
       typescript: '^5.7.3',
     };
   }
@@ -381,7 +408,7 @@ export class NewCommand extends BaseCommand {
           'DB_PORT=5432',
           'DB_USERNAME=postgres',
           'DB_PASSWORD=password',
-          'DB_DATABASE=solid_nestjs_dev'
+          'DB_DATABASE=solid_nestjs_dev',
         );
         break;
       case 'mysql':
@@ -391,7 +418,7 @@ export class NewCommand extends BaseCommand {
           'DB_PORT=3306',
           'DB_USERNAME=root',
           'DB_PASSWORD=password',
-          'DB_DATABASE=solid_nestjs_dev'
+          'DB_DATABASE=solid_nestjs_dev',
         );
         break;
       case 'mssql':
@@ -401,14 +428,11 @@ export class NewCommand extends BaseCommand {
           'DB_PORT=1433',
           'DB_USERNAME=sa',
           'DB_PASSWORD=Password123!',
-          'DB_DATABASE=solid_nestjs_dev'
+          'DB_DATABASE=solid_nestjs_dev',
         );
         break;
       case 'sqlite':
-        envVars.push(
-          'DB_TYPE=sqlite',
-          'DB_DATABASE=database.sqlite'
-        );
+        envVars.push('DB_TYPE=sqlite', 'DB_DATABASE=database.sqlite');
         break;
     }
 
@@ -486,34 +510,46 @@ coverage
     projectPath: string,
     nameVariations: any,
     options: NewCommandOptions,
-    generatedFiles: string[]
+    generatedFiles: string[],
   ): Promise<void> {
     const srcPath = path.join(projectPath, 'src');
-    
+
     // Create main.ts
     const mainContent = this.generateMainTs(options);
-    const mainResult = await writeFile(path.join(srcPath, 'main.ts'), mainContent);
+    const mainResult = await writeFile(
+      path.join(srcPath, 'main.ts'),
+      mainContent,
+    );
     if (mainResult.success) {
       generatedFiles.push(mainResult.path);
     }
 
     // Create app.module.ts
     const appModuleContent = this.generateAppModule(nameVariations, options);
-    const appModuleResult = await writeFile(path.join(srcPath, 'app.module.ts'), appModuleContent);
+    const appModuleResult = await writeFile(
+      path.join(srcPath, 'app.module.ts'),
+      appModuleContent,
+    );
     if (appModuleResult.success) {
       generatedFiles.push(appModuleResult.path);
     }
 
     // Create app.controller.ts
     const appControllerContent = this.generateAppController();
-    const appControllerResult = await writeFile(path.join(srcPath, 'app.controller.ts'), appControllerContent);
+    const appControllerResult = await writeFile(
+      path.join(srcPath, 'app.controller.ts'),
+      appControllerContent,
+    );
     if (appControllerResult.success) {
       generatedFiles.push(appControllerResult.path);
     }
 
     // Create app.service.ts
     const appServiceContent = this.generateAppService();
-    const appServiceResult = await writeFile(path.join(srcPath, 'app.service.ts'), appServiceContent);
+    const appServiceResult = await writeFile(
+      path.join(srcPath, 'app.service.ts'),
+      appServiceContent,
+    );
     if (appServiceResult.success) {
       generatedFiles.push(appServiceResult.path);
     }
@@ -530,7 +566,7 @@ coverage
     const dbConfigContent = this.generateDatabaseConfig(options);
     const dbConfigResult = await writeFile(
       path.join(srcPath, 'config', 'database.config.ts'),
-      dbConfigContent
+      dbConfigContent,
     );
     if (dbConfigResult.success) {
       generatedFiles.push(dbConfigResult.path);
@@ -544,7 +580,9 @@ coverage
     ];
 
     if (options.type === 'rest' || options.type === 'hybrid') {
-      imports.push("import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';");
+      imports.push(
+        "import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';",
+      );
     }
 
     const mainContent = `${imports.join('\n')}
@@ -552,7 +590,9 @@ coverage
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-${options.type === 'rest' || options.type === 'hybrid' ? `  // Swagger documentation
+${
+  options.type === 'rest' || options.type === 'hybrid'
+    ? `  // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('SOLID NestJS API')
     .setDescription('API documentation for SOLID NestJS application')
@@ -561,7 +601,9 @@ ${options.type === 'rest' || options.type === 'hybrid' ? `  // Swagger documenta
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-` : ''}  await app.listen(process.env.PORT || 3000);
+`
+    : ''
+}  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
 `;
@@ -569,7 +611,10 @@ bootstrap();
     return mainContent;
   }
 
-  private generateAppModule(nameVariations: any, options: NewCommandOptions): string {
+  private generateAppModule(
+    nameVariations: any,
+    options: NewCommandOptions,
+  ): string {
     const imports = [
       "import { Module } from '@nestjs/common';",
       "import { TypeOrmModule } from '@nestjs/typeorm';",
@@ -581,7 +626,9 @@ bootstrap();
 
     if (options.type === 'graphql' || options.type === 'hybrid') {
       imports.push("import { GraphQLModule } from '@nestjs/graphql';");
-      imports.push("import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';");
+      imports.push(
+        "import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';",
+      );
     }
 
     const moduleImports = [
@@ -667,13 +714,15 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
     
     return {
       type: dbType as any,
-      ${options.database === 'sqlite' 
-        ? "database: configService.get('DB_DATABASE') || 'database.sqlite'," 
-        : `host: configService.get('DB_HOST') || 'localhost',
+      ${
+        options.database === 'sqlite'
+          ? "database: configService.get('DB_DATABASE') || 'database.sqlite',"
+          : `host: configService.get('DB_HOST') || 'localhost',
       port: parseInt(configService.get('DB_PORT')) || ${this.getDefaultPort(options.database)},
       username: configService.get('DB_USERNAME'),
       password: configService.get('DB_PASSWORD'),
-      database: configService.get('DB_DATABASE'),`}
+      database: configService.get('DB_DATABASE'),`
+      }
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       synchronize: configService.get('NODE_ENV') !== 'production',
       logging: configService.get('NODE_ENV') === 'development',
@@ -688,16 +737,21 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
 
   private getDefaultPort(database: string): number {
     switch (database) {
-      case 'postgres': return 5432;
-      case 'mysql': return 3306;
-      case 'mssql': return 1433;
-      default: return 5432;
+      case 'postgres':
+        return 5432;
+      case 'mysql':
+        return 3306;
+      case 'mssql':
+        return 1433;
+      default:
+        return 5432;
     }
   }
 
   private generateSnestConfig(options: NewCommandOptions): string {
     const config = {
-      $schema: './node_modules/@solid-nestjs/typeorm-hybrid-crud/schemas/snest.config.json',
+      $schema:
+        './node_modules/@solid-nestjs/typeorm-hybrid-crud/schemas/snest.config.json',
       version: '1.0',
       project: {
         type: options.type,
@@ -739,7 +793,10 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
     }
   }
 
-  private generateReadme(nameVariations: any, options: NewCommandOptions): string {
+  private generateReadme(
+    nameVariations: any,
+    options: NewCommandOptions,
+  ): string {
     return `# ${nameVariations.pascalCase}
 
 A SOLID NestJS application built with TypeScript.
@@ -810,12 +867,15 @@ This project is [MIT licensed](LICENSE).
 `;
   }
 
-  private async installDependencies(projectPath: string, packageManager: string): Promise<void> {
+  private async installDependencies(
+    projectPath: string,
+    packageManager: string,
+  ): Promise<void> {
     this.startSpinner(`Installing dependencies with ${packageManager}...`);
 
     try {
       const { spawn } = await import('child_process');
-      
+
       await new Promise<void>((resolve, reject) => {
         const child = spawn(packageManager, ['install'], {
           cwd: projectPath,
@@ -823,11 +883,13 @@ This project is [MIT licensed](LICENSE).
           shell: true,
         });
 
-        child.on('close', (code) => {
+        child.on('close', code => {
           if (code === 0) {
             resolve();
           } else {
-            reject(new Error(`${packageManager} install failed with code ${code}`));
+            reject(
+              new Error(`${packageManager} install failed with code ${code}`),
+            );
           }
         });
 
@@ -846,7 +908,7 @@ This project is [MIT licensed](LICENSE).
 
     try {
       const { spawn } = await import('child_process');
-      
+
       await new Promise<void>((resolve, reject) => {
         const child = spawn('git', ['init'], {
           cwd: projectPath,
@@ -854,7 +916,7 @@ This project is [MIT licensed](LICENSE).
           shell: true,
         });
 
-        child.on('close', (code) => {
+        child.on('close', code => {
           if (code === 0) {
             resolve();
           } else {
@@ -867,7 +929,9 @@ This project is [MIT licensed](LICENSE).
 
       this.succeedSpinner('Git repository initialized');
     } catch (error) {
-      this.logWarning('Failed to initialize git repository (git not available)');
+      this.logWarning(
+        'Failed to initialize git repository (git not available)',
+      );
     }
   }
 
@@ -875,7 +939,7 @@ This project is [MIT licensed](LICENSE).
     console.log('\n' + chalk.green('✨ Project created successfully!'));
     console.log('\n' + chalk.bold('Next steps:'));
     console.log(chalk.gray('  1.'), `cd ${projectName}`);
-    
+
     if (!options.skipInstall && !options.skipGit) {
       console.log(chalk.gray('  2.'), 'cp .env.example .env');
       console.log(chalk.gray('  3.'), 'Configure your database in .env');
@@ -883,27 +947,37 @@ This project is [MIT licensed](LICENSE).
     } else {
       let step = 2;
       if (options.skipInstall) {
-        console.log(chalk.gray(`  ${step++}.`), `${options.packageManager} install`);
+        console.log(
+          chalk.gray(`  ${step++}.`),
+          `${options.packageManager} install`,
+        );
       }
       console.log(chalk.gray(`  ${step++}.`), 'cp .env.example .env');
-      console.log(chalk.gray(`  ${step++}.`), 'Configure your database in .env');
+      console.log(
+        chalk.gray(`  ${step++}.`),
+        'Configure your database in .env',
+      );
       console.log(chalk.gray(`  ${step++}.`), 'npm run start:dev');
     }
 
     console.log('\n' + chalk.blue('📚 Documentation:'));
-    console.log('  - Framework docs: https://github.com/solid-nestjs/framework');
+    console.log(
+      '  - Framework docs: https://github.com/solid-nestjs/framework',
+    );
     console.log('  - NestJS docs: https://docs.nestjs.com');
-    
+
     if (options.type === 'rest' || options.type === 'hybrid') {
       console.log('  - Swagger UI: http://localhost:3000/api');
     }
-    
+
     if (options.type === 'graphql' || options.type === 'hybrid') {
       console.log('  - GraphQL Playground: http://localhost:3000/graphql');
     }
-    
+
     console.log('\n' + chalk.yellow('💡 Generate resources with:'));
-    console.log('  snest generate resource Product --fields "name:string,price:number"');
+    console.log(
+      '  snest generate resource Product --fields "name:string,price:number"',
+    );
     console.log('  snest generate --interactive');
   }
 }

@@ -31,33 +31,33 @@ export interface ProjectContext {
   // Framework detection
   hasSolidNestjs: boolean;
   solidVersion: string;
-  
+
   // API capabilities
   apiType?: 'rest' | 'graphql' | 'hybrid';
   hasGraphQL: boolean;
   hasSwagger: boolean;
   hasTypeORM: boolean;
-  
+
   // Database configuration
   databaseType: 'sqlite' | 'postgres' | 'mysql' | 'mssql';
-  
+
   // Existing project structure
   existingEntities: string[];
   existingServices: string[];
   existingControllers: string[];
   existingModules: string[];
-  
+
   // SOLID framework features
   hasSolidDecorators: boolean;
   hasArgsHelpers: boolean;
   hasEntityGeneration: boolean;
   useSolidDecorators: boolean;
   useGenerateDtoFromEntity: boolean;
-  
+
   // Project info
   projectRoot: string;
   packageJson: any;
-  
+
   // Path configuration
   paths?: {
     entities: string;
@@ -66,7 +66,7 @@ export interface ProjectContext {
     modules: string;
     dto: string | { inputs: string; args: string };
   };
-  
+
   // Module support
   isModularStructure?: boolean;
   moduleBasePath?: string;
@@ -77,7 +77,14 @@ export interface ProjectContext {
  */
 export interface GenerationOptions {
   name: string;
-  type: 'entity' | 'service' | 'controller' | 'module' | 'dto' | 'resource';
+  type:
+    | 'entity'
+    | 'service'
+    | 'controller'
+    | 'resolver'
+    | 'module'
+    | 'dto'
+    | 'resource';
   apiType?: 'rest' | 'graphql' | 'hybrid';
   fields?: FieldDefinition[] | string[];
   entityName?: string;
@@ -89,6 +96,7 @@ export interface GenerationOptions {
   entities?: string[] | string;
   services?: string[] | string;
   controllers?: string[] | string;
+  resolvers?: string[] | string;
   customProviders?: any[];
   moduleImports?: any[];
   customExports?: any[];

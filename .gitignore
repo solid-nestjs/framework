@@ -70,6 +70,7 @@ apps-examples/**/coverage-e2e
 
 .claude/*
 .codex/*
+/test*/*
 
 # dotenv environment variable files
 .env

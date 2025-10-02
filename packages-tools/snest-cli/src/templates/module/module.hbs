@@ -1,83 +1,104 @@
 import { Module } from '@nestjs/common';
 {{#if hasTypeORM}}
-import { TypeOrmModule } from '@nestjs/typeorm';
+  import { TypeOrmModule } from '@nestjs/typeorm';
 {{/if}}
 {{#if hasGraphQL}}
-import { GraphQLModule } from '@nestjs/graphql';
+  import { GraphQLModule } from '@nestjs/graphql';
 {{/if}}
 {{#each entityImports}}
-import { {{this.className}} } from '{{this.path}}';
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
 {{/each}}
 {{#each serviceImports}}
-import { {{this.className}} } from '{{this.path}}';
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
 {{/each}}
 {{#each controllerImports}}
-import { {{this.className}} } from '{{this.path}}';
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
+{{/each}}
+{{#each resolverImports}}
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
 {{/each}}
 {{#each customImports}}
-import { {{this.className}} } from '{{this.path}}';
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
 {{/each}}
 
-/**
- * {{pascalCase name}} Module
- * 
- * This module encapsulates all {{camelCase name}}-related functionality including:
- * {{#if entities}}- Entities: {{#each entities}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
- * {{#if services}}- Services: {{#each services}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
- * {{#if controllers}}- Controllers: {{#each controllers}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
- */
-@Module({
-  {{#if hasTypeORM}}
+/** *
+{{pascalCase name}}
+Module * * This module encapsulates all
+{{camelCase name}}-related functionality including: *
+{{#if entities}}- Entities:
+  {{#each entities}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+*
+{{#if services}}- Services:
+  {{#each services}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+*
+{{#if controllers}}- Controllers:
+  {{#each controllers}}{{this.name}}{{#unless @last}},
+    {{/unless}}{{/each}}{{/if}}
+*/ @Module({
+{{#if hasTypeORM}}
   imports: [
-    {{#if entities}}
+  {{#if entities}}
     TypeOrmModule.forFeature([
-      {{#each entities}}
+    {{#each entities}}
       {{this.className}},
-      {{/each}}
+    {{/each}}
     ]),
-    {{/if}}
-    {{#each moduleImports}}
+  {{/if}}
+  {{#each moduleImports}}
     {{this.name}},
-    {{/each}}
+  {{/each}}
   ],
-  {{else}}
+{{else}}
   {{#if moduleImports}}
-  imports: [
+    imports: [
     {{#each moduleImports}}
-    {{this.name}},
+      {{this.name}},
     {{/each}}
-  ],
+    ],
   {{/if}}
-  {{/if}}
-  {{#if controllers}}
+{{/if}}
+{{#if controllers}}
   controllers: [
-    {{#each controllers}}
+  {{#each controllers}}
     {{this.className}},
-    {{/each}}
+  {{/each}}
   ],
-  {{/if}}
-  {{#if services}}
+{{/if}}
+{{#if services}}
   providers: [
-    {{#each services}}
+  {{#each services}}
     {{this.className}},
-    {{/each}}
-    {{#each customProviders}}
+  {{/each}}
+  {{#each resolvers}}
+    {{this.className}},
+  {{/each}}
+  {{#each customProviders}}
     {{this.name}},
-    {{/each}}
+  {{/each}}
   ],
-  {{/if}}
-  {{#if exports}}
+{{/if}}
+{{#if exports}}
   exports: [
-    {{#if hasTypeORM}}
+  {{#if hasTypeORM}}
     TypeOrmModule,
-    {{/if}}
-    {{#each services}}
-    {{this.className}},
-    {{/each}}
-    {{#each customExports}}
-    {{this.name}},
-    {{/each}}
-  ],
   {{/if}}
-})
-export class {{pascalCase name}}Module {}
+  {{#each services}}
+    {{this.className}},
+  {{/each}}
+  {{#each customExports}}
+    {{this.name}},
+  {{/each}}
+  ],
+{{/if}}
+}) export class
+{{pascalCase name}}Module {}

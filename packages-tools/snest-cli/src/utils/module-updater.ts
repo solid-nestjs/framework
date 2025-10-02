@@ -1,6 +1,11 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { AstUtils, ModuleImport, ModuleArrayItem, TypeOrmEntity } from './ast-utils';
+import {
+  AstUtils,
+  ModuleImport,
+  ModuleArrayItem,
+  TypeOrmEntity,
+} from './ast-utils';
 import { createNameVariations } from './string-utils';
 
 /**
@@ -8,7 +13,7 @@ import { createNameVariations } from './string-utils';
  */
 export interface ComponentRegistration {
   name: string;
-  type: 'entity' | 'service' | 'controller';
+  type: 'entity' | 'service' | 'controller' | 'resolver';
   filePath: string;
   className: string;
 }
@@ -27,25 +32,27 @@ export interface ModuleUpdateResult {
  * Automatic module updater for SOLID NestJS projects
  */
 export class ModuleUpdater {
-  
   /**
    * Update modules to include a new component
    */
   async updateModulesForComponent(
     component: ComponentRegistration,
-    projectRoot: string = process.cwd()
+    projectRoot: string = process.cwd(),
   ): Promise<ModuleUpdateResult> {
     const result: ModuleUpdateResult = {
       success: true,
       updatedFiles: [],
       errors: [],
-      message: 'No modules found to update'
+      message: 'No modules found to update',
     };
 
     try {
       // Find relevant module files
-      const moduleFiles = await this.findRelevantModules(component, projectRoot);
-      
+      const moduleFiles = await this.findRelevantModules(
+        component,
+        projectRoot,
+      );
+
       if (moduleFiles.length === 0) {
         result.message = `No relevant modules found for component ${component.name}`;
         return result;
@@ -59,7 +66,9 @@ export class ModuleUpdater {
             result.updatedFiles.push(moduleFile);
           }
         } catch (error) {
-          result.errors.push(`Failed to update ${moduleFile}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          result.errors.push(
+            `Failed to update ${moduleFile}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
           result.success = false;
         }
       }
@@ -67,12 +76,14 @@ export class ModuleUpdater {
       if (result.updatedFiles.length > 0) {
         result.message = `Successfully updated ${result.updatedFiles.length} module(s)`;
       } else if (result.errors.length === 0) {
-        result.message = 'No modules needed updating (components already registered)';
+        result.message =
+          'No modules needed updating (components already registered)';
       }
-
     } catch (error) {
       result.success = false;
-      result.errors.push(`Failed to update modules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.errors.push(
+        `Failed to update modules: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       result.message = 'Module update failed';
     }
 
@@ -84,7 +95,7 @@ export class ModuleUpdater {
    */
   private async findRelevantModules(
     component: ComponentRegistration,
-    projectRoot: string
+    projectRoot: string,
   ): Promise<string[]> {
     const moduleFiles = await AstUtils.findModuleFiles(projectRoot);
     const relevantModules: string[] = [];
@@ -103,18 +114,21 @@ export class ModuleUpdater {
    */
   private async isModuleRelevant(
     component: ComponentRegistration,
-    moduleFilePath: string
+    moduleFilePath: string,
   ): Promise<boolean> {
     try {
       const moduleDir = path.dirname(moduleFilePath);
       const componentDir = path.dirname(component.filePath);
-      
+
       // Check if component is in the same directory structure
       const relativePath = path.relative(moduleDir, componentDir);
-      
+
       // Include if component is in a subdirectory or same level
       // Exclude if component is in a completely different module tree
-      return !relativePath.startsWith('..') || relativePath.split(path.sep).filter(p => p === '..').length <= 2;
+      return (
+        !relativePath.startsWith('..') ||
+        relativePath.split(path.sep).filter(p => p === '..').length <= 2
+      );
     } catch {
       return false;
     }
@@ -125,7 +139,7 @@ export class ModuleUpdater {
    */
   private async updateSingleModule(
     component: ComponentRegistration,
-    moduleFilePath: string
+    moduleFilePath: string,
   ): Promise<boolean> {
     const sourceFile = AstUtils.parseFile(moduleFilePath);
     if (!sourceFile) {
@@ -140,14 +154,14 @@ export class ModuleUpdater {
     const componentPath = this.buildRelativeImportPath(
       moduleDir,
       component.filePath,
-      component.type
+      component.type,
     );
 
     // Add import
     const moduleImport: ModuleImport = {
       name: component.className,
       path: componentPath,
-      isDefault: false
+      isDefault: false,
     };
 
     const updatedContent = AstUtils.addImport(sourceFile, moduleImport);
@@ -162,33 +176,35 @@ export class ModuleUpdater {
     // Handle entity registration
     if (component.type === 'entity') {
       const entityContent = AstUtils.addTypeOrmEntity(updatedSourceFile, {
-        name: component.className
+        name: component.className,
       });
       if (entityContent !== content) {
         content = entityContent;
         hasUpdates = true;
         // Re-parse with updated entity
-        updatedSourceFile = AstUtils.parseFromContent(content) || updatedSourceFile;
+        updatedSourceFile =
+          AstUtils.parseFromContent(content) || updatedSourceFile;
       }
     }
 
-    // Handle service registration  
+    // Handle service registration
     if (component.type === 'service') {
       const serviceContent = AstUtils.addModuleArrayItem(updatedSourceFile, {
         name: component.className,
-        arrayType: 'providers'
+        arrayType: 'providers',
       });
       if (serviceContent !== content) {
         content = serviceContent;
         hasUpdates = true;
         // Re-parse with updated providers
-        updatedSourceFile = AstUtils.parseFromContent(content) || updatedSourceFile;
+        updatedSourceFile =
+          AstUtils.parseFromContent(content) || updatedSourceFile;
       }
 
       // Also add to exports
       const exportContent = AstUtils.addModuleArrayItem(updatedSourceFile, {
         name: component.className,
-        arrayType: 'exports'
+        arrayType: 'exports',
       });
       if (exportContent !== content) {
         content = exportContent;
@@ -200,10 +216,22 @@ export class ModuleUpdater {
     if (component.type === 'controller') {
       const controllerContent = AstUtils.addModuleArrayItem(updatedSourceFile, {
         name: component.className,
-        arrayType: 'controllers'
+        arrayType: 'controllers',
       });
       if (controllerContent !== content) {
         content = controllerContent;
+        hasUpdates = true;
+      }
+    }
+
+    // Handle resolver registration
+    if (component.type === 'resolver') {
+      const resolverContent = AstUtils.addModuleArrayItem(updatedSourceFile, {
+        name: component.className,
+        arrayType: 'providers',
+      });
+      if (resolverContent !== content) {
+        content = resolverContent;
         hasUpdates = true;
       }
     }
@@ -223,22 +251,22 @@ export class ModuleUpdater {
   private buildRelativeImportPath(
     moduleDir: string,
     componentFilePath: string,
-    componentType: 'entity' | 'service' | 'controller'
+    componentType: 'entity' | 'service' | 'controller' | 'resolver',
   ): string {
     const componentDir = path.dirname(componentFilePath);
     const componentName = path.basename(componentFilePath, '.ts');
-    
+
     // Build relative path
     let relativePath = path.relative(moduleDir, componentDir);
-    
+
     // Ensure it starts with ./
     if (!relativePath.startsWith('.')) {
       relativePath = `./${relativePath}`;
     }
-    
+
     // Convert Windows paths to Unix-style for imports
     relativePath = relativePath.replace(/\\/g, '/');
-    
+
     // Add component file name
     return `${relativePath}/${componentName}`;
   }
@@ -248,22 +276,25 @@ export class ModuleUpdater {
    */
   async updateModulesForComponents(
     components: ComponentRegistration[],
-    projectRoot: string = process.cwd()
+    projectRoot: string = process.cwd(),
   ): Promise<ModuleUpdateResult> {
     const result: ModuleUpdateResult = {
       success: true,
       updatedFiles: [],
       errors: [],
-      message: ''
+      message: '',
     };
 
     for (const component of components) {
-      const componentResult = await this.updateModulesForComponent(component, projectRoot);
-      
+      const componentResult = await this.updateModulesForComponent(
+        component,
+        projectRoot,
+      );
+
       // Merge results
       result.updatedFiles.push(...componentResult.updatedFiles);
       result.errors.push(...componentResult.errors);
-      
+
       if (!componentResult.success) {
         result.success = false;
       }
@@ -286,8 +317,8 @@ export class ModuleUpdater {
    */
   static createComponentRegistration(
     name: string,
-    type: 'entity' | 'service' | 'controller',
-    generatedFilePath: string
+    type: 'entity' | 'service' | 'controller' | 'resolver',
+    generatedFilePath: string,
   ): ComponentRegistration {
     const nameVariations = createNameVariations(name);
     let className: string;
@@ -302,13 +333,16 @@ export class ModuleUpdater {
       case 'controller':
         className = `${nameVariations.pascalCase}Controller`;
         break;
+      case 'resolver':
+        className = `${nameVariations.pascalCase}Resolver`;
+        break;
     }
 
     return {
       name,
       type,
       filePath: generatedFilePath,
-      className
+      className,
     };
   }
 
@@ -321,7 +355,7 @@ export class ModuleUpdater {
       if (process.env.SKIP_MODULE_UPDATE === 'true') {
         return false;
       }
-      
+
       // Check for a configuration flag or just return true for now
       // This could be extended to read from package.json, .snestrc, etc.
       return true;
