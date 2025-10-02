@@ -12,6 +12,9 @@ build/
 *.d.ts
 *.js.map
 
+# cli tool templates
+*.hbs
+
 # Database files
 *.sqlite
 *.db

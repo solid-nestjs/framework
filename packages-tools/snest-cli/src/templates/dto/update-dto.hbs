@@ -1,5 +1,5 @@
-import { PartialType } from '{{solidBundle}}'; import { Create{{pascalCase
-  entityName
-}}Dto } from './create-{{kebabCase entityName}}.dto'; export class Update{{pascalCase
-  entityName
-}}Dto extends PartialType(Create{{pascalCase entityName}}Dto) {}
+import { PartialType, SolidInput } from '{{solidBundle}}'; 
+import { Create{{pascalCase  entityName}}Dto } from './create-{{kebabCase entityName}}.dto'; 
+
+@SolidInput()
+export class Update{{pascalCase entityName}}Dto extends PartialType(Create{{pascalCase entityName}}Dto) {}

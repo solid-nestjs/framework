@@ -5,15 +5,6 @@ import { Context } from '{{solidBundle}}';
 {{/if}}
 import { {{pascalCase name}}Service, {{camelCase name}}ServiceStructure } from '../services/{{kebabCase name}}.service';
 import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
-{{#if hasCreateDto}}
-import { Create{{pascalCase entityName}}Dto } from '../dto/inputs/create-{{kebabCase entityName}}.dto';
-{{/if}}
-{{#if hasUpdateDto}}
-import { Update{{pascalCase entityName}}Dto } from '../dto/inputs/update-{{kebabCase entityName}}.dto';
-{{/if}}
-{{#if hasFindArgs}}
-import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}.args';
-{{/if}}
 {{#if withGuards}}
 {{#each guards}}
 import { {{this.name}} } from '{{this.path}}';

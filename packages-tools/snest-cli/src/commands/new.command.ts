@@ -300,8 +300,8 @@ export class NewCommand extends BaseCommand {
 
       case 'graphql':
         base['@nestjs/graphql'] = '^13.1.0';
-        base['@nestjs/apollo'] = '^13.1.0';
-        base['@apollo/server'] = '^5.0.0';
+        base['@nestjs/apollo'] = '13.1.0';
+        base['@apollo/server'] = '^4.12.1';
         base['graphql'] = '^16.11.0';
         base['@solid-nestjs/typeorm-graphql-crud'] = '^0.2.9';
         break;
@@ -309,8 +309,8 @@ export class NewCommand extends BaseCommand {
       case 'hybrid':
         base['@nestjs/swagger'] = '^11.1.4';
         base['@nestjs/graphql'] = '^13.1.0';
-        base['@nestjs/apollo'] = '^13.1.0';
-        base['@apollo/server'] = '^5.0.0';
+        base['@nestjs/apollo'] = '13.1.0';
+        base['@apollo/server'] = '^4.12.1';
         base['graphql'] = '^16.11.0';
         base['@solid-nestjs/typeorm-hybrid-crud'] = '^0.2.9';
         break;
@@ -604,6 +604,16 @@ ${
 `
     : ''
 }  await app.listen(process.env.PORT || 3000);
+
+  const port = process.env.PORT || 3000;
+${
+  options.type === 'rest'
+    ? `  console.log(\`🚀 Rest-API ready at http://localhost:\${port}/api\`);`
+    : options.type === 'graphql'
+      ? `  console.log(\`🚀 GraphQL server ready at http://localhost:\${port}/graphql\`);`
+      : `  console.log(\`🚀 Rest-API ready at http://localhost:\${port}/api\`);
+  console.log(\`🚀 GraphQL server ready at http://localhost:\${port}/graphql\`);`
+}
 }
 bootstrap();
 `;
@@ -629,6 +639,10 @@ bootstrap();
       imports.push(
         "import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';",
       );
+      imports.push(
+        "import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';",
+      );
+      imports.push("import { join } from 'path';");
     }
 
     const moduleImports = [
@@ -637,12 +651,18 @@ bootstrap();
     ];
 
     if (options.type === 'graphql' || options.type === 'hybrid') {
-      moduleImports.push(`// GraphQL disabled until resolvers are added
-    // GraphQLModule.forRoot<ApolloDriverConfig>({
-    //   driver: ApolloDriver,
-    //   autoSchemaFile: true,
-    //   playground: true,
-    // })`);
+      moduleImports.push(`GraphQLModule.forRootAsync({
+      driver: ApolloDriver,
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        playground: false,
+        introspection: configService.get('GRAPHQL_INTROSPECTION', 'true') === 'true',
+        sortSchema: true,
+        plugins: [ApolloServerPluginLandingPageLocalDefault()],
+      }),
+      inject: [ConfigService],
+    })`);
     }
 
     const appModuleContent = `${imports.join('\n')}

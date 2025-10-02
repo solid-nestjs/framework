@@ -1,4 +1,5 @@
-import { GenerateDtoFromEntity } from '{{solidBundle}}';
-import { {{pascalCase entityName}} } from '../../entities/{{kebabCase entityName}}.entity';
+import { GenerateDtoFromEntity, SolidInput } from '{{solidBundle}}'; 
+import { {{pascalCase entityName}} } from '../../entities/{{kebabCase entityName}}.entity'; 
 
+@SolidInput() 
 export class Create{{pascalCase entityName}}Dto extends GenerateDtoFromEntity({{pascalCase entityName}}) {}
