@@ -37,12 +37,6 @@ export const {{camelCase name}}ServiceStructure = CrudServiceStructure({
     },
   },
   {{/if}}
-  {{#if withSoftDelete}}
-  softDelete: true,
-  {{/if}}
-  {{#if withBulkOperations}}
-  enableBulkOperations: true,
-  {{/if}}
 });
 
 /**

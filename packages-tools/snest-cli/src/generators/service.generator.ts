@@ -1,6 +1,12 @@
 import * as path from 'path';
 import { TemplateEngine } from '../utils/template-engine';
-import { GenerationOptions, CommandResult, ProjectContext, RelationDefinition, FieldDefinition } from '../types';
+import {
+  GenerationOptions,
+  CommandResult,
+  ProjectContext,
+  RelationDefinition,
+  FieldDefinition,
+} from '../types';
 import { writeFile, ensureDirectory } from '../utils/file-utils';
 import { createNameVariations, getSolidBundle } from '../utils/string-utils';
 import { ModuleUpdater } from '../utils/module-updater';
@@ -22,27 +28,28 @@ export class ServiceGenerator {
   async generate(
     name: string,
     options: GenerationOptions,
-    context?: ProjectContext
+    context?: ProjectContext,
   ): Promise<CommandResult> {
     try {
       const nameVariations = createNameVariations(name);
-      
+
       // Determine entity name (default to singular form of service name)
       const entityName = options.entityName || this.singularize(name);
       const entityVariations = createNameVariations(entityName);
-      
+
       // Always use SOLID decorators and GenerateDtoFromEntity
-      const hasArgsHelpers = options.withArgsHelpers ?? context?.hasArgsHelpers ?? false;
+      const hasArgsHelpers =
+        options.withArgsHelpers ?? context?.hasArgsHelpers ?? false;
       const withSoftDelete = options.withSoftDelete ?? false;
       const withBulkOperations = options.withBulkOperations ?? false;
       const databaseType = context?.databaseType || 'typeorm-hybrid-crud';
-      
+
       // Parse relations if provided
       const relations = this.parseRelations(options.relations || []);
-      
+
       // Get basic fields for entity (for GenerateDtoFromEntity)
       const entityFields = this.getBasicFields(entityName);
-      
+
       // Build template data
       const templateData = TemplateEngine.createTemplateData(name, {
         entityName: entityVariations.pascalCase,
@@ -55,9 +62,11 @@ export class ServiceGenerator {
         relations,
         withSoftDelete,
         withBulkOperations,
-        hasCustomMethods: options.customMethods && options.customMethods.length > 0,
+        hasCustomMethods:
+          options.customMethods && options.customMethods.length > 0,
         customMethods: options.customMethods || [],
         solidBundle: getSolidBundle(context?.apiType),
+        apiType: context?.apiType || 'rest',
         hasSwagger: context?.hasSwagger ?? false,
         hasGraphQL: context?.hasGraphQL ?? false,
         hasValidation: true, // Always include validation for DTOs
@@ -65,36 +74,59 @@ export class ServiceGenerator {
       });
 
       // Generate service content
-      const serviceContent = await this.templateEngine.render('service/service', templateData);
-      
+      const serviceContent = await this.templateEngine.render(
+        'service/service',
+        templateData,
+      );
+
       // Determine output path
-      const outputDir = options.path || (context?.paths?.services || 'src/services');
+      const outputDir =
+        options.path || context?.paths?.services || 'src/services';
       const projectRoot = context?.projectRoot || process.cwd();
-      const outputPath = path.join(projectRoot, outputDir, `${nameVariations.kebabCase}.service.ts`);
-      
+      const outputPath = path.join(
+        projectRoot,
+        outputDir,
+        `${nameVariations.kebabCase}.service.ts`,
+      );
+
       // Generate DTOs automatically using templates
       const generatedFiles: string[] = [];
-      
+
       try {
         // Determine DTO paths from context or use defaults
-        const dtoInputsPath = typeof context?.paths?.dto === 'string' 
-          ? path.join(context.paths.dto, 'inputs')
-          : context?.paths?.dto?.inputs || 'src/dto/inputs';
-          
+        const dtoInputsPath =
+          typeof context?.paths?.dto === 'string'
+            ? path.join(context.paths.dto, 'inputs')
+            : context?.paths?.dto?.inputs || 'src/dto/inputs';
+
         // Ensure DTO directories exist
         await ensureDirectory(path.join(projectRoot, dtoInputsPath));
-        
+
         // Generate create DTO
-        const createDtoContent = await this.templateEngine.render('dto/create-dto', templateData);
-        const createDtoPath = path.join(projectRoot, dtoInputsPath, `create-${entityVariations.kebabCase}.dto.ts`);
+        const createDtoContent = await this.templateEngine.render(
+          'dto/create-dto',
+          templateData,
+        );
+        const createDtoPath = path.join(
+          projectRoot,
+          dtoInputsPath,
+          `create-${entityVariations.kebabCase}.dto.ts`,
+        );
         const createResult = await writeFile(createDtoPath, createDtoContent);
         if (createResult.success) {
           generatedFiles.push(createResult.path);
         }
-        
+
         // Generate update DTO
-        const updateDtoContent = await this.templateEngine.render('dto/update-dto', templateData);
-        const updateDtoPath = path.join(projectRoot, dtoInputsPath, `update-${entityVariations.kebabCase}.dto.ts`);
+        const updateDtoContent = await this.templateEngine.render(
+          'dto/update-dto',
+          templateData,
+        );
+        const updateDtoPath = path.join(
+          projectRoot,
+          dtoInputsPath,
+          `update-${entityVariations.kebabCase}.dto.ts`,
+        );
         const updateResult = await writeFile(updateDtoPath, updateDtoContent);
         if (updateResult.success) {
           generatedFiles.push(updateResult.path);
@@ -104,15 +136,19 @@ export class ServiceGenerator {
       }
 
       // Write service file
-      const result = await writeFile(outputPath, serviceContent, options.overwrite);
-      
+      const result = await writeFile(
+        outputPath,
+        serviceContent,
+        options.overwrite,
+      );
+
       if (!result.success) {
         return {
           success: false,
           message: `Failed to create service: ${result.error}`,
         };
       }
-      
+
       generatedFiles.push(result.path);
 
       // Prepare next steps
@@ -123,30 +159,43 @@ export class ServiceGenerator {
       ];
 
       // Update modules if enabled
-      if (ModuleUpdater.isModuleUpdatingEnabled() && !options.skipModuleUpdate) {
+      if (
+        ModuleUpdater.isModuleUpdatingEnabled() &&
+        !options.skipModuleUpdate
+      ) {
         const moduleUpdater = new ModuleUpdater();
         const componentRegistration = ModuleUpdater.createComponentRegistration(
           name,
           'service',
-          result.path
+          result.path,
         );
-        
+
         try {
-          const updateResult = await moduleUpdater.updateModulesForComponent(componentRegistration);
+          const updateResult = await moduleUpdater.updateModulesForComponent(
+            componentRegistration,
+          );
           if (updateResult.success && updateResult.updatedFiles.length > 0) {
-            nextSteps.unshift(`✅ Automatically updated ${updateResult.updatedFiles.length} module(s)`);
+            nextSteps.unshift(
+              `✅ Automatically updated ${updateResult.updatedFiles.length} module(s)`,
+            );
           } else if (updateResult.errors.length > 0) {
-            nextSteps.unshift(`⚠️  Module auto-update had issues: ${updateResult.errors.join(', ')}`);
+            nextSteps.unshift(
+              `⚠️  Module auto-update had issues: ${updateResult.errors.join(', ')}`,
+            );
           }
         } catch (error) {
-          nextSteps.unshift(`⚠️  Could not auto-update modules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          nextSteps.unshift(
+            `⚠️  Could not auto-update modules: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
         }
       }
 
       return {
         success: true,
         message: `Service '${nameVariations.pascalCase}' generated successfully`,
-        generatedFiles: generatedFiles.map(file => path.relative(process.cwd(), file)),
+        generatedFiles: generatedFiles.map(file =>
+          path.relative(process.cwd(), file),
+        ),
         nextSteps,
       };
     } catch (error) {
@@ -163,23 +212,25 @@ export class ServiceGenerator {
    */
   private parseRelations(relationDefinitions: string[]): RelationDefinition[] {
     const relations: RelationDefinition[] = [];
-    
+
     for (const relationDef of relationDefinitions) {
       const parts = relationDef.split(':');
-      
+
       if (parts.length >= 2) {
         const relation: RelationDefinition = {
           name: parts[0].trim(),
           type: parts[1].trim() as any,
-          target: parts[2] ? parts[2].trim() : createNameVariations(parts[0]).pascalCase,
+          target: parts[2]
+            ? parts[2].trim()
+            : createNameVariations(parts[0]).pascalCase,
           eager: parts.includes('eager'),
           cascade: parts.includes('cascade'),
         };
-        
+
         relations.push(relation);
       }
     }
-    
+
     return relations;
   }
 
@@ -188,7 +239,7 @@ export class ServiceGenerator {
    */
   async generateInteractive(): Promise<CommandResult> {
     const inquirer = await import('inquirer');
-    
+
     const answers = await inquirer.default.prompt([
       {
         type: 'input',
@@ -234,7 +285,8 @@ export class ServiceGenerator {
       {
         type: 'input',
         name: 'relations',
-        message: 'Relations (format: name:type:target, e.g., "supplier:manyToOne:Supplier"):',
+        message:
+          'Relations (format: name:type:target, e.g., "supplier:manyToOne:Supplier"):',
         default: '',
       },
       {
@@ -245,7 +297,12 @@ export class ServiceGenerator {
       },
     ]);
 
-    const relationStrings = answers.relations ? answers.relations.split(',').map((r: string) => r.trim()).filter((r: string) => r) : [];
+    const relationStrings = answers.relations
+      ? answers.relations
+          .split(',')
+          .map((r: string) => r.trim())
+          .filter((r: string) => r)
+      : [];
 
     const options: GenerationOptions = {
       name: answers.name,
@@ -274,7 +331,9 @@ export class ServiceGenerator {
 
     // Validate service name format
     if (options.name && !/^[A-Za-z][A-Za-z0-9]*$/.test(options.name)) {
-      errors.push('Service name must be a valid identifier (letters and numbers only, starting with a letter)');
+      errors.push(
+        'Service name must be a valid identifier (letters and numbers only, starting with a letter)',
+      );
     }
 
     // Validate relations format
@@ -283,12 +342,20 @@ export class ServiceGenerator {
         if (typeof relation === 'string') {
           const parts = relation.split(':');
           if (parts.length < 2) {
-            errors.push(`Invalid relation definition: ${relation}. Expected format: name:type or name:type:target`);
+            errors.push(
+              `Invalid relation definition: ${relation}. Expected format: name:type or name:type:target`,
+            );
           }
-          
+
           const relationType = parts[1];
-          if (!['oneToOne', 'oneToMany', 'manyToOne', 'manyToMany'].includes(relationType)) {
-            errors.push(`Invalid relation type: ${relationType}. Must be oneToOne, oneToMany, manyToOne, or manyToMany`);
+          if (
+            !['oneToOne', 'oneToMany', 'manyToOne', 'manyToMany'].includes(
+              relationType,
+            )
+          ) {
+            errors.push(
+              `Invalid relation type: ${relationType}. Must be oneToOne, oneToMany, manyToOne, or manyToMany`,
+            );
           }
         }
       }
@@ -300,7 +367,10 @@ export class ServiceGenerator {
   /**
    * Generate service with entity reference
    */
-  async generateForEntity(entityName: string, options: Partial<GenerationOptions> = {}): Promise<CommandResult> {
+  async generateForEntity(
+    entityName: string,
+    options: Partial<GenerationOptions> = {},
+  ): Promise<CommandResult> {
     const serviceOptions: GenerationOptions = {
       name: options.name || `${entityName}s`,
       type: 'service',
@@ -322,7 +392,7 @@ export class ServiceGenerator {
    */
   private singularize(word: string): string {
     const singular = word.toLowerCase();
-    
+
     // Common patterns
     if (singular.endsWith('ies')) {
       return word.slice(0, -3) + 'y'; // Companies -> Company
@@ -333,7 +403,7 @@ export class ServiceGenerator {
     } else if (singular.endsWith('s') && singular.length > 1) {
       return word.slice(0, -1); // Users -> User
     }
-    
+
     return word; // Return as-is if no pattern matches
   }
 
@@ -342,29 +412,32 @@ export class ServiceGenerator {
    */
   private getBasicFields(entityName: string): FieldDefinition[] {
     const entityLower = entityName.toLowerCase();
-    
+
     // Common field patterns based on entity name
     const commonFields: FieldDefinition[] = [];
-    
+
     if (entityLower.includes('user')) {
       commonFields.push(
         { name: 'email', type: 'string', required: true, nullable: false },
         { name: 'name', type: 'string', required: true, nullable: false },
-        { name: 'password', type: 'string', required: true, nullable: false }
+        { name: 'password', type: 'string', required: true, nullable: false },
       );
     } else if (entityLower.includes('product')) {
       commonFields.push(
         { name: 'name', type: 'string', required: true, nullable: false },
         { name: 'price', type: 'number', required: true, nullable: false },
-        { name: 'category', type: 'string', required: true, nullable: false }
+        { name: 'category', type: 'string', required: true, nullable: false },
       );
     } else {
       // Default fields for unknown entities
-      commonFields.push(
-        { name: 'name', type: 'string', required: true, nullable: false }
-      );
+      commonFields.push({
+        name: 'name',
+        type: 'string',
+        required: true,
+        nullable: false,
+      });
     }
-    
+
     return commonFields;
   }
 }

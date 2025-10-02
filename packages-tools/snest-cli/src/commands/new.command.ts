@@ -13,6 +13,7 @@ interface NewCommandOptions {
   type: 'rest' | 'graphql' | 'hybrid';
   skipInstall: boolean;
   skipGit: boolean;
+  resourceFolder: string;
 }
 
 /**
@@ -40,6 +41,11 @@ export class NewCommand extends BaseCommand {
       )
       .option('--skip-install', 'Skip package installation', false)
       .option('--skip-git', 'Skip git initialization', false)
+      .option(
+        '--resource-folder <folder>',
+        'Resource folder name (default: modules)',
+        'modules',
+      )
       .action(async (projectName: string, options: NewCommandOptions) => {
         await this.handleExecution(() => this.execute(projectName, options));
       });
@@ -84,6 +90,7 @@ export class NewCommand extends BaseCommand {
       const packageJsonContent = this.generatePackageJson(
         nameVariations,
         options,
+        projectName,
       );
       const packageJsonResult = await writeFile(
         path.join(projectPath, 'package.json'),
@@ -213,12 +220,17 @@ export class NewCommand extends BaseCommand {
   private generatePackageJson(
     nameVariations: any,
     options: NewCommandOptions,
+    projectName: string,
   ): string {
     const dependencies = this.getDependencies(options);
     const devDependencies = this.getDevDependencies(options);
 
     const packageJson = {
-      name: nameVariations.kebabCase,
+      name: projectName
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, ''),
       version: '0.0.1',
       description: 'A SOLID NestJS application',
       author: '',
@@ -555,11 +567,7 @@ coverage
     }
 
     // Create directory structure
-    await ensureDirectory(path.join(srcPath, 'entities'));
-    await ensureDirectory(path.join(srcPath, 'services'));
-    await ensureDirectory(path.join(srcPath, 'controllers'));
-    await ensureDirectory(path.join(srcPath, 'modules'));
-    await ensureDirectory(path.join(srcPath, 'dto'));
+    await ensureDirectory(path.join(srcPath, options.resourceFolder));
     await ensureDirectory(path.join(srcPath, 'config'));
 
     // Create database config
@@ -576,12 +584,16 @@ coverage
   private generateMainTs(options: NewCommandOptions): string {
     const imports = [
       "import { NestFactory } from '@nestjs/core';",
+      "import { ValidationPipe } from '@nestjs/common';",
       "import { AppModule } from './app.module';",
     ];
 
     if (options.type === 'rest' || options.type === 'hybrid') {
       imports.push(
         "import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';",
+      );
+      imports.push(
+        "import { swaggerRecomenedOptions } from '@solid-nestjs/rest-api';",
       );
     }
 
@@ -591,15 +603,33 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
 ${
+  options.type === 'graphql' || options.type === 'hybrid'
+    ? `  // Enable CORS for GraphQL playground
+  app.enableCors();
+
+`
+    : ''
+}  // Enable validation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+${
   options.type === 'rest' || options.type === 'hybrid'
-    ? `  // Swagger documentation
+    ? `  // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('SOLID NestJS API')
     .setDescription('API documentation for SOLID NestJS application')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: { ...swaggerRecomenedOptions },
+  });
 
 `
     : ''
@@ -690,17 +720,17 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get application info' })
-  getHello(): string {
-    return this.appService.getHello();
-  }
+  // @Get()
+  // @ApiOperation({ summary: 'Get application info' })
+  // getHello(): string {
+  //   return this.appService.getHello();
+  // }
 
-  @Get('health')
-  @ApiOperation({ summary: 'Health check' })
-  getHealth(): { status: string; timestamp: string } {
-    return this.appService.getHealth();
-  }
+  // @Get('health')
+  // @ApiOperation({ summary: 'Health check' })
+  // getHealth(): { status: string; timestamp: string } {
+  //   return this.appService.getHealth();
+  // }
 }
 `;
   }
@@ -769,9 +799,9 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
   }
 
   private generateSnestConfig(options: NewCommandOptions): string {
+    const bundle = this.getSolidBundleForType(options.type);
     const config = {
-      $schema:
-        './node_modules/@solid-nestjs/typeorm-hybrid-crud/schemas/snest.config.json',
+      $schema: `./node_modules/${bundle}/schemas/snest.config.json`,
       version: '1.0',
       project: {
         type: options.type,
@@ -780,20 +810,12 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
           hasSwagger: options.type === 'rest' || options.type === 'hybrid',
           hasGraphQL: options.type === 'graphql' || options.type === 'hybrid',
           hasTypeORM: true,
-          hasSolidDecorators: true,
-          useSolidDecorators: true,
-          useGenerateDtoFromEntity: true,
         },
-        bundle: this.getSolidBundleForType(options.type),
+        bundle: bundle,
       },
       generators: {
-        defaultEntityPath: 'src/entities',
-        defaultServicePath: 'src/services',
-        defaultControllerPath: 'src/controllers',
-        defaultModulePath: 'src',
+        defaultModulePath: `src/${options.resourceFolder}`,
         autoUpdateModules: true,
-        useSolidDecorators: true,
-        useGenerateDtoFromEntity: true,
       },
     };
 

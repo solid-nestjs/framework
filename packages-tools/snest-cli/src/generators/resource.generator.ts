@@ -8,6 +8,7 @@ import { ResolverGenerator } from './resolver.generator';
 import { ModuleGenerator } from './module.generator';
 import { ModuleUpdater } from '../utils/module-updater';
 import { AstUtils } from '../utils/ast-utils';
+import { readSnestConfig } from '../utils/config-reader';
 
 /**
  * Resource generation result
@@ -404,23 +405,64 @@ export class ResourceGenerator {
    * Build module path based on options or current directory context
    */
   private buildModulePath(name: string, modulePath?: string): string {
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
     if (modulePath) {
       // Explicit module path provided
       const normalizedPath = modulePath.replace(/\\/g, '/');
-      return path.join('src', 'modules', normalizedPath);
+      return path.join('src', moduleFolder, normalizedPath);
     }
 
     // Auto-detect module path from current directory
     const autoDetectedPath = this.detectModulePathFromCurrentDirectory(name);
     if (autoDetectedPath) {
-      const fullPath = path.join('src', 'modules', autoDetectedPath);
+      const fullPath = path.join('src', moduleFolder, autoDetectedPath);
       console.log(`🔍 Auto-detected module path: ${fullPath}`);
       return fullPath;
     }
 
     // Default single module
     const nameVariations = createNameVariations(name);
-    return path.join('src', 'modules', nameVariations.kebabCase);
+    return path.join('src', moduleFolder, nameVariations.kebabCase);
+  }
+
+  /**
+   * Build project context from snest.config.json
+   */
+  private buildProjectContext(): ProjectContext | undefined {
+    const config = readSnestConfig();
+    if (!config?.project) {
+      return undefined;
+    }
+
+    const apiType = config.project.type as 'rest' | 'graphql' | 'hybrid';
+    const hasGraphQL = apiType === 'graphql' || apiType === 'hybrid';
+    const hasSwagger = apiType === 'rest' || apiType === 'hybrid';
+
+    return {
+      hasSolidNestjs: true,
+      solidVersion: '1.0.0',
+      hasGraphQL,
+      hasSwagger,
+      hasTypeORM: true,
+      databaseType: config.project.database,
+      existingEntities: [],
+      existingServices: [],
+      existingControllers: [],
+      existingModules: [],
+      hasSolidDecorators: true,
+      hasArgsHelpers: false,
+      hasEntityGeneration: true,
+      useSolidDecorators: true,
+      useGenerateDtoFromEntity: true,
+      projectRoot: this.findProjectRoot(process.cwd()) || process.cwd(),
+      packageJson: {},
+      apiType,
+    };
   }
 
   /**
@@ -523,18 +565,6 @@ export class ResourceGenerator {
         default: [],
       },
       {
-        type: 'confirm',
-        name: 'withSoftDelete',
-        message: 'Enable soft deletion?',
-        default: false,
-      },
-      {
-        type: 'confirm',
-        name: 'withBulkOperations',
-        message: 'Enable bulk operations?',
-        default: false,
-      },
-      {
         type: 'input',
         name: 'path',
         message: 'Custom output path (leave empty for default):',
@@ -554,12 +584,12 @@ export class ResourceGenerator {
       skipEntity: answers.skip.includes('entity'),
       skipService: answers.skip.includes('service'),
       skipController: answers.skip.includes('controller'),
-      withSoftDelete: answers.withSoftDelete,
-      withBulkOperations: answers.withBulkOperations,
       path: answers.path || undefined,
     };
 
-    return this.generate(answers.name, options);
+    // Read project context to determine API type
+    const projectContext = this.buildProjectContext();
+    return this.generate(answers.name, options, projectContext);
   }
 
   /**
@@ -603,8 +633,6 @@ export class ResourceGenerator {
       fields,
       generateModule: true,
       modulePath,
-      withSoftDelete: false,
-      withBulkOperations: false,
     };
 
     return this.generate(name, options);
@@ -689,15 +717,21 @@ export class ResourceGenerator {
       return null; // Not in a project
     }
 
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
     // Get relative path from project root to current directory
     const relativePath = path
       .relative(projectRoot, currentDir)
       .replace(/\\/g, '/');
 
-    // Check if we're inside src/modules/...
-    if (relativePath.startsWith('src/modules/')) {
+    // Check if we're inside src/[configuredFolder]/...
+    if (relativePath.startsWith(`src/${moduleFolder}/`)) {
       // Extract the module path part
-      const modulePath = relativePath.replace('src/modules/', '');
+      const modulePath = relativePath.replace(`src/${moduleFolder}/`, '');
 
       if (modulePath) {
         // We're inside a module directory
@@ -718,13 +752,13 @@ export class ResourceGenerator {
       }
     }
 
-    // Check if we're in project root and modules directory exists
+    // Check if we're in project root and configured directory exists
     if (relativePath === '' || relativePath === '.') {
-      const modulesDir = path.join(projectRoot, 'src', 'modules');
+      const configuredDir = path.join(projectRoot, 'src', moduleFolder);
       try {
         const fs = require('fs');
-        if (fs.existsSync(modulesDir)) {
-          // We're in project root and modules exist, use default behavior
+        if (fs.existsSync(configuredDir)) {
+          // We're in project root and configured folder exists, use default behavior
           return null;
         }
       } catch {
@@ -764,9 +798,17 @@ export class ResourceGenerator {
   private extractModulePathFromBasePath(
     moduleBasePath: string,
   ): string | undefined {
-    // Convert "src/modules/ecommerce/products" to "ecommerce/products"
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
+    // Convert "src/features/ecommerce/products" to "ecommerce/products"
     const normalizedPath = moduleBasePath.replace(/\\/g, '/');
-    const match = normalizedPath.match(/^src\/modules\/(.+)$/);
+    const match = normalizedPath.match(
+      new RegExp(`^src\/${moduleFolder}\/(.+)$`),
+    );
     return match ? match[1] : undefined;
   }
 

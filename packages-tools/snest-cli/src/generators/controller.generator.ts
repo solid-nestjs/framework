@@ -44,31 +44,32 @@ export class ControllerGenerator {
   async generate(
     name: string,
     options: GenerationOptions,
-    context?: ProjectContext
+    context?: ProjectContext,
   ): Promise<CommandResult> {
     try {
       const nameVariations = createNameVariations(name);
-      
+
       // Determine entity and service names (with auto-singularization)
       const entityName = options.entityName || this.detectEntityName(name);
       const serviceName = options.serviceName || name; // Service name is usually plural (Users, Products)
       const entityVariations = createNameVariations(entityName);
       const serviceVariations = createNameVariations(serviceName);
-      
+
       // Always use SOLID decorators and determine features
       const useSolidDecorators = true; // Always use SOLID framework mixins
       const hasSwagger = context?.hasSwagger ?? true; // Default to true for REST APIs
       const hasGraphQL = context?.hasGraphQL ?? false;
       const hasValidation = options.withValidation ?? true;
-      const hasArgsHelpers = options.withArgsHelpers ?? context?.hasArgsHelpers ?? false;
+      const hasArgsHelpers =
+        options.withArgsHelpers ?? context?.hasArgsHelpers ?? false;
       const apiType = options.apiType || 'rest';
-      
+
       // Configure operations
       const operations = this.configureOperations(options);
-      
+
       // Configure custom endpoints
       const customEndpoints = options.customEndpoints || [];
-      
+
       // Build template data
       const templateData = TemplateEngine.createTemplateData(name, {
         entityName: entityVariations.pascalCase,
@@ -91,16 +92,28 @@ export class ControllerGenerator {
       });
 
       // Generate controller content
-      const controllerContent = await this.templateEngine.render('controller/rest-controller', templateData);
-      
+      const controllerContent = await this.templateEngine.render(
+        'controller/rest-controller',
+        templateData,
+      );
+
       // Determine output path
-      const outputDir = options.path || (context?.paths?.controllers || 'src/controllers');
+      const outputDir =
+        options.path || context?.paths?.controllers || 'src/controllers';
       const projectRoot = context?.projectRoot || process.cwd();
-      const outputPath = path.join(projectRoot, outputDir, `${nameVariations.kebabCase}.controller.ts`);
-      
+      const outputPath = path.join(
+        projectRoot,
+        outputDir,
+        `${nameVariations.kebabCase}.controller.ts`,
+      );
+
       // Write file
-      const result = await writeFile(outputPath, controllerContent, options.overwrite);
-      
+      const result = await writeFile(
+        outputPath,
+        controllerContent,
+        options.overwrite,
+      );
+
       if (!result.success) {
         return {
           success: false,
@@ -117,23 +130,34 @@ export class ControllerGenerator {
       ];
 
       // Update modules if enabled
-      if (ModuleUpdater.isModuleUpdatingEnabled() && !options.skipModuleUpdate) {
+      if (
+        ModuleUpdater.isModuleUpdatingEnabled() &&
+        !options.skipModuleUpdate
+      ) {
         const moduleUpdater = new ModuleUpdater();
         const componentRegistration = ModuleUpdater.createComponentRegistration(
           name,
           'controller',
-          result.path
+          result.path,
         );
-        
+
         try {
-          const updateResult = await moduleUpdater.updateModulesForComponent(componentRegistration);
+          const updateResult = await moduleUpdater.updateModulesForComponent(
+            componentRegistration,
+          );
           if (updateResult.success && updateResult.updatedFiles.length > 0) {
-            nextSteps.unshift(`✅ Automatically updated ${updateResult.updatedFiles.length} module(s)`);
+            nextSteps.unshift(
+              `✅ Automatically updated ${updateResult.updatedFiles.length} module(s)`,
+            );
           } else if (updateResult.errors.length > 0) {
-            nextSteps.unshift(`⚠️  Module auto-update had issues: ${updateResult.errors.join(', ')}`);
+            nextSteps.unshift(
+              `⚠️  Module auto-update had issues: ${updateResult.errors.join(', ')}`,
+            );
           }
         } catch (error) {
-          nextSteps.unshift(`⚠️  Could not auto-update modules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          nextSteps.unshift(
+            `⚠️  Could not auto-update modules: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
         }
       }
 
@@ -154,7 +178,9 @@ export class ControllerGenerator {
   /**
    * Configure default CRUD operations
    */
-  private configureOperations(options: GenerationOptions): ControllerOperation[] {
+  private configureOperations(
+    options: GenerationOptions,
+  ): ControllerOperation[] {
     const defaultOperations: ControllerOperation[] = [
       { name: 'findAll', enabled: true },
       { name: 'findOne', enabled: true },
@@ -162,23 +188,6 @@ export class ControllerGenerator {
       { name: 'update', enabled: true },
       { name: 'remove', enabled: true },
     ];
-
-    // Add bulk operations if enabled
-    if (options.withBulkOperations) {
-      defaultOperations.push(
-        { name: 'bulkCreate', enabled: true },
-        { name: 'bulkUpdate', enabled: true },
-        { name: 'bulkRemove', enabled: true }
-      );
-    }
-
-    // Add soft delete operations if enabled
-    if (options.withSoftDelete) {
-      defaultOperations.push(
-        { name: 'recover', enabled: true },
-        { name: 'hardRemove', enabled: true }
-      );
-    }
 
     return defaultOperations;
   }
@@ -188,7 +197,7 @@ export class ControllerGenerator {
    */
   async generateInteractive(): Promise<CommandResult> {
     const inquirer = await import('inquirer');
-    
+
     const answers = await inquirer.default.prompt([
       {
         type: 'input',
@@ -261,7 +270,8 @@ export class ControllerGenerator {
       name: answers.name,
       type: 'controller',
       entityName: answers.entityName || answers.name,
-      serviceName: answers.serviceName || `${answers.entityName || answers.name}s`,
+      serviceName:
+        answers.serviceName || `${answers.entityName || answers.name}s`,
       withSolid: answers.withSolid,
       withValidation: answers.withValidation,
       withArgsHelpers: answers.withArgsHelpers,
@@ -286,11 +296,16 @@ export class ControllerGenerator {
 
     // Validate controller name format
     if (options.name && !/^[A-Za-z][A-Za-z0-9]*$/.test(options.name)) {
-      errors.push('Controller name must be a valid identifier (letters and numbers only, starting with a letter)');
+      errors.push(
+        'Controller name must be a valid identifier (letters and numbers only, starting with a letter)',
+      );
     }
 
     // Validate API type if specified
-    if (options.apiType && !['rest', 'graphql', 'hybrid'].includes(options.apiType)) {
+    if (
+      options.apiType &&
+      !['rest', 'graphql', 'hybrid'].includes(options.apiType)
+    ) {
       errors.push('API type must be one of: rest, graphql, hybrid');
     }
 
@@ -301,9 +316,9 @@ export class ControllerGenerator {
    * Generate controller with entity and service references
    */
   async generateForEntity(
-    entityName: string, 
+    entityName: string,
     serviceName?: string,
-    options: Partial<GenerationOptions> = {}
+    options: Partial<GenerationOptions> = {},
   ): Promise<CommandResult> {
     const controllerOptions: GenerationOptions = {
       name: options.name || entityName,

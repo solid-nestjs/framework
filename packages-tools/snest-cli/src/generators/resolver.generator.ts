@@ -163,23 +163,6 @@ export class ResolverGenerator {
       { name: 'remove', enabled: true },
     ];
 
-    // Add bulk operations if enabled
-    if (options.withBulkOperations) {
-      defaultOperations.push(
-        { name: 'bulkCreate', enabled: true },
-        { name: 'bulkUpdate', enabled: true },
-        { name: 'bulkRemove', enabled: true },
-      );
-    }
-
-    // Add soft delete operations if enabled
-    if (options.withSoftDelete) {
-      defaultOperations.push(
-        { name: 'recover', enabled: true },
-        { name: 'hardRemove', enabled: true },
-      );
-    }
-
     return defaultOperations;
   }
 
