@@ -1,6 +1,11 @@
 import * as path from 'path';
-import { GenerationOptions, CommandResult, ProjectContext } from '../types';
-import { createNameVariations } from '../utils/string-utils';
+import {
+  GenerationOptions,
+  CommandResult,
+  ProjectContext,
+  FieldDefinition,
+} from '../types';
+import { createNameVariations, getSolidBundle } from '../utils/string-utils';
 import { EntityGenerator } from './entity.generator';
 import { ServiceGenerator } from './service.generator';
 import { ControllerGenerator } from './controller.generator';
@@ -9,6 +14,8 @@ import { ModuleGenerator } from './module.generator';
 import { ModuleUpdater } from '../utils/module-updater';
 import { AstUtils } from '../utils/ast-utils';
 import { readSnestConfig } from '../utils/config-reader';
+import { TemplateEngine } from '../utils/template-engine';
+import { writeFile, ensureDirectory } from '../utils/file-utils';
 
 /**
  * Resource generation result
@@ -78,6 +85,10 @@ export class ResourceGenerator {
       const generateController = options.skipController !== true;
       const generateModule = options.generateModule !== false; // Default to true
 
+      // Check if we need to generate FindArgs and GroupBy
+      const generateFindArgs = options.generateFindArgs ?? false;
+      const generateGroupBy = options.generateGroupBy ?? false;
+
       // Determine module path structure
       const moduleBasePath = this.buildModulePath(name, options.modulePath);
       const moduleContext = this.buildModuleContext(
@@ -123,6 +134,8 @@ export class ResourceGenerator {
           type: 'service',
           path: path.join(moduleBasePath, 'services'),
           skipModuleUpdate: true, // We'll handle module updates at the resource level
+          withArgsHelpers: generateFindArgs, // Enable args helpers if FindArgs are being generated
+          overwrite: options.overwrite,
         };
 
         results.service = await this.serviceGenerator.generate(
@@ -138,6 +151,67 @@ export class ResourceGenerator {
           );
         } else {
           errors.push(`Service generation failed: ${results.service.message}`);
+        }
+      }
+
+      // 3.5. Generate FindArgs DTO (optional, depends on service)
+      if (generateFindArgs && (!generateService || results.service?.success)) {
+        console.log(
+          `🔍 Generating FindArgs DTO for '${nameVariations.pascalCase}'...`,
+        );
+        try {
+          const findArgsResult = await this.generateFindArgsDTO(
+            nameVariations.pascalCase,
+            options.fields || [],
+            moduleBasePath,
+            moduleContext,
+          );
+          if (findArgsResult.success) {
+            generatedFiles.push(...(findArgsResult.generatedFiles || []));
+            console.log(
+              `✅ FindArgs DTO 'Find${nameVariations.pascalCase}Args' generated`,
+            );
+          } else {
+            errors.push(
+              `FindArgs DTO generation failed: ${findArgsResult.message}`,
+            );
+          }
+        } catch (error) {
+          errors.push(
+            `FindArgs DTO generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // 3.6. Generate GroupBy DTO (optional, depends on FindArgs)
+      if (
+        generateGroupBy &&
+        (!generateFindArgs || !errors.some(e => e.includes('FindArgs')))
+      ) {
+        console.log(
+          `📊 Generating GroupBy DTO for '${nameVariations.pascalCase}'...`,
+        );
+        try {
+          const groupByResult = await this.generateGroupByDTO(
+            nameVariations.pascalCase,
+            options.fields || [],
+            moduleBasePath,
+            moduleContext,
+          );
+          if (groupByResult.success) {
+            generatedFiles.push(...(groupByResult.generatedFiles || []));
+            console.log(
+              `✅ GroupBy DTO 'Grouped${nameVariations.pascalCase}Args' generated`,
+            );
+          } else {
+            errors.push(
+              `GroupBy DTO generation failed: ${groupByResult.message}`,
+            );
+          }
+        } catch (error) {
+          errors.push(
+            `GroupBy DTO generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
         }
       }
 
@@ -163,6 +237,7 @@ export class ResourceGenerator {
             type: 'controller',
             path: path.join(moduleBasePath, 'controllers'),
             skipModuleUpdate: true, // We'll handle module updates at the resource level
+            generateGroupBy,
           };
 
           results.controller = await this.controllerGenerator.generate(
@@ -195,6 +270,7 @@ export class ResourceGenerator {
             type: 'resolver',
             path: path.join(moduleBasePath, 'resolvers'),
             skipModuleUpdate: true, // We'll handle module updates at the resource level
+            generateGroupBy,
           };
 
           results.resolver = await this.resolverGenerator.generate(
@@ -621,6 +697,19 @@ export class ResourceGenerator {
         default: [],
       },
       {
+        type: 'confirm',
+        name: 'generateFindArgs',
+        message: 'Generate FindArgs DTO for advanced querying?',
+        default: false,
+      },
+      {
+        type: 'confirm',
+        name: 'generateGroupBy',
+        message: 'Generate GroupBy DTO for aggregation queries?',
+        default: false,
+        when: answers => answers.generateFindArgs,
+      },
+      {
         type: 'input',
         name: 'path',
         message: 'Custom output path (leave empty for default):',
@@ -640,6 +729,8 @@ export class ResourceGenerator {
       skipEntity: answers.skip.includes('entity'),
       skipService: answers.skip.includes('service'),
       skipController: answers.skip.includes('controller'),
+      generateFindArgs: answers.generateFindArgs,
+      generateGroupBy: answers.generateGroupBy,
       path: answers.path || undefined,
     };
 
@@ -1133,5 +1224,237 @@ export class ${parentInfo.moduleClassName} {}
 
     // Write the updated content back to the file
     AstUtils.writeFile(appModulePath, updatedContent);
+  }
+
+  /**
+   * Generate FindArgs DTO for a resource
+   */
+  private async generateFindArgsDTO(
+    entityName: string,
+    fields: string[] | FieldDefinition[],
+    moduleBasePath: string,
+    context?: ProjectContext,
+  ): Promise<CommandResult> {
+    try {
+      const templateEngine = new TemplateEngine();
+      const nameVariations = createNameVariations(entityName);
+
+      // Convert string fields to FieldDefinition format if needed
+      const entityFields = this.convertFieldsToFieldDefinitions(fields);
+
+      const templateData = TemplateEngine.createTemplateData(entityName, {
+        entityName: nameVariations.pascalCase,
+        solidBundle: getSolidBundle(context?.apiType),
+        fields: entityFields,
+      });
+
+      const dtoContent = await templateEngine.render(
+        'dto/args-dto',
+        templateData,
+      );
+
+      // Determine output path
+      const dtoArgsPath =
+        typeof context?.paths?.dto === 'string'
+          ? path.join(context.paths.dto, 'args')
+          : context?.paths?.dto?.args ||
+            path.join(moduleBasePath, 'dto', 'args');
+
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(
+        projectRoot,
+        dtoArgsPath,
+        `find-${nameVariations.kebabCase}-args.dto.ts`,
+      );
+
+      // Ensure directory exists
+      await ensureDirectory(path.dirname(outputPath));
+
+      const result = await writeFile(outputPath, dtoContent);
+      if (!result.success) {
+        return {
+          success: false,
+          message: `Failed to create FindArgs DTO: ${result.error}`,
+        };
+      }
+
+      return {
+        success: true,
+        message: `FindArgs DTO generated successfully`,
+        generatedFiles: [result.path],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to generate FindArgs DTO: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * Generate GroupBy DTO for a resource
+   */
+  private async generateGroupByDTO(
+    entityName: string,
+    fields: string[] | FieldDefinition[],
+    moduleBasePath: string,
+    context?: ProjectContext,
+  ): Promise<CommandResult> {
+    try {
+      const templateEngine = new TemplateEngine();
+      const nameVariations = createNameVariations(entityName);
+
+      // Convert string fields to FieldDefinition format if needed
+      const entityFields = this.convertFieldsToFieldDefinitions(fields);
+
+      const templateData = TemplateEngine.createTemplateData(entityName, {
+        entityName: nameVariations.pascalCase,
+        solidBundle: getSolidBundle(context?.apiType),
+        fields: entityFields,
+      });
+
+      const dtoContent = await templateEngine.render(
+        'dto/groupby-dto',
+        templateData,
+      );
+
+      // Determine output path
+      const dtoArgsPath =
+        typeof context?.paths?.dto === 'string'
+          ? path.join(context.paths.dto, 'args')
+          : context?.paths?.dto?.args ||
+            path.join(moduleBasePath, 'dto', 'args');
+
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(
+        projectRoot,
+        dtoArgsPath,
+        `grouped-${nameVariations.kebabCase}-args.dto.ts`,
+      );
+
+      // Ensure directory exists
+      await ensureDirectory(path.dirname(outputPath));
+
+      const result = await writeFile(outputPath, dtoContent);
+      if (!result.success) {
+        return {
+          success: false,
+          message: `Failed to create GroupBy DTO: ${result.error}`,
+        };
+      }
+
+      return {
+        success: true,
+        message: `GroupBy DTO generated successfully`,
+        generatedFiles: [result.path],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to generate GroupBy DTO: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * Get entity fields for DTO generation
+   */
+  private getEntityFields(
+    entityName: string,
+    context?: ProjectContext,
+  ): FieldDefinition[] {
+    // Try to get fields from context if available
+    if (context?.existingEntities) {
+      // This would need more complex logic to extract fields from actual entity files
+      // For now, return basic defaults
+    }
+
+    // Return basic fields based on entity name patterns
+    const entityLower = entityName.toLowerCase();
+    const commonFields: FieldDefinition[] = [];
+
+    if (entityLower.includes('user')) {
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'email', type: 'string', required: true, nullable: false },
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    } else if (entityLower.includes('product')) {
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'price', type: 'number', required: true, nullable: false },
+        { name: 'category', type: 'string', required: true, nullable: false },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    } else if (
+      entityLower.includes('client') ||
+      entityLower.includes('customer')
+    ) {
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'firstName', type: 'string', required: true, nullable: false },
+        { name: 'lastName', type: 'string', required: true, nullable: false },
+        { name: 'email', type: 'string', required: true, nullable: false },
+        { name: 'phone', type: 'string', required: false, nullable: true },
+        { name: 'city', type: 'string', required: false, nullable: true },
+        { name: 'country', type: 'string', required: false, nullable: true },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    } else {
+      // Default fields for unknown entities
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    }
+
+    return commonFields;
+  }
+
+  /**
+   * Convert string fields or FieldDefinition array to FieldDefinition array
+   */
+  private convertFieldsToFieldDefinitions(
+    fields: string[] | FieldDefinition[],
+  ): FieldDefinition[] {
+    if (!fields || fields.length === 0) {
+      return [];
+    }
+
+    // If already FieldDefinition array, return as is
+    if (typeof fields[0] === 'object' && 'name' in fields[0]) {
+      return fields as FieldDefinition[];
+    }
+
+    // Convert string array to FieldDefinition array
+    const stringFields = fields as string[];
+    return stringFields.map(field => {
+      // Parse field format: "name:type" or "name:type:required"
+      const parts = field.split(':');
+      const name = parts[0].trim();
+      const type = (parts[1] || 'string').trim() as
+        | 'string'
+        | 'number'
+        | 'boolean'
+        | 'Date'
+        | 'relation';
+      const required = parts[2]
+        ? parts[2].trim().toLowerCase() === 'true'
+        : true;
+
+      return {
+        name,
+        type,
+        required,
+        nullable: !required,
+      };
+    });
   }
 }

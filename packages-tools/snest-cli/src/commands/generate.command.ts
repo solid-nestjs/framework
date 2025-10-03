@@ -23,6 +23,8 @@ interface GenerateCommandOptions {
   skipController?: boolean;
   withSoftDelete?: boolean;
   withBulkOperations?: boolean;
+  generateFindArgs?: boolean;
+  generateGroupBy?: boolean;
 }
 
 /**
@@ -87,6 +89,16 @@ export class GenerateCommand extends BaseCommand {
       .option('--no-module', 'Skip module generation')
       .option('--with-soft-delete', 'Enable soft deletion', false)
       .option('--with-bulk-operations', 'Enable bulk operations', false)
+      .option(
+        '--generate-find-args',
+        'Generate FindArgs DTO for advanced querying',
+        false,
+      )
+      .option(
+        '--generate-group-by',
+        'Generate GroupBy DTO for aggregation queries',
+        false,
+      )
       .option(
         '--path <path>',
         'Custom output path (only when not using modules)',
@@ -211,6 +223,8 @@ export class GenerateCommand extends BaseCommand {
         skipController: options.skipController,
         withSoftDelete: options.withSoftDelete,
         withBulkOperations: options.withBulkOperations,
+        generateFindArgs: options.generateFindArgs,
+        generateGroupBy: options.generateGroupBy,
         path: options.path,
         overwrite: options.overwrite,
       };

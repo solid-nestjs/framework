@@ -58,6 +58,7 @@ export class ResolverGenerator {
         hasCreateDto: true, // Assume DTOs exist
         hasUpdateDto: true,
         hasFindArgs: hasArgsHelpers,
+        hasGroupBy: options.generateGroupBy ?? false,
         operations,
         customEndpoints,
         hasCustomEndpoints: customEndpoints.length > 0,

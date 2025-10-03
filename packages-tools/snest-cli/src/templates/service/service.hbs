@@ -11,7 +11,7 @@ import { Create{{pascalCase entityName}}Dto } from '../dto/inputs/create-{{kebab
 import { Update{{pascalCase entityName}}Dto } from '../dto/inputs/update-{{kebabCase entityName}}.dto';
 {{/if}}
 {{#if hasFindArgs}}
-import { Find{{pascalCase name}}Args } from '../dto/args/find-{{kebabCase name}}.args';
+import { Find{{pascalCase entityName}}Args } from '../dto/args/find-{{kebabCase entityName}}-args.dto';
 {{/if}}
 
 /**
@@ -26,7 +26,7 @@ export const {{camelCase name}}ServiceStructure = CrudServiceStructure({
   updateInputType: Update{{pascalCase entityName}}Dto,
   {{/if}}
   {{#if hasFindArgs}}
-  findArgsType: Find{{pascalCase name}}Args,
+  findArgsType: Find{{pascalCase entityName}}Args,
   {{/if}}
   {{#if hasRelations}}
   relationsConfig: {

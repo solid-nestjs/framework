@@ -5,6 +5,9 @@ import { Context } from '{{solidBundle}}';
 {{/if}}
 import { {{pascalCase name}}Service, {{camelCase name}}ServiceStructure } from '../services/{{kebabCase name}}.service';
 import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
+{{#if hasGroupBy}}
+import { Grouped{{pascalCase entityName}}Args } from '../dto/args/grouped-{{kebabCase entityName}}-args.dto';
+{{/if}}
 {{#if withGuards}}
 {{#each guards}}
 import { {{this.name}} } from '{{this.path}}';
@@ -17,6 +20,9 @@ import { {{this.name}} } from '{{this.path}}';
 export const {{camelCase name}}ControllerStructure = CrudControllerStructure({
   ...{{camelCase name}}ServiceStructure,
   serviceType: {{pascalCase name}}Service,
+  {{#if hasGroupBy}}
+  groupByArgsType: Grouped{{pascalCase entityName}}Args,
+  {{/if}}
   operations: {
     {{#each operations}}
     {{this.name}}: {{#if this.enabled}}{{#if this.config}}{{json this.config}}{{else}}true{{/if}}{{else}}false{{/if}},

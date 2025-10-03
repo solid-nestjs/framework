@@ -118,6 +118,8 @@ export interface GenerationOptions {
   skipEntity?: boolean;
   skipService?: boolean;
   skipController?: boolean;
+  generateFindArgs?: boolean;
+  generateGroupBy?: boolean;
 }
 
 /**
