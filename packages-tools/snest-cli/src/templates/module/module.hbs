@@ -2,9 +2,6 @@ import { Module } from '@nestjs/common';
 {{#if hasTypeORM}}
   import { TypeOrmModule } from '@nestjs/typeorm';
 {{/if}}
-{{#if hasGraphQL}}
-  import { GraphQLModule } from '@nestjs/graphql';
-{{/if}}
 {{#each entityImports}}
   import {
   {{this.className}}

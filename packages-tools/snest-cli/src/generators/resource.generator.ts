@@ -53,7 +53,20 @@ export class ResourceGenerator {
     process.env.SKIP_MODULE_UPDATE = 'true';
 
     try {
-      const nameVariations = createNameVariations(name);
+      // Handle nested resource names like "accounting/invoice"
+      const isNestedResource = name.includes('/');
+      let actualResourceName: string;
+      let parentPath: string | undefined;
+
+      if (isNestedResource) {
+        const pathParts = name.split('/');
+        actualResourceName = pathParts[pathParts.length - 1]; // "invoice"
+        parentPath = pathParts.slice(0, -1).join('/'); // "accounting"
+      } else {
+        actualResourceName = name;
+      }
+
+      const nameVariations = createNameVariations(actualResourceName);
       const results: ResourceResult = {};
       const generatedFiles: string[] = [];
       const errors: string[] = [];
@@ -283,7 +296,9 @@ export class ResourceGenerator {
 
         const moduleOptions: GenerationOptions = {
           ...options,
-          name: nameVariations.pascalCase,
+          name: isNestedResource
+            ? actualResourceName
+            : nameVariations.pascalCase,
           type: 'module',
           path: moduleBasePath,
           entities: generateEntity ? [nameVariations.pascalCase] : [],
@@ -294,7 +309,7 @@ export class ResourceGenerator {
         };
 
         results.module = await this.moduleGenerator.generate(
-          nameVariations.pascalCase,
+          isNestedResource ? actualResourceName : nameVariations.pascalCase,
           moduleOptions,
           moduleContext,
         );
@@ -339,35 +354,70 @@ export class ResourceGenerator {
       // 5. Update parent module or app.module.ts to import the generated module
       if (generateModule && results.module?.success) {
         try {
-          // Check for parent module info from either explicit modulePath or detected moduleBasePath
-          const modulePathForParent =
-            options.modulePath ||
-            this.extractModulePathFromBasePath(moduleBasePath);
-          const parentInfo = this.getParentModuleInfo(modulePathForParent);
-          if (parentInfo) {
-            // Create parent module if it doesn't exist and update it
-            await this.ensureParentModule(
-              parentInfo,
+          if (isNestedResource && parentPath) {
+            // For nested resources like "accounting/invoice", we need to handle parent-child relationship
+            const parentInfo = this.getParentModuleInfoForNestedResource(
+              parentPath,
               nameVariations.pascalCase,
               moduleBasePath,
             );
-            console.log(
-              `✅ Updated ${parentInfo.moduleName} with ${nameVariations.pascalCase}Module import`,
-            );
-            // Ensure parent module is imported in app.module.ts
-            await this.ensureParentInAppModule(parentInfo);
-            console.log(
-              `✅ Ensured ${parentInfo.moduleName} is imported in app.module.ts`,
-            );
+
+            if (parentInfo) {
+              // Create parent module if it doesn't exist and update it
+              await this.ensureParentModule(
+                parentInfo,
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated ${parentInfo.moduleName} with ${nameVariations.pascalCase}Module import`,
+              );
+              // Ensure parent module is imported in app.module.ts
+              await this.ensureParentInAppModule(parentInfo);
+              console.log(
+                `✅ Ensured ${parentInfo.moduleName} is imported in app.module.ts`,
+              );
+            } else {
+              // Fallback to direct app.module.ts import
+              await this.updateAppModule(
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated app.module.ts with ${nameVariations.pascalCase}Module import`,
+              );
+            }
           } else {
-            // No parent module, import directly in app.module.ts
-            await this.updateAppModule(
-              nameVariations.pascalCase,
-              moduleBasePath,
-            );
-            console.log(
-              `✅ Updated app.module.ts with ${nameVariations.pascalCase}Module import`,
-            );
+            // Check for parent module info from either explicit modulePath or detected moduleBasePath
+            const modulePathForParent =
+              options.modulePath ||
+              this.extractModulePathFromBasePath(moduleBasePath);
+            const parentInfo = this.getParentModuleInfo(modulePathForParent);
+            if (parentInfo) {
+              // Create parent module if it doesn't exist and update it
+              await this.ensureParentModule(
+                parentInfo,
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated ${parentInfo.moduleName} with ${nameVariations.pascalCase}Module import`,
+              );
+              // Ensure parent module is imported in app.module.ts
+              await this.ensureParentInAppModule(parentInfo);
+              console.log(
+                `✅ Ensured ${parentInfo.moduleName} is imported in app.module.ts`,
+              );
+            } else {
+              // No parent module, import directly in app.module.ts
+              await this.updateAppModule(
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated app.module.ts with ${nameVariations.pascalCase}Module import`,
+              );
+            }
           }
           allNextSteps = allNextSteps.filter(
             step => !step.includes('Import this module in your app.module.ts'),
@@ -412,9 +462,15 @@ export class ResourceGenerator {
     const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
 
     if (modulePath) {
-      // Explicit module path provided
+      // Explicit module path provided - handle nested paths like "accounting/invoice"
       const normalizedPath = modulePath.replace(/\\/g, '/');
       return path.join('src', moduleFolder, normalizedPath);
+    }
+
+    // Check if name contains '/' - treat as nested path
+    if (name.includes('/')) {
+      // For "accounting/invoice", use "accounting/invoice" as the path
+      return path.join('src', moduleFolder, name);
     }
 
     // Auto-detect module path from current directory
@@ -602,11 +658,17 @@ export class ResourceGenerator {
       errors.push('Resource name is required');
     }
 
-    // Validate resource name format
-    if (options.name && !/^[A-Za-z][A-Za-z0-9]*$/.test(options.name)) {
-      errors.push(
-        'Resource name must be a valid identifier (letters and numbers only, starting with a letter)',
-      );
+    // Validate resource name format (allow nested paths with "/")
+    if (options.name) {
+      const nameParts = options.name.split('/');
+      for (const part of nameParts) {
+        if (!/^[A-Za-z][A-Za-z0-9]*$/.test(part.trim())) {
+          errors.push(
+            'Resource name parts must be valid identifiers (letters and numbers only, starting with a letter)',
+          );
+          break;
+        }
+      }
     }
 
     // Validate module path if provided
@@ -836,6 +898,35 @@ export class ResourceGenerator {
       moduleClassName: `${parentVariations.pascalCase}Module`,
       moduleBasePath: path.join('src', 'modules', parentPath),
       childPath: pathParts[pathParts.length - 1], // "facturas"
+    };
+  }
+
+  /**
+   * Get parent module information for explicitly nested resources (like "accounting/invoice")
+   */
+  private getParentModuleInfoForNestedResource(
+    parentPath: string,
+    childModuleName: string,
+    childModuleBasePath: string,
+  ): {
+    moduleName: string;
+    moduleClassName: string;
+    moduleBasePath: string;
+    childPath: string;
+  } | null {
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
+    const parentVariations = createNameVariations(parentPath);
+
+    return {
+      moduleName: `${parentVariations.pascalCase}Module`,
+      moduleClassName: `${parentVariations.pascalCase}Module`,
+      moduleBasePath: path.join('src', moduleFolder, parentPath),
+      childPath: createNameVariations(childModuleName).kebabCase,
     };
   }
 
