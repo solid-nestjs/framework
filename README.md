@@ -395,7 +395,36 @@ export class CreateProductDto extends GenerateDtoFromEntity(Product, [
 
 For complete documentation, see [Entity-to-DTO Generation Guide](docs/DTO_GENERATION_FROM_ENTITIES.md).
 
-### 🚀 Try Complete Examples
+### 🛠️ CLI Tool for Rapid Development
+
+The SOLID NestJS Framework includes a powerful CLI tool (`snest-cli`) for rapid project and code generation:
+
+```bash
+# Install the CLI
+npm install -g @solid-nestjs/snest-cli
+
+# Create a new project
+snest new my-project --type hybrid --database postgres
+
+# Generate a complete CRUD resource
+snest generate resource Product --fields "name:string,price:number,category:string" --generate-find-args --generate-group-by
+
+# Interactive mode for guided generation
+snest generate --interactive
+```
+
+**CLI Features:**
+
+- ✅ **Project Scaffolding** - Create new projects with pre-configured dependencies
+- ✅ **Resource Generation** - Generate complete CRUD resources with SOLID decorators
+- ✅ **Advanced DTOs** - Optional FindArgs and GroupBy DTOs for complex querying
+- ✅ **Interactive Mode** - Guided generation with intelligent suggestions
+- ✅ **Multi-Database Support** - Pre-configured for PostgreSQL, MySQL, SQL Server, and SQLite
+- ✅ **Protocol Agnostic** - Same code works for REST API, GraphQL, and hybrid applications
+
+For complete CLI documentation, see [snest-cli README](packages-tools/snest-cli/README.md).
+
+### � Try Complete Examples
 
 Get started immediately with our working examples:
 
