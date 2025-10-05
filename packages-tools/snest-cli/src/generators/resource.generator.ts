@@ -1,0 +1,1460 @@
+import * as path from 'path';
+import {
+  GenerationOptions,
+  CommandResult,
+  ProjectContext,
+  FieldDefinition,
+} from '../types';
+import { createNameVariations, getSolidBundle } from '../utils/string-utils';
+import { EntityGenerator } from './entity.generator';
+import { ServiceGenerator } from './service.generator';
+import { ControllerGenerator } from './controller.generator';
+import { ResolverGenerator } from './resolver.generator';
+import { ModuleGenerator } from './module.generator';
+import { ModuleUpdater } from '../utils/module-updater';
+import { AstUtils } from '../utils/ast-utils';
+import { readSnestConfig } from '../utils/config-reader';
+import { TemplateEngine } from '../utils/template-engine';
+import { writeFile, ensureDirectory } from '../utils/file-utils';
+
+/**
+ * Resource generation result
+ */
+interface ResourceResult {
+  entity?: CommandResult;
+  service?: CommandResult;
+  controller?: CommandResult;
+  resolver?: CommandResult;
+  module?: CommandResult;
+}
+
+/**
+ * Generator for complete resources (entity + service + controller + module)
+ * Similar to NestJS CLI's "nest generate resource" but with SOLID framework features
+ */
+export class ResourceGenerator {
+  private entityGenerator: EntityGenerator;
+  private serviceGenerator: ServiceGenerator;
+  private controllerGenerator: ControllerGenerator;
+  private resolverGenerator: ResolverGenerator;
+  private moduleGenerator: ModuleGenerator;
+
+  constructor() {
+    this.entityGenerator = new EntityGenerator();
+    this.serviceGenerator = new ServiceGenerator();
+    this.controllerGenerator = new ControllerGenerator();
+    this.resolverGenerator = new ResolverGenerator();
+    this.moduleGenerator = new ModuleGenerator();
+  }
+
+  /**
+   * Generate a complete resource with all components
+   */
+  async generate(
+    name: string,
+    options: GenerationOptions,
+    context?: ProjectContext,
+  ): Promise<CommandResult> {
+    // Temporarily disable automatic module updating during resource generation
+    const originalSkipFlag = process.env.SKIP_MODULE_UPDATE;
+    process.env.SKIP_MODULE_UPDATE = 'true';
+
+    try {
+      // Handle nested resource names like "accounting/invoice"
+      const isNestedResource = name.includes('/');
+      let actualResourceName: string;
+      let parentPath: string | undefined;
+
+      if (isNestedResource) {
+        const pathParts = name.split('/');
+        actualResourceName = pathParts[pathParts.length - 1]; // "invoice"
+        parentPath = pathParts.slice(0, -1).join('/'); // "accounting"
+      } else {
+        actualResourceName = name;
+      }
+
+      const nameVariations = createNameVariations(actualResourceName);
+      const results: ResourceResult = {};
+      const generatedFiles: string[] = [];
+      const errors: string[] = [];
+      let allNextSteps: string[] = [];
+
+      // Determine what to generate
+      const generateEntity = options.skipEntity !== true;
+      const generateService = options.skipService !== true;
+      const generateController = options.skipController !== true;
+      const generateModule = options.generateModule !== false; // Default to true
+
+      // Check if we need to generate FindArgs and GroupBy
+      const generateFindArgs = options.generateFindArgs ?? false;
+      const generateGroupBy = options.generateGroupBy ?? false;
+
+      // Determine module path structure
+      const moduleBasePath = this.buildModulePath(name, options.modulePath);
+      const moduleContext = this.buildModuleContext(
+        context,
+        moduleBasePath,
+        options,
+      );
+
+      console.log(`\n🚀 Generating resource '${nameVariations.pascalCase}'...`);
+
+      // 1. Generate Entity
+      if (generateEntity) {
+        console.log(`📋 Generating entity '${nameVariations.pascalCase}'...`);
+        const entityOptions: GenerationOptions = {
+          ...options,
+          name: nameVariations.pascalCase,
+          type: 'entity',
+          path: path.join(moduleBasePath, 'entities'),
+          skipModuleUpdate: true, // We'll handle module updates at the resource level
+        };
+
+        results.entity = await this.entityGenerator.generate(
+          nameVariations.pascalCase,
+          entityOptions,
+          moduleContext,
+        );
+
+        if (results.entity.success) {
+          generatedFiles.push(...(results.entity.generatedFiles || []));
+          console.log(`✅ Entity '${nameVariations.pascalCase}' generated`);
+        } else {
+          errors.push(`Entity generation failed: ${results.entity.message}`);
+        }
+      }
+
+      // 2. Generate Service (depends on entity for DTOs)
+      if (generateService && (!generateEntity || results.entity?.success)) {
+        console.log(`⚙️ Generating service '${nameVariations.pascalCase}s'...`);
+        const serviceOptions: GenerationOptions = {
+          ...options,
+          name: `${nameVariations.pascalCase}s`,
+          entityName: nameVariations.pascalCase,
+          type: 'service',
+          path: path.join(moduleBasePath, 'services'),
+          skipModuleUpdate: true, // We'll handle module updates at the resource level
+          withArgsHelpers: generateFindArgs, // Enable args helpers if FindArgs are being generated
+          overwrite: options.overwrite,
+        };
+
+        results.service = await this.serviceGenerator.generate(
+          `${nameVariations.pascalCase}s`,
+          serviceOptions,
+          moduleContext,
+        );
+
+        if (results.service.success) {
+          generatedFiles.push(...(results.service.generatedFiles || []));
+          console.log(
+            `✅ Service '${nameVariations.pascalCase}sService' generated`,
+          );
+        } else {
+          errors.push(`Service generation failed: ${results.service.message}`);
+        }
+      }
+
+      // 3.5. Generate FindArgs DTO (optional, depends on service)
+      if (generateFindArgs && (!generateService || results.service?.success)) {
+        console.log(
+          `🔍 Generating FindArgs DTO for '${nameVariations.pascalCase}'...`,
+        );
+        try {
+          const findArgsResult = await this.generateFindArgsDTO(
+            nameVariations.pascalCase,
+            options.fields || [],
+            moduleBasePath,
+            moduleContext,
+          );
+          if (findArgsResult.success) {
+            generatedFiles.push(...(findArgsResult.generatedFiles || []));
+            console.log(
+              `✅ FindArgs DTO 'Find${nameVariations.pascalCase}Args' generated`,
+            );
+          } else {
+            errors.push(
+              `FindArgs DTO generation failed: ${findArgsResult.message}`,
+            );
+          }
+        } catch (error) {
+          errors.push(
+            `FindArgs DTO generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // 3.6. Generate GroupBy DTO (optional, depends on FindArgs)
+      if (
+        generateGroupBy &&
+        (!generateFindArgs || !errors.some(e => e.includes('FindArgs')))
+      ) {
+        console.log(
+          `📊 Generating GroupBy DTO for '${nameVariations.pascalCase}'...`,
+        );
+        try {
+          const groupByResult = await this.generateGroupByDTO(
+            nameVariations.pascalCase,
+            options.fields || [],
+            moduleBasePath,
+            moduleContext,
+          );
+          if (groupByResult.success) {
+            generatedFiles.push(...(groupByResult.generatedFiles || []));
+            console.log(
+              `✅ GroupBy DTO 'Grouped${nameVariations.pascalCase}Args' generated`,
+            );
+          } else {
+            errors.push(
+              `GroupBy DTO generation failed: ${groupByResult.message}`,
+            );
+          }
+        } catch (error) {
+          errors.push(
+            `GroupBy DTO generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // 3. Generate Controller/Resolver (depends on service)
+      if (
+        generateController &&
+        (!generateService || results.service?.success)
+      ) {
+        // Determine API type from context
+        const apiType = context?.apiType || 'rest';
+
+        if (apiType === 'hybrid') {
+          // Generate both REST controller and GraphQL resolver for hybrid projects
+          console.log(
+            `🎮 Generating REST controller '${nameVariations.pascalCase}s'...`,
+          );
+          const controllerOptions: GenerationOptions = {
+            ...options,
+            name: `${nameVariations.pascalCase}s`,
+            entityName: nameVariations.pascalCase,
+            serviceName: `${nameVariations.pascalCase}s`,
+            apiType: 'rest',
+            type: 'controller',
+            path: path.join(moduleBasePath, 'controllers'),
+            skipModuleUpdate: true, // We'll handle module updates at the resource level
+            generateGroupBy,
+          };
+
+          results.controller = await this.controllerGenerator.generate(
+            `${nameVariations.pascalCase}s`,
+            controllerOptions,
+            moduleContext,
+          );
+
+          if (results.controller.success) {
+            generatedFiles.push(...(results.controller.generatedFiles || []));
+            console.log(
+              `✅ REST Controller '${nameVariations.pascalCase}sController' generated`,
+            );
+          } else {
+            errors.push(
+              `REST Controller generation failed: ${results.controller.message}`,
+            );
+          }
+
+          // Generate GraphQL resolver
+          console.log(
+            `🔍 Generating GraphQL resolver '${nameVariations.pascalCase}s'...`,
+          );
+          const resolverOptions: GenerationOptions = {
+            ...options,
+            name: `${nameVariations.pascalCase}s`,
+            entityName: nameVariations.pascalCase,
+            serviceName: `${nameVariations.pascalCase}s`,
+            apiType: 'graphql',
+            type: 'resolver',
+            path: path.join(moduleBasePath, 'resolvers'),
+            skipModuleUpdate: true, // We'll handle module updates at the resource level
+            generateGroupBy,
+          };
+
+          results.resolver = await this.resolverGenerator.generate(
+            `${nameVariations.pascalCase}s`,
+            resolverOptions,
+            moduleContext,
+          );
+
+          if (results.resolver.success) {
+            generatedFiles.push(...(results.resolver.generatedFiles || []));
+            console.log(
+              `✅ GraphQL Resolver '${nameVariations.pascalCase}sResolver' generated`,
+            );
+          } else {
+            errors.push(
+              `GraphQL Resolver generation failed: ${results.resolver.message}`,
+            );
+          }
+        } else {
+          // Generate single controller for REST or GraphQL only projects
+          const componentType =
+            apiType === 'graphql' ? 'resolver' : 'controller';
+          const componentName =
+            apiType === 'graphql' ? 'resolver' : 'controller';
+
+          console.log(
+            `🎮 Generating ${componentName} '${nameVariations.pascalCase}s'...`,
+          );
+          const componentOptions: GenerationOptions = {
+            ...options,
+            name: `${nameVariations.pascalCase}s`,
+            entityName: nameVariations.pascalCase,
+            serviceName: `${nameVariations.pascalCase}s`,
+            apiType,
+            type: componentType as any,
+            path: path.join(
+              moduleBasePath,
+              apiType === 'graphql' ? 'resolvers' : 'controllers',
+            ),
+            skipModuleUpdate: true, // We'll handle module updates at the resource level
+          };
+
+          if (apiType === 'graphql') {
+            results.resolver = await this.resolverGenerator.generate(
+              `${nameVariations.pascalCase}s`,
+              componentOptions,
+              moduleContext,
+            );
+
+            if (results.resolver.success) {
+              generatedFiles.push(...(results.resolver.generatedFiles || []));
+              console.log(
+                `✅ GraphQL Resolver '${nameVariations.pascalCase}sResolver' generated`,
+              );
+            } else {
+              errors.push(
+                `GraphQL Resolver generation failed: ${results.resolver.message}`,
+              );
+            }
+          } else {
+            results.controller = await this.controllerGenerator.generate(
+              `${nameVariations.pascalCase}s`,
+              componentOptions,
+              moduleContext,
+            );
+
+            if (results.controller.success) {
+              generatedFiles.push(...(results.controller.generatedFiles || []));
+              console.log(
+                `✅ REST Controller '${nameVariations.pascalCase}sController' generated`,
+              );
+            } else {
+              errors.push(
+                `REST Controller generation failed: ${results.controller.message}`,
+              );
+            }
+          }
+        }
+      }
+
+      // 4. Generate Module (ties everything together)
+      if (generateModule && errors.length === 0) {
+        console.log(`📦 Generating module '${nameVariations.pascalCase}'...`);
+        // Determine what components to include in the module
+        const apiType = context?.apiType || 'rest';
+        let controllers: string[] = [];
+        let resolvers: string[] = [];
+
+        if (generateController) {
+          if (apiType === 'hybrid') {
+            controllers = [`${nameVariations.pascalCase}s`];
+            resolvers = [`${nameVariations.pascalCase}s`];
+          } else if (apiType === 'graphql') {
+            resolvers = [`${nameVariations.pascalCase}s`];
+          } else {
+            controllers = [`${nameVariations.pascalCase}s`];
+          }
+        }
+
+        const moduleOptions: GenerationOptions = {
+          ...options,
+          name: isNestedResource
+            ? actualResourceName
+            : nameVariations.pascalCase,
+          type: 'module',
+          path: moduleBasePath,
+          entities: generateEntity ? [nameVariations.pascalCase] : [],
+          services: generateService ? [`${nameVariations.pascalCase}s`] : [],
+          controllers,
+          resolvers,
+          withExports: false,
+        };
+
+        results.module = await this.moduleGenerator.generate(
+          isNestedResource ? actualResourceName : nameVariations.pascalCase,
+          moduleOptions,
+          moduleContext,
+        );
+
+        if (results.module.success) {
+          generatedFiles.push(...(results.module.generatedFiles || []));
+          console.log(
+            `✅ Module '${nameVariations.pascalCase}Module' generated`,
+          );
+        } else {
+          errors.push(`Module generation failed: ${results.module.message}`);
+        }
+      }
+
+      // Collect next steps
+      if (results.module?.nextSteps) {
+        allNextSteps.push(...results.module.nextSteps);
+      } else {
+        allNextSteps.push(
+          'Import the generated module in your app.module.ts or parent module',
+          'Verify database connection is configured properly',
+          'Test the generated API endpoints',
+        );
+      }
+
+      // Add module-specific next steps
+      if (generateModule && moduleBasePath !== 'src') {
+        allNextSteps.unshift(
+          `📦 Add module import: import { ${nameVariations.pascalCase}Module } from './${path.posix.relative('src', moduleBasePath)}/${nameVariations.kebabCase}.module';`,
+        );
+      }
+
+      if (errors.length > 0) {
+        return {
+          success: false,
+          message: `Resource generation partially failed: ${errors.join(', ')}`,
+          generatedFiles,
+          errors,
+        };
+      }
+
+      // 5. Update parent module or app.module.ts to import the generated module
+      if (generateModule && results.module?.success) {
+        try {
+          if (isNestedResource && parentPath) {
+            // For nested resources like "accounting/invoice", we need to handle parent-child relationship
+            const parentInfo = this.getParentModuleInfoForNestedResource(
+              parentPath,
+              nameVariations.pascalCase,
+              moduleBasePath,
+            );
+
+            if (parentInfo) {
+              // Create parent module if it doesn't exist and update it
+              await this.ensureParentModule(
+                parentInfo,
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated ${parentInfo.moduleName} with ${nameVariations.pascalCase}Module import`,
+              );
+              // Ensure parent module is imported in app.module.ts
+              await this.ensureParentInAppModule(parentInfo);
+              console.log(
+                `✅ Ensured ${parentInfo.moduleName} is imported in app.module.ts`,
+              );
+            } else {
+              // Fallback to direct app.module.ts import
+              await this.updateAppModule(
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated app.module.ts with ${nameVariations.pascalCase}Module import`,
+              );
+            }
+          } else {
+            // Check for parent module info from either explicit modulePath or detected moduleBasePath
+            const modulePathForParent =
+              options.modulePath ||
+              this.extractModulePathFromBasePath(moduleBasePath);
+            const parentInfo = this.getParentModuleInfo(modulePathForParent);
+            if (parentInfo) {
+              // Create parent module if it doesn't exist and update it
+              await this.ensureParentModule(
+                parentInfo,
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated ${parentInfo.moduleName} with ${nameVariations.pascalCase}Module import`,
+              );
+              // Ensure parent module is imported in app.module.ts
+              await this.ensureParentInAppModule(parentInfo);
+              console.log(
+                `✅ Ensured ${parentInfo.moduleName} is imported in app.module.ts`,
+              );
+            } else {
+              // No parent module, import directly in app.module.ts
+              await this.updateAppModule(
+                nameVariations.pascalCase,
+                moduleBasePath,
+              );
+              console.log(
+                `✅ Updated app.module.ts with ${nameVariations.pascalCase}Module import`,
+              );
+            }
+          }
+          allNextSteps = allNextSteps.filter(
+            step => !step.includes('Import this module in your app.module.ts'),
+          );
+        } catch (error) {
+          // Don't fail the generation if module update fails
+          console.log(
+            `⚠️ Could not auto-update modules: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      return {
+        success: true,
+        message: `Resource '${nameVariations.pascalCase}' generated successfully`,
+        generatedFiles,
+        nextSteps: allNextSteps,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to generate resource: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    } finally {
+      // Restore original SKIP_MODULE_UPDATE flag
+      if (originalSkipFlag !== undefined) {
+        process.env.SKIP_MODULE_UPDATE = originalSkipFlag;
+      } else {
+        delete process.env.SKIP_MODULE_UPDATE;
+      }
+    }
+  }
+
+  /**
+   * Build module path based on options or current directory context
+   */
+  private buildModulePath(name: string, modulePath?: string): string {
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
+    if (modulePath) {
+      // Explicit module path provided - handle nested paths like "accounting/invoice"
+      const normalizedPath = modulePath.replace(/\\/g, '/');
+      return path.join('src', moduleFolder, normalizedPath);
+    }
+
+    // Check if name contains '/' - treat as nested path
+    if (name.includes('/')) {
+      // For "accounting/invoice", use "accounting/invoice" as the path
+      return path.join('src', moduleFolder, name);
+    }
+
+    // Auto-detect module path from current directory
+    const autoDetectedPath = this.detectModulePathFromCurrentDirectory(name);
+    if (autoDetectedPath) {
+      const fullPath = path.join('src', moduleFolder, autoDetectedPath);
+      console.log(`🔍 Auto-detected module path: ${fullPath}`);
+      return fullPath;
+    }
+
+    // Default single module
+    const nameVariations = createNameVariations(name);
+    return path.join('src', moduleFolder, nameVariations.kebabCase);
+  }
+
+  /**
+   * Build project context from snest.config.json
+   */
+  private buildProjectContext(): ProjectContext | undefined {
+    const config = readSnestConfig();
+    if (!config?.project) {
+      return undefined;
+    }
+
+    const apiType = config.project.type as 'rest' | 'graphql' | 'hybrid';
+    const hasGraphQL = apiType === 'graphql' || apiType === 'hybrid';
+    const hasSwagger = apiType === 'rest' || apiType === 'hybrid';
+
+    return {
+      hasSolidNestjs: true,
+      solidVersion: '1.0.0',
+      hasGraphQL,
+      hasSwagger,
+      hasTypeORM: true,
+      databaseType: config.project.database,
+      existingEntities: [],
+      existingServices: [],
+      existingControllers: [],
+      existingModules: [],
+      hasSolidDecorators: true,
+      hasArgsHelpers: false,
+      hasEntityGeneration: true,
+      useSolidDecorators: true,
+      useGenerateDtoFromEntity: true,
+      projectRoot: this.findProjectRoot(process.cwd()) || process.cwd(),
+      packageJson: {},
+      apiType,
+    };
+  }
+
+  /**
+   * Build context for module-based generation
+   */
+  private buildModuleContext(
+    baseContext: ProjectContext | undefined,
+    moduleBasePath: string,
+    options: GenerationOptions,
+  ): ProjectContext {
+    const detectedProjectRoot =
+      this.findProjectRoot(process.cwd()) || process.cwd();
+
+    const defaultContext: ProjectContext = {
+      hasSolidNestjs: true,
+      solidVersion: '1.0.0',
+      hasGraphQL: false,
+      hasSwagger: true,
+      hasTypeORM: true,
+      databaseType: 'sqlite',
+      existingEntities: [],
+      existingServices: [],
+      existingControllers: [],
+      existingModules: [],
+      hasSolidDecorators: true,
+      hasArgsHelpers: false,
+      hasEntityGeneration: true,
+      useSolidDecorators: true,
+      useGenerateDtoFromEntity: true,
+      projectRoot: detectedProjectRoot,
+      packageJson: {},
+    };
+
+    return {
+      ...defaultContext,
+      ...baseContext,
+      isModularStructure: true,
+      moduleBasePath,
+      paths: {
+        entities: path.join(moduleBasePath, 'entities'),
+        services: path.join(moduleBasePath, 'services'),
+        controllers: path.join(moduleBasePath, 'controllers'),
+        modules: moduleBasePath,
+        dto: {
+          inputs: path.join(moduleBasePath, 'dto', 'inputs'),
+          args: path.join(moduleBasePath, 'dto', 'args'),
+        },
+      },
+    };
+  }
+
+  /**
+   * Generate resource from interactive input
+   */
+  async generateInteractive(): Promise<CommandResult> {
+    const inquirer = await import('inquirer');
+
+    const answers = await inquirer.default.prompt([
+      {
+        type: 'input',
+        name: 'name',
+        message: 'Resource name (singular, e.g., "Product", "User"):',
+        validate: (input: string) => {
+          if (!input.trim()) {
+            return 'Resource name is required';
+          }
+          return true;
+        },
+      },
+      {
+        type: 'input',
+        name: 'fields',
+        message:
+          'Entity fields (e.g., "name:string,price:number,active:boolean"):',
+        default: '',
+      },
+      {
+        type: 'confirm',
+        name: 'generateModule',
+        message: 'Generate as a separate module?',
+        default: true,
+      },
+      {
+        type: 'input',
+        name: 'modulePath',
+        message:
+          'Module path (e.g., "users/profile" for nested modules, leave empty for single module):',
+        default: '',
+        when: answers => answers.generateModule,
+      },
+      {
+        type: 'checkbox',
+        name: 'skip',
+        message: 'Skip generation of:',
+        choices: [
+          { name: 'Entity', value: 'entity' },
+          { name: 'Service', value: 'service' },
+          { name: 'Controller', value: 'controller' },
+        ],
+        default: [],
+      },
+      {
+        type: 'confirm',
+        name: 'generateFindArgs',
+        message: 'Generate FindArgs DTO for advanced querying?',
+        default: false,
+      },
+      {
+        type: 'confirm',
+        name: 'generateGroupBy',
+        message: 'Generate GroupBy DTO for aggregation queries?',
+        default: false,
+        when: answers => answers.generateFindArgs,
+      },
+      {
+        type: 'input',
+        name: 'path',
+        message: 'Custom output path (leave empty for default):',
+        default: '',
+        when: answers => !answers.generateModule,
+      },
+    ]);
+
+    const options: GenerationOptions = {
+      name: answers.name,
+      type: 'resource',
+      fields: answers.fields
+        ? answers.fields.split(',').map((f: string) => f.trim())
+        : [],
+      generateModule: answers.generateModule,
+      modulePath: answers.modulePath || undefined,
+      skipEntity: answers.skip.includes('entity'),
+      skipService: answers.skip.includes('service'),
+      skipController: answers.skip.includes('controller'),
+      generateFindArgs: answers.generateFindArgs,
+      generateGroupBy: answers.generateGroupBy,
+      path: answers.path || undefined,
+    };
+
+    // Read project context to determine API type
+    const projectContext = this.buildProjectContext();
+    return this.generate(answers.name, options, projectContext);
+  }
+
+  /**
+   * Validate resource generation options
+   */
+  validateOptions(options: GenerationOptions): string[] {
+    const errors: string[] = [];
+
+    if (!options.name || !options.name.trim()) {
+      errors.push('Resource name is required');
+    }
+
+    // Validate resource name format (allow nested paths with "/")
+    if (options.name) {
+      const nameParts = options.name.split('/');
+      for (const part of nameParts) {
+        if (!/^[A-Za-z][A-Za-z0-9]*$/.test(part.trim())) {
+          errors.push(
+            'Resource name parts must be valid identifiers (letters and numbers only, starting with a letter)',
+          );
+          break;
+        }
+      }
+    }
+
+    // Validate module path if provided
+    if (options.modulePath && !/^[A-Za-z0-9\-_/]+$/.test(options.modulePath)) {
+      errors.push(
+        'Module path must contain only letters, numbers, hyphens, underscores, and forward slashes',
+      );
+    }
+
+    return errors;
+  }
+
+  /**
+   * Quick resource generation with sensible defaults
+   */
+  async generateQuick(
+    name: string,
+    fields: string[] = [],
+    modulePath?: string,
+  ): Promise<CommandResult> {
+    const options: GenerationOptions = {
+      name,
+      type: 'resource',
+      fields,
+      generateModule: true,
+      modulePath,
+    };
+
+    return this.generate(name, options);
+  }
+
+  /**
+   * Update app.module.ts to import the generated module
+   */
+  private async updateAppModule(
+    moduleName: string,
+    moduleBasePath: string,
+  ): Promise<void> {
+    const fs = await import('fs-extra');
+
+    // Find the project root from current directory
+    const projectRoot = this.findProjectRoot(process.cwd());
+    if (!projectRoot) {
+      throw new Error(
+        'Could not find project root. Make sure you are in a NestJS project directory.',
+      );
+    }
+
+    const appModulePath = path.join(projectRoot, 'src', 'app.module.ts');
+
+    // Build relative import path from src to module
+    const srcDir = path.join(projectRoot, 'src');
+    const relativePath = path
+      .relative(srcDir, moduleBasePath)
+      .replace(/\\/g, '/');
+    const moduleFileName = createNameVariations(moduleName).kebabCase;
+    const importPath = `./${relativePath}/${moduleFileName}.module`;
+    const moduleClassName = `${moduleName}Module`;
+
+    // Parse the existing app.module.ts file
+    const sourceFile = AstUtils.parseFile(appModulePath);
+    if (!sourceFile) {
+      throw new Error(`Could not parse ${appModulePath}`);
+    }
+
+    // Add import statement
+    const moduleImport = {
+      name: moduleClassName,
+      path: importPath,
+    };
+
+    let updatedContent = AstUtils.addImport(sourceFile, moduleImport);
+
+    // Parse the updated content to add to imports array
+    const updatedSourceFile = AstUtils.parseFromContent(
+      updatedContent,
+      'app.module.ts',
+    );
+    if (!updatedSourceFile) {
+      throw new Error('Could not parse updated content');
+    }
+
+    // Add to imports array in @Module decorator
+    const moduleArrayItem = {
+      name: moduleClassName,
+      arrayType: 'imports' as const,
+    };
+
+    updatedContent = AstUtils.addModuleArrayItem(
+      updatedSourceFile,
+      moduleArrayItem,
+    );
+
+    // Write the updated content back to the file
+    AstUtils.writeFile(appModulePath, updatedContent);
+  }
+
+  /**
+   * Detect module path from current working directory
+   */
+  private detectModulePathFromCurrentDirectory(
+    resourceName: string,
+  ): string | null {
+    const currentDir = process.cwd();
+    const projectRoot = this.findProjectRoot(currentDir);
+
+    if (!projectRoot) {
+      return null; // Not in a project
+    }
+
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
+    // Get relative path from project root to current directory
+    const relativePath = path
+      .relative(projectRoot, currentDir)
+      .replace(/\\/g, '/');
+
+    // Check if we're inside src/[configuredFolder]/...
+    if (relativePath.startsWith(`src/${moduleFolder}/`)) {
+      // Extract the module path part
+      const modulePath = relativePath.replace(`src/${moduleFolder}/`, '');
+
+      if (modulePath) {
+        // We're inside a module directory
+        const nameVariations = createNameVariations(resourceName);
+
+        // Check if we're in a directory that matches the resource name (single module)
+        // or in a parent directory that should contain multiple submodules
+        if (
+          modulePath.toLowerCase() === nameVariations.kebabCase.toLowerCase()
+        ) {
+          // We're in a directory named exactly like the resource, use just the parent
+          return modulePath;
+        } else {
+          // We're in a parent directory, create nested path
+          const fullModulePath = `${modulePath}/${nameVariations.kebabCase}`;
+          return fullModulePath;
+        }
+      }
+    }
+
+    // Check if we're in project root and configured directory exists
+    if (relativePath === '' || relativePath === '.') {
+      const configuredDir = path.join(projectRoot, 'src', moduleFolder);
+      try {
+        const fs = require('fs');
+        if (fs.existsSync(configuredDir)) {
+          // We're in project root and configured folder exists, use default behavior
+          return null;
+        }
+      } catch {
+        // If fs check fails, continue with default behavior
+      }
+    }
+
+    return null; // No auto-detection possible
+  }
+
+  /**
+   * Find the project root by looking for package.json or nest-cli.json
+   */
+  private findProjectRoot(startPath: string): string | null {
+    let currentPath = startPath;
+    const fs = require('fs');
+
+    while (currentPath !== path.dirname(currentPath)) {
+      // Check for project markers
+      if (
+        fs.existsSync(path.join(currentPath, 'package.json')) ||
+        fs.existsSync(path.join(currentPath, 'nest-cli.json')) ||
+        fs.existsSync(path.join(currentPath, 'snest.config.json'))
+      ) {
+        return currentPath;
+      }
+
+      currentPath = path.dirname(currentPath);
+    }
+
+    return null; // No project root found
+  }
+
+  /**
+   * Extract module path from base path for parent module detection
+   */
+  private extractModulePathFromBasePath(
+    moduleBasePath: string,
+  ): string | undefined {
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
+    // Convert "src/features/ecommerce/products" to "ecommerce/products"
+    const normalizedPath = moduleBasePath.replace(/\\/g, '/');
+    const match = normalizedPath.match(
+      new RegExp(`^src\/${moduleFolder}\/(.+)$`),
+    );
+    return match ? match[1] : undefined;
+  }
+
+  /**
+   * Get parent module information from module path
+   */
+  private getParentModuleInfo(modulePath?: string): {
+    moduleName: string;
+    moduleClassName: string;
+    moduleBasePath: string;
+    childPath: string;
+  } | null {
+    if (!modulePath) return null;
+
+    const pathParts = modulePath.split('/').filter(p => p.length > 0);
+    if (pathParts.length < 2) return null; // No parent if only one level
+
+    // For "contabilidad/facturas" -> parent is "contabilidad"
+    const parentPath = pathParts.slice(0, -1).join('/');
+    const parentName = pathParts[pathParts.length - 2]; // "contabilidad"
+    const parentVariations = createNameVariations(parentName);
+
+    return {
+      moduleName: `${parentVariations.pascalCase}Module`,
+      moduleClassName: `${parentVariations.pascalCase}Module`,
+      moduleBasePath: path.join('src', 'modules', parentPath),
+      childPath: pathParts[pathParts.length - 1], // "facturas"
+    };
+  }
+
+  /**
+   * Get parent module information for explicitly nested resources (like "accounting/invoice")
+   */
+  private getParentModuleInfoForNestedResource(
+    parentPath: string,
+    childModuleName: string,
+    childModuleBasePath: string,
+  ): {
+    moduleName: string;
+    moduleClassName: string;
+    moduleBasePath: string;
+    childPath: string;
+  } | null {
+    // Read the configured module folder from snest.config.json
+    const config = readSnestConfig();
+    const configuredModulePath =
+      config?.generators?.defaultModulePath || 'src/modules';
+    const moduleFolder = path.basename(configuredModulePath); // Extract folder name from "src/features" -> "features"
+
+    const parentVariations = createNameVariations(parentPath);
+
+    return {
+      moduleName: `${parentVariations.pascalCase}Module`,
+      moduleClassName: `${parentVariations.pascalCase}Module`,
+      moduleBasePath: path.join('src', moduleFolder, parentPath),
+      childPath: createNameVariations(childModuleName).kebabCase,
+    };
+  }
+
+  /**
+   * Ensure parent module exists and update it with child module
+   */
+  private async ensureParentModule(
+    parentInfo: {
+      moduleName: string;
+      moduleClassName: string;
+      moduleBasePath: string;
+      childPath: string;
+    },
+    childModuleName: string,
+    childModuleBasePath: string,
+  ): Promise<void> {
+    const projectRoot = this.findProjectRoot(process.cwd());
+    if (!projectRoot) {
+      throw new Error(
+        'Could not find project root. Make sure you are in a NestJS project directory.',
+      );
+    }
+
+    const parentModulePath = path.join(
+      projectRoot,
+      parentInfo.moduleBasePath,
+      `${createNameVariations(parentInfo.moduleName.replace('Module', '')).kebabCase}.module.ts`,
+    );
+
+    // Check if parent module exists
+    const fs = await import('fs-extra');
+    if (!(await fs.pathExists(parentModulePath))) {
+      // Create parent module
+      await this.createParentModule(parentInfo, parentModulePath);
+      console.log(`✅ Created parent module ${parentInfo.moduleName}`);
+    }
+
+    // Update parent module to import child module
+    await this.updateParentModule(
+      parentModulePath,
+      childModuleName,
+      childModuleBasePath,
+      parentInfo.moduleBasePath,
+    );
+  }
+
+  /**
+   * Create parent module file
+   */
+  private async createParentModule(
+    parentInfo: {
+      moduleName: string;
+      moduleClassName: string;
+      moduleBasePath: string;
+      childPath: string;
+    },
+    parentModulePath: string,
+  ): Promise<void> {
+    const fs = await import('fs-extra');
+    const parentName = parentInfo.moduleName.replace('Module', '');
+
+    // Ensure directory exists
+    await fs.ensureDir(path.dirname(parentModulePath));
+
+    const content = `import { Module } from '@nestjs/common';
+
+/**
+ * ${parentName} Module
+ * 
+ * This module encapsulates all ${parentName.toLowerCase()}-related functionality
+ */
+@Module({
+  imports: [],
+  controllers: [],
+  providers: [],
+})
+export class ${parentInfo.moduleClassName} {}
+`;
+
+    await fs.writeFile(parentModulePath, content, 'utf-8');
+  }
+
+  /**
+   * Update parent module to import child module
+   */
+  private async updateParentModule(
+    parentModulePath: string,
+    childModuleName: string,
+    childModuleBasePath: string,
+    parentModuleBasePath: string,
+  ): Promise<void> {
+    // Build relative import path from parent to child
+    const relativePath = path
+      .relative(parentModuleBasePath, childModuleBasePath)
+      .replace(/\\/g, '/');
+    const childFileName = createNameVariations(childModuleName).kebabCase;
+    const importPath = `./${relativePath}/${childFileName}.module`;
+    const childModuleClassName = `${childModuleName}Module`;
+
+    // Parse the existing parent module file
+    const sourceFile = AstUtils.parseFile(parentModulePath);
+    if (!sourceFile) {
+      throw new Error(`Could not parse ${parentModulePath}`);
+    }
+
+    // Add import statement
+    const moduleImport = {
+      name: childModuleClassName,
+      path: importPath,
+    };
+
+    let updatedContent = AstUtils.addImport(sourceFile, moduleImport);
+
+    // Parse the updated content to add to imports array
+    const updatedSourceFile = AstUtils.parseFromContent(
+      updatedContent,
+      path.basename(parentModulePath),
+    );
+    if (!updatedSourceFile) {
+      throw new Error('Could not parse updated parent module content');
+    }
+
+    // Add to imports array in @Module decorator
+    const moduleArrayItem = {
+      name: childModuleClassName,
+      arrayType: 'imports' as const,
+    };
+
+    updatedContent = AstUtils.addModuleArrayItem(
+      updatedSourceFile,
+      moduleArrayItem,
+    );
+
+    // Write the updated content back to the file
+    AstUtils.writeFile(parentModulePath, updatedContent);
+  }
+
+  /**
+   * Ensure parent module is imported in app.module.ts
+   */
+  private async ensureParentInAppModule(parentInfo: {
+    moduleName: string;
+    moduleClassName: string;
+    moduleBasePath: string;
+    childPath: string;
+  }): Promise<void> {
+    const projectRoot = this.findProjectRoot(process.cwd());
+    if (!projectRoot) {
+      throw new Error(
+        'Could not find project root. Make sure you are in a NestJS project directory.',
+      );
+    }
+
+    const appModulePath = path.join(projectRoot, 'src', 'app.module.ts');
+
+    // Build relative import path from src to parent module
+    const srcDir = path.join(projectRoot, 'src');
+    const relativePath = path
+      .relative(srcDir, parentInfo.moduleBasePath)
+      .replace(/\\/g, '/');
+    const moduleFileName = createNameVariations(
+      parentInfo.moduleName.replace('Module', ''),
+    ).kebabCase;
+    const importPath = `./${relativePath}/${moduleFileName}.module`;
+
+    // Parse the existing app.module.ts file
+    const sourceFile = AstUtils.parseFile(appModulePath);
+    if (!sourceFile) {
+      throw new Error(`Could not parse ${appModulePath}`);
+    }
+
+    // Check if parent module is already imported
+    if (AstUtils.hasImport(sourceFile, parentInfo.moduleClassName)) {
+      return; // Already imported, nothing to do
+    }
+
+    // Add import statement
+    const moduleImport = {
+      name: parentInfo.moduleClassName,
+      path: importPath,
+    };
+
+    let updatedContent = AstUtils.addImport(sourceFile, moduleImport);
+
+    // Parse the updated content to add to imports array
+    const updatedSourceFile = AstUtils.parseFromContent(
+      updatedContent,
+      'app.module.ts',
+    );
+    if (!updatedSourceFile) {
+      throw new Error('Could not parse updated app module content');
+    }
+
+    // Add to imports array in @Module decorator
+    const moduleArrayItem = {
+      name: parentInfo.moduleClassName,
+      arrayType: 'imports' as const,
+    };
+
+    updatedContent = AstUtils.addModuleArrayItem(
+      updatedSourceFile,
+      moduleArrayItem,
+    );
+
+    // Write the updated content back to the file
+    AstUtils.writeFile(appModulePath, updatedContent);
+  }
+
+  /**
+   * Generate FindArgs DTO for a resource
+   */
+  private async generateFindArgsDTO(
+    entityName: string,
+    fields: string[] | FieldDefinition[],
+    moduleBasePath: string,
+    context?: ProjectContext,
+  ): Promise<CommandResult> {
+    try {
+      const templateEngine = new TemplateEngine();
+      const nameVariations = createNameVariations(entityName);
+
+      // Convert string fields to FieldDefinition format if needed
+      const entityFields = this.convertFieldsToFieldDefinitions(fields);
+
+      const templateData = TemplateEngine.createTemplateData(entityName, {
+        entityName: nameVariations.pascalCase,
+        solidBundle: getSolidBundle(context?.apiType),
+        fields: entityFields,
+      });
+
+      const dtoContent = await templateEngine.render(
+        'dto/args-dto',
+        templateData,
+      );
+
+      // Determine output path
+      const dtoArgsPath =
+        typeof context?.paths?.dto === 'string'
+          ? path.join(context.paths.dto, 'args')
+          : context?.paths?.dto?.args ||
+            path.join(moduleBasePath, 'dto', 'args');
+
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(
+        projectRoot,
+        dtoArgsPath,
+        `find-${nameVariations.kebabCase}-args.dto.ts`,
+      );
+
+      // Ensure directory exists
+      await ensureDirectory(path.dirname(outputPath));
+
+      const result = await writeFile(outputPath, dtoContent);
+      if (!result.success) {
+        return {
+          success: false,
+          message: `Failed to create FindArgs DTO: ${result.error}`,
+        };
+      }
+
+      return {
+        success: true,
+        message: `FindArgs DTO generated successfully`,
+        generatedFiles: [result.path],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to generate FindArgs DTO: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * Generate GroupBy DTO for a resource
+   */
+  private async generateGroupByDTO(
+    entityName: string,
+    fields: string[] | FieldDefinition[],
+    moduleBasePath: string,
+    context?: ProjectContext,
+  ): Promise<CommandResult> {
+    try {
+      const templateEngine = new TemplateEngine();
+      const nameVariations = createNameVariations(entityName);
+
+      // Convert string fields to FieldDefinition format if needed
+      const entityFields = this.convertFieldsToFieldDefinitions(fields);
+
+      const templateData = TemplateEngine.createTemplateData(entityName, {
+        entityName: nameVariations.pascalCase,
+        solidBundle: getSolidBundle(context?.apiType),
+        fields: entityFields,
+      });
+
+      const dtoContent = await templateEngine.render(
+        'dto/groupby-dto',
+        templateData,
+      );
+
+      // Determine output path
+      const dtoArgsPath =
+        typeof context?.paths?.dto === 'string'
+          ? path.join(context.paths.dto, 'args')
+          : context?.paths?.dto?.args ||
+            path.join(moduleBasePath, 'dto', 'args');
+
+      const projectRoot = context?.projectRoot || process.cwd();
+      const outputPath = path.join(
+        projectRoot,
+        dtoArgsPath,
+        `grouped-${nameVariations.kebabCase}-args.dto.ts`,
+      );
+
+      // Ensure directory exists
+      await ensureDirectory(path.dirname(outputPath));
+
+      const result = await writeFile(outputPath, dtoContent);
+      if (!result.success) {
+        return {
+          success: false,
+          message: `Failed to create GroupBy DTO: ${result.error}`,
+        };
+      }
+
+      return {
+        success: true,
+        message: `GroupBy DTO generated successfully`,
+        generatedFiles: [result.path],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to generate GroupBy DTO: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * Get entity fields for DTO generation
+   */
+  private getEntityFields(
+    entityName: string,
+    context?: ProjectContext,
+  ): FieldDefinition[] {
+    // Try to get fields from context if available
+    if (context?.existingEntities) {
+      // This would need more complex logic to extract fields from actual entity files
+      // For now, return basic defaults
+    }
+
+    // Return basic fields based on entity name patterns
+    const entityLower = entityName.toLowerCase();
+    const commonFields: FieldDefinition[] = [];
+
+    if (entityLower.includes('user')) {
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'email', type: 'string', required: true, nullable: false },
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    } else if (entityLower.includes('product')) {
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'price', type: 'number', required: true, nullable: false },
+        { name: 'category', type: 'string', required: true, nullable: false },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    } else if (
+      entityLower.includes('client') ||
+      entityLower.includes('customer')
+    ) {
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'firstName', type: 'string', required: true, nullable: false },
+        { name: 'lastName', type: 'string', required: true, nullable: false },
+        { name: 'email', type: 'string', required: true, nullable: false },
+        { name: 'phone', type: 'string', required: false, nullable: true },
+        { name: 'city', type: 'string', required: false, nullable: true },
+        { name: 'country', type: 'string', required: false, nullable: true },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    } else {
+      // Default fields for unknown entities
+      commonFields.push(
+        { name: 'id', type: 'string', required: true, nullable: false },
+        { name: 'name', type: 'string', required: true, nullable: false },
+        { name: 'createdAt', type: 'Date', required: false, nullable: true },
+        { name: 'updatedAt', type: 'Date', required: false, nullable: true },
+      );
+    }
+
+    return commonFields;
+  }
+
+  /**
+   * Convert string fields or FieldDefinition array to FieldDefinition array
+   */
+  private convertFieldsToFieldDefinitions(
+    fields: string[] | FieldDefinition[],
+  ): FieldDefinition[] {
+    if (!fields || fields.length === 0) {
+      return [];
+    }
+
+    // If already FieldDefinition array, return as is
+    if (typeof fields[0] === 'object' && 'name' in fields[0]) {
+      return fields as FieldDefinition[];
+    }
+
+    // Convert string array to FieldDefinition array
+    const stringFields = fields as string[];
+    return stringFields.map(field => {
+      // Parse field format: "name:type" or "name:type:required"
+      const parts = field.split(':');
+      const name = parts[0].trim();
+      const type = (parts[1] || 'string').trim() as
+        | 'string'
+        | 'number'
+        | 'boolean'
+        | 'Date'
+        | 'relation';
+      const required = parts[2]
+        ? parts[2].trim().toLowerCase() === 'true'
+        : true;
+
+      return {
+        name,
+        type,
+        required,
+        nullable: !required,
+      };
+    });
+  }
+}

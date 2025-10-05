@@ -1,0 +1,79 @@
+import { Controller } from '@nestjs/common';
+import { CrudControllerFrom, CrudControllerStructure } from '{{solidBundle}}';
+{{#if hasArgsHelpers}}
+import { Context } from '{{solidBundle}}';
+{{/if}}
+import { {{pascalCase name}}Service, {{camelCase name}}ServiceStructure } from '../services/{{kebabCase name}}.service';
+import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
+{{#if hasGroupBy}}
+import { Grouped{{pascalCase entityName}}Args } from '../dto/args/grouped-{{kebabCase entityName}}-args.dto';
+{{/if}}
+{{#if withGuards}}
+{{#each guards}}
+import { {{this.name}} } from '{{this.path}}';
+{{/each}}
+{{/if}}
+
+/**
+ * Controller structure configuration for {{pascalCase name}}
+ */
+export const {{camelCase name}}ControllerStructure = CrudControllerStructure({
+  ...{{camelCase name}}ServiceStructure,
+  serviceType: {{pascalCase name}}Service,
+  {{#if hasGroupBy}}
+  groupByArgsType: Grouped{{pascalCase entityName}}Args,
+  {{/if}}
+  operations: {
+    {{#each operations}}
+    {{this.name}}: {{#if this.enabled}}{{#if this.config}}{{json this.config}}{{else}}true{{/if}}{{else}}false{{/if}},
+    {{/each}}
+  },
+  {{#if customEndpoints}}
+  customEndpoints: {
+    {{#each customEndpoints}}
+    {{this.name}}: {
+      method: '{{this.method}}',
+      path: '{{this.path}}',
+      {{#if this.decorators}}
+      decorators: [{{#each this.decorators}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}],
+      {{/if}}
+    },
+    {{/each}}
+  },
+  {{/if}}
+});
+
+/**
+ * REST Controller for {{pascalCase name}} entities
+ * 
+ * This controller extends the SOLID framework's CrudController with automatic REST endpoints.
+ * It provides type-safe CRUD operations for {{pascalCase entityName}} entities.
+ * 
+ * Available endpoints:
+{{#each operations}}
+ * - {{#if (eq this.name "findAll")}}GET /{{pluralize (kebabCase entityName)}}{{/if}}{{#if (eq this.name "findOne")}}GET /{{pluralize (kebabCase entityName)}}/:id{{/if}}{{#if (eq this.name "create")}}POST /{{pluralize (kebabCase entityName)}}{{/if}}{{#if (eq this.name "update")}}PATCH /{{pluralize (kebabCase entityName)}}/:id{{/if}}{{#if (eq this.name "remove")}}DELETE /{{pluralize (kebabCase entityName)}}/:id{{/if}}{{#if (eq this.name "bulkCreate")}}POST /{{pluralize (kebabCase entityName)}}/bulk{{/if}}{{#if (eq this.name "bulkUpdate")}}PATCH /{{pluralize (kebabCase entityName)}}/bulk{{/if}}{{#if (eq this.name "bulkRemove")}}DELETE /{{pluralize (kebabCase entityName)}}/bulk{{/if}}{{#if (eq this.name "recover")}}POST /{{pluralize (kebabCase entityName)}}/:id/recover{{/if}}{{#if (eq this.name "hardRemove")}}DELETE /{{pluralize (kebabCase entityName)}}/:id/hard{{/if}} - {{this.name}}
+{{/each}}
+ */
+@Controller('{{pluralize (kebabCase entityName)}}')
+export class {{pascalCase name}}Controller extends CrudControllerFrom({{camelCase name}}ControllerStructure) {
+  {{#if hasCustomEndpoints}}
+  {{#each customEndpoints}}
+
+  /**
+   * {{this.description}}
+   */
+  {{#if this.swagger}}
+  {{#each this.swagger}}
+  @{{this.decorator}}({{#if this.config}}{{json this.config}}{{/if}})
+  {{/each}}
+  {{/if}}
+  {{#each this.decorators}}
+  @{{this}}
+  {{/each}}
+  async {{this.name}}({{#each this.parameters}}{{this.name}}: {{this.type}}{{#unless @last}}, {{/unless}}{{/each}}): Promise<{{this.returnType}}> {
+    // TODO: Implement custom endpoint logic
+    throw new Error('Method not implemented.');
+  }
+  {{/each}}
+  {{/if}}
+}

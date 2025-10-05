@@ -1,0 +1,63 @@
+import { Injectable } from '@nestjs/common';
+import { CrudServiceFrom, CrudServiceStructure } from '{{solidBundle}}';
+{{#if hasArgsHelpers}}
+import { Context } from '{{solidBundle}}';
+{{/if}}
+import { {{pascalCase entityName}} } from '../entities/{{kebabCase entityName}}.entity';
+{{#if hasCreateDto}}
+import { Create{{pascalCase entityName}}Dto } from '../dto/inputs/create-{{kebabCase entityName}}.dto';
+{{/if}}
+{{#if hasUpdateDto}}
+import { Update{{pascalCase entityName}}Dto } from '../dto/inputs/update-{{kebabCase entityName}}.dto';
+{{/if}}
+{{#if hasFindArgs}}
+import { Find{{pascalCase entityName}}Args } from '../dto/args/find-{{kebabCase entityName}}-args.dto';
+{{/if}}
+
+/**
+ * Service structure configuration for {{pascalCase name}}
+ */
+export const {{camelCase name}}ServiceStructure = CrudServiceStructure({
+  entityType: {{pascalCase entityName}},
+  {{#if hasCreateDto}}
+  createInputType: Create{{pascalCase entityName}}Dto,
+  {{/if}}
+  {{#if hasUpdateDto}}
+  updateInputType: Update{{pascalCase entityName}}Dto,
+  {{/if}}
+  {{#if hasFindArgs}}
+  findArgsType: Find{{pascalCase entityName}}Args,
+  {{/if}}
+  {{#if hasRelations}}
+  relationsConfig: {
+    relations: {
+      {{#each relations}}
+      {{this.name}}: {{this.eager}},
+      {{/each}}
+    },
+  },
+  {{/if}}
+});
+
+/**
+ * Service for {{pascalCase name}} entity operations
+ * 
+ * This service extends the SOLID framework's CrudService with automatic CRUD operations.
+ * It provides type-safe CRUD operations for {{pascalCase entityName}} entities.
+ */
+@Injectable()
+export class {{pascalCase name}}Service extends CrudServiceFrom({{camelCase name}}ServiceStructure) {
+  // Custom business logic methods can be added here
+  {{#if hasCustomMethods}}
+  {{#each customMethods}}
+
+  /**
+   * {{this.description}}
+   */
+  async {{this.name}}({{#each this.parameters}}{{this.name}}: {{this.type}}{{#unless @last}}, {{/unless}}{{/each}}): Promise<{{this.returnType}}> {
+    // TODO: Implement custom logic
+    throw new Error('Method not implemented.');
+  }
+  {{/each}}
+  {{/if}}
+}

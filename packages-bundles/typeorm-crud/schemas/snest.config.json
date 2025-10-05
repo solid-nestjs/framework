@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SNEST Configuration Schema",
+  "description": "Configuration schema for SOLID NestJS CLI tool",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration version",
+      "enum": ["1.0"]
+    },
+    "project": {
+      "type": "object",
+      "description": "Project configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "API type",
+          "enum": ["rest", "graphql", "hybrid"]
+        },
+        "database": {
+          "type": "string",
+          "description": "Database type",
+          "enum": ["sqlite", "postgres", "mysql", "mssql"]
+        },
+        "features": {
+          "type": "object",
+          "description": "Project features",
+          "properties": {
+            "hasSwagger": {
+              "type": "boolean",
+              "description": "Whether the project has Swagger documentation"
+            },
+            "hasGraphQL": {
+              "type": "boolean",
+              "description": "Whether the project has GraphQL API"
+            },
+            "hasTypeORM": {
+              "type": "boolean",
+              "description": "Whether the project uses TypeORM"
+            }
+          },
+          "additionalProperties": false
+        },
+        "bundle": {
+          "type": "string",
+          "description": "SOLID NestJS bundle to use",
+          "enum": [
+            "@solid-nestjs/typeorm-crud",
+            "@solid-nestjs/typeorm-graphql-crud",
+            "@solid-nestjs/typeorm-hybrid-crud"
+          ]
+        }
+      },
+      "required": ["type", "database", "features", "bundle"],
+      "additionalProperties": false
+    },
+    "generators": {
+      "type": "object",
+      "description": "Code generation configuration",
+      "properties": {
+        "defaultModulePath": {
+          "type": "string",
+          "description": "Default path for generated modules",
+          "pattern": "^src/[a-zA-Z][a-zA-Z0-9_-]*$"
+        },
+        "autoUpdateModules": {
+          "type": "boolean",
+          "description": "Whether to automatically update module imports"
+        }
+      },
+      "required": ["defaultModulePath", "autoUpdateModules"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["version", "project", "generators"],
+  "additionalProperties": false
+}
