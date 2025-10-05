@@ -150,6 +150,20 @@ export class NewCommand extends BaseCommand {
         generatedFiles.push(gitignoreResult.path);
       }
 
+      // Generate docker-compose.yml for non-SQLite databases
+      if (options.database !== 'sqlite') {
+        const dockerComposeContent = this.generateDockerCompose(
+          options.database,
+        );
+        const dockerComposeResult = await writeFile(
+          path.join(projectPath, 'docker-compose.yml'),
+          dockerComposeContent,
+        );
+        if (dockerComposeResult.success) {
+          generatedFiles.push(dockerComposeResult.path);
+        }
+      }
+
       // Create src directory structure
       await this.createSrcStructure(
         projectPath,
@@ -428,7 +442,7 @@ export class NewCommand extends BaseCommand {
           'DB_TYPE=mysql',
           'DB_HOST=localhost',
           'DB_PORT=3306',
-          'DB_USERNAME=root',
+          'DB_USERNAME=mysqluser',
           'DB_PASSWORD=password',
           'DB_DATABASE=solid_nestjs_dev',
         );
@@ -516,10 +530,200 @@ coverage
 # Database
 *.sqlite
 *.db
+database/
 
 # Backup files
 *.backup.*
 `;
+  }
+
+  private generateDockerCompose(database: string): string {
+    const services: Record<string, any> = {};
+
+    switch (database) {
+      case 'postgres':
+        services.postgres = {
+          image: 'postgres:15-alpine',
+          container_name: 'solid-nestjs-postgres',
+          restart: 'unless-stopped',
+          environment: {
+            POSTGRES_USER: '${DB_USERNAME}',
+            POSTGRES_PASSWORD: '${DB_PASSWORD}',
+            POSTGRES_DB: '${DB_DATABASE}',
+          },
+          ports: ['${DB_PORT}:5432'],
+          volumes: ['./database/postgres:/var/lib/postgresql/data'],
+          healthcheck: {
+            test: [
+              'CMD-SHELL',
+              'pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}',
+            ],
+            interval: '10s',
+            timeout: '5s',
+            retries: 5,
+          },
+        };
+        break;
+
+      case 'mysql':
+        services.mysql = {
+          image: 'mysql:8.0',
+          container_name: 'solid-nestjs-mysql',
+          restart: 'unless-stopped',
+          environment: {
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}',
+            MYSQL_DATABASE: '${DB_DATABASE}',
+            MYSQL_USER: '${DB_USERNAME}',
+            MYSQL_PASSWORD: '${DB_PASSWORD}',
+          },
+          ports: ['${DB_PORT}:3306'],
+          volumes: ['./database/mysql:/var/lib/mysql'],
+          command: '--default-authentication-plugin=mysql_native_password',
+          healthcheck: {
+            test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost'],
+            interval: '10s',
+            timeout: '5s',
+            retries: 5,
+          },
+        };
+        break;
+
+      case 'mssql':
+        services.mssql = {
+          image: 'mcr.microsoft.com/mssql/server:2019-latest',
+          container_name: 'solid-nestjs-mssql',
+          restart: 'unless-stopped',
+          environment: {
+            ACCEPT_EULA: 'Y',
+            MSSQL_SA_PASSWORD: '${DB_PASSWORD}',
+            MSSQL_PID: 'Express',
+            MSSQL_DATABASE: '${DB_DATABASE}',
+          },
+          ports: ['${DB_PORT}:1433'],
+          volumes: ['./database/mssql:/var/opt/mssql'],
+          healthcheck: {
+            test: [
+              'CMD-SHELL',
+              '/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${DB_PASSWORD} -d ${DB_DATABASE} -Q "SELECT 1"',
+            ],
+            interval: '10s',
+            timeout: '5s',
+            retries: 5,
+          },
+        };
+        break;
+    }
+
+    const dockerCompose = {
+      version: '3.8',
+      services,
+    };
+
+    return `version: '3.8'
+
+services:
+${
+  database === 'postgres'
+    ? `  postgres:
+    image: postgres:15-alpine
+    container_name: solid-nestjs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: \${DB_USERNAME}
+      POSTGRES_PASSWORD: \${DB_PASSWORD}
+      POSTGRES_DB: \${DB_DATABASE}
+    ports:
+      - \${DB_PORT}:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \${DB_USERNAME} -d \${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5`
+    : database === 'mysql'
+      ? `  mysql:
+    image: mysql:8.0
+    container_name: solid-nestjs-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: \${DB_PASSWORD}
+      MYSQL_DATABASE: \${DB_DATABASE}
+      MYSQL_USER: \${DB_USERNAME}
+      MYSQL_PASSWORD: \${DB_PASSWORD}
+    ports:
+      - \${DB_PORT}:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5`
+      : `  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql_server
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=\${DB_PASSWORD}
+      - MSSQL_PID=Developer
+      - DB_DATABASE=\${DB_DATABASE}
+    ports:
+      - "\${DB_PORT}:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        /opt/mssql/bin/sqlservr &
+        pid=\$!
+        echo "Waiting for SQL Server to be ready..."
+        sleep 30
+
+        echo "Checking and creating database: \$\$DB_DATABASE"
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "\$\$SA_PASSWORD" -C -Q "
+        IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '\$\$DB_DATABASE')
+        BEGIN
+            CREATE DATABASE [\$\$DB_DATABASE];
+            PRINT 'Database \$\$DB_DATABASE created successfully';
+        END
+        ELSE
+        BEGIN
+            PRINT 'Database \$\$DB_DATABASE already exists';
+        END
+        " || echo "Error creating database"
+
+        echo "Initialization completed"
+        wait \$pid
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \${DB_PASSWORD} -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s`
+}${
+      database === 'postgres'
+        ? `
+
+volumes:
+  postgres_data:
+    driver: local`
+        : database === 'mysql'
+          ? `
+
+volumes:
+  mysql_data:
+    driver: local`
+          : database === 'mssql'
+            ? `
+
+volumes:
+  mssql_data:
+    driver: local`
+            : ''
+    }`;
   }
 
   private async createSrcStructure(
@@ -862,14 +1066,42 @@ This project was generated using the SOLID NestJS CLI. It includes:
 
 ${options.type === 'rest' || options.type === 'hybrid' ? '- REST API with Swagger documentation\n' : ''}${options.type === 'graphql' || options.type === 'hybrid' ? '- GraphQL API with playground\n' : ''}- TypeORM integration with ${options.database.toUpperCase()}
 - SOLID decorators for reduced boilerplate
-- Automatic CRUD generation capabilities
+- Automatic CRUD generation capabilities${options.database !== 'sqlite' ? '\n- Docker setup for database' : ''}
 
 ## Installation
 
 \`\`\`bash
 $ npm install
 \`\`\`
+${
+  options.database !== 'sqlite'
+    ? `
+## Database Setup
 
+This project includes a Docker Compose setup for your ${options.database.toUpperCase()} database.
+
+### Using Docker
+
+1. Copy the environment file:
+\`\`\`bash
+$ cp .env.example .env
+\`\`\`
+
+2. Configure your database settings in \`.env\` (the defaults should work for Docker)
+
+3. Start the database:
+\`\`\`bash
+$ docker-compose up -d
+\`\`\`
+
+4. The database will be available with persistent storage in the \`./database\` folder.
+
+### Manual Database Setup
+
+If you prefer to set up the database manually, update the connection settings in \`.env\` and ensure your database server is running.
+`
+    : ''
+}
 ## Running the app
 
 \`\`\`bash
@@ -995,23 +1227,20 @@ This project is [MIT licensed](LICENSE).
     console.log('\n' + chalk.bold('Next steps:'));
     console.log(chalk.gray('  1.'), `cd ${projectName}`);
 
-    if (!options.skipInstall && !options.skipGit) {
-      console.log(chalk.gray('  2.'), 'cp .env.example .env');
-      console.log(chalk.gray('  3.'), 'Configure your database in .env');
-      console.log(chalk.gray('  4.'), 'npm run start:dev');
-    } else {
-      let step = 2;
-      if (options.skipInstall) {
-        console.log(
-          chalk.gray(`  ${step++}.`),
-          `${options.packageManager} install`,
-        );
-      }
-      console.log(chalk.gray(`  ${step++}.`), 'cp .env.example .env');
+    let step = 2;
+    if (options.skipInstall) {
       console.log(
         chalk.gray(`  ${step++}.`),
-        'Configure your database in .env',
+        `${options.packageManager} install`,
       );
+    }
+
+    if (options.database !== 'sqlite') {
+      console.log(chalk.gray(`  ${step++}.`), 'cp .env.example .env');
+      console.log(chalk.gray(`  ${step++}.`), 'docker-compose up -d');
+      console.log(chalk.gray(`  ${step++}.`), 'npm run start:dev');
+    } else {
+      console.log(chalk.gray(`  ${step++}.`), 'cp .env.example .env');
       console.log(chalk.gray(`  ${step++}.`), 'npm run start:dev');
     }
 

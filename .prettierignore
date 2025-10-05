@@ -8,6 +8,8 @@ build/
 **/dist/
 **/build/
 
+*.yml
+
 # Compiled files
 *.d.ts
 *.js.map
