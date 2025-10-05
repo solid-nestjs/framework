@@ -8,9 +8,14 @@ build/
 **/dist/
 **/build/
 
+*.yml
+
 # Compiled files
 *.d.ts
 *.js.map
+
+# cli tool templates
+*.hbs
 
 # Database files
 *.sqlite

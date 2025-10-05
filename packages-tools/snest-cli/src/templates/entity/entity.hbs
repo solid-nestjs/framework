@@ -1,0 +1,39 @@
+import { SolidEntity, SolidId, SolidField{{#if withTimestamps}}, SolidCreatedAt, SolidUpdatedAt{{/if}}{{#if withSoftDelete}}, SolidDeletedAt{{/if}} } from '{{solidBundle}}';
+{{#if hasRelations}}
+import { SolidOneToMany, SolidManyToOne, SolidOneToOne, SolidManyToMany } from '{{solidBundle}}';
+{{/if}}
+{{#each relationImports}}
+import { {{this.className}} } from '{{this.path}}';
+{{/each}}
+
+@SolidEntity()
+export class {{pascalCase name}} {
+  @SolidId()
+  id: number;
+
+{{#each fields}}
+{{#unless (or (eq this.name "createdAt") (eq this.name "updatedAt"))}}
+  {{#if this.isRelation}}
+  @Solid{{pascalCase this.relationType}}(() => {{pascalCase this.relationTarget}}{{#if this.relationOptions}}, {{jsonOptions this.relationOptions}}{{/if}})
+  {{this.name}}{{#unless this.required}}?{{/unless}}: {{#if (eq this.relationType "oneToMany")}}{{pascalCase this.relationTarget}}[]{{else}}{{pascalCase this.relationTarget}}{{/if}};
+
+  {{else}}
+  @SolidField({{#if this.options}}{{jsonOptions this.options}}{{/if}})
+  {{this.name}}{{#unless this.required}}?{{/unless}}: {{typeScriptType this.type}};
+
+  {{/if}}
+{{/unless}}
+{{/each}}
+{{#if withSoftDelete}}
+  @SolidDeletedAt()
+  deletedAt?: Date;
+{{/if}}
+
+{{#if withTimestamps}}
+  @SolidCreatedAt()
+  createdAt: Date;
+
+  @SolidUpdatedAt()
+  updatedAt: Date;
+{{/if}}
+}

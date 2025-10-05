@@ -3,6 +3,7 @@
   "workspaces": [
     "packages-core/*",
     "packages-bundles/*",
+    "packages-tools/*",
     "apps-examples/*"
   ],
   "scripts": {

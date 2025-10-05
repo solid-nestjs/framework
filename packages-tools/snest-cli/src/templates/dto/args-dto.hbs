@@ -1,0 +1,44 @@
+import { ArgsType } from '@nestjs/graphql';
+import {
+  FindArgsFrom,
+  createWhereFields,
+  createOrderByFields,
+} from '{{solidBundle}}';
+import { {{pascalCase entityName}} } from '../../entities/{{kebabCase entityName}}.entity';
+
+// Generated WHERE fields using helper - auto-infers filters for entity fields
+const {{pascalCase entityName}}Where = createWhereFields({{pascalCase entityName}}, {
+  {{#each fields}}
+  {{#if (eq type "string")}}
+  {{name}}: true, // Auto-infers StringFilter + applies all decorators
+  {{/if}}
+  {{#if (eq type "number")}}
+  {{name}}: true, // Auto-infers NumberFilter + applies all decorators
+  {{/if}}
+  {{#if (eq type "boolean")}}
+  {{name}}: true, // Auto-infers BooleanFilter + applies all decorators
+  {{/if}}
+  {{#if (eq type "Date")}}
+  {{name}}: true, // Auto-infers DateFilter + applies all decorators
+  {{/if}}
+  {{/each}}
+}, {
+  name: '{{pascalCase entityName}}Where',
+  description: 'WHERE conditions for {{pascalCase entityName}} queries'
+});
+
+// Generated ORDER BY fields using helper - auto-infers OrderByTypes enum
+const {{pascalCase entityName}}OrderBy = createOrderByFields({{pascalCase entityName}}, {
+  {{#each fields}}
+  {{name}}: true, // Enables ordering + applies all decorators
+  {{/each}}
+}, {
+  name: '{{pascalCase entityName}}OrderBy',
+  description: 'ORDER BY options for {{pascalCase entityName}} queries'
+});
+
+@ArgsType()
+export class Find{{pascalCase entityName}}Args extends FindArgsFrom<{{pascalCase entityName}}>({
+  whereType: {{pascalCase entityName}}Where,
+  orderByType: {{pascalCase entityName}}OrderBy,
+}) {}

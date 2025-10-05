@@ -1,0 +1,37 @@
+import { ArgsType } from '@nestjs/graphql';
+import { GroupByArgsFrom, createGroupByFields } from '{{solidBundle}}';
+import { Find{{pascalCase entityName}}Args } from './find-{{kebabCase entityName}}-args.dto';
+import { {{pascalCase entityName}} } from '../../entities/{{kebabCase entityName}}.entity';
+
+// Generated GROUP BY fields using helper
+export const {{pascalCase entityName}}GroupByFields = createGroupByFields({{pascalCase entityName}}, {
+  {{#each fields}}
+  {{name}}: {
+    description: 'Group by {{name}}'
+  },
+  {{/each}}
+}, {
+  name: '{{pascalCase entityName}}GroupByFields',
+  description: 'GROUP BY fields for {{pascalCase entityName}} queries'
+});
+
+/**
+ * GroupBy arguments for {{pascalCase entityName}} queries with both REST and GraphQL support
+ *
+ * This class extends Find{{pascalCase entityName}}Args to add groupBy functionality using the
+ * {{pascalCase entityName}}GroupByFields generated with createGroupByFields helper.
+ *
+ * Example usage:
+ * - REST API: POST /{{kebabCase entityName}}s/grouped with { groupBy: { fields: { {{#each fields}}{{#if @first}}{{name}}: true{{/if}}{{/each}} }, aggregates: [...] } }
+ * - GraphQL: query { {{camelCase entityName}}sGrouped(groupBy: { fields: { {{#each fields}}{{#if @first}}{{name}}: true{{/if}}{{/each}} }, aggregates: [...] }) { ... } }
+ */
+@ArgsType()
+export class Grouped{{pascalCase entityName}}Args extends GroupByArgsFrom({
+  findArgsType: Find{{pascalCase entityName}}Args,
+  groupByFieldsType: {{pascalCase entityName}}GroupByFields,
+  options: {
+    name: 'Grouped{{pascalCase entityName}}Args',
+    description: 'Arguments for grouping {{camelCase entityName}}s with filtering and aggregation support',
+    groupByInputTypeName: '{{pascalCase entityName}}GroupByInput',
+  },
+}) {}

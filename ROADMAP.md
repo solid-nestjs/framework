@@ -31,7 +31,16 @@ The framework currently provides:
 
 #### 🛠️ Enhanced CLI Tools
 
-- 🔲 **Framework CLI Generator** - Scaffold controllers, services, and modules with interactive prompts
+- ✅ **SOLID CLI Generator (snest-cli)** - Complete CLI tool for scaffolding entities, DTOs, services, controllers, resolvers, and modules using SOLID decorators
+  - **Project Generation** - Create new projects with pre-configured dependencies (REST, GraphQL, Hybrid)
+  - **Resource Generation** - Generate complete CRUD resources with advanced query capabilities
+  - **Module Generation** - Create NestJS modules with proper structure and imports
+  - **Advanced DTOs** - Optional generation of FindArgs and GroupBy DTOs for complex querying
+  - **Interactive Mode** - Guided generation with intelligent suggestions and validation
+  - **SOLID Decorators Integration** - All generated code uses unified decorators with 70-80% code reduction
+  - **Multi-Database Support** - Pre-configured for PostgreSQL, MySQL, SQL Server, and SQLite
+  - **Protocol Agnostic** - Same code works for REST API, GraphQL, and hybrid applications
+  - **Type Safety** - Full TypeScript support with comprehensive type definitions
 
 #### 🎨 Custom Decorators & Boilerplate Reduction
 

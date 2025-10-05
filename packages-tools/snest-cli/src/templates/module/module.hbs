@@ -1,0 +1,101 @@
+import { Module } from '@nestjs/common';
+{{#if hasTypeORM}}
+  import { TypeOrmModule } from '@nestjs/typeorm';
+{{/if}}
+{{#each entityImports}}
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
+{{/each}}
+{{#each serviceImports}}
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
+{{/each}}
+{{#each controllerImports}}
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
+{{/each}}
+{{#each resolverImports}}
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
+{{/each}}
+{{#each customImports}}
+  import {
+  {{this.className}}
+  } from '{{this.path}}';
+{{/each}}
+
+/** *
+{{pascalCase name}}
+Module * * This module encapsulates all
+{{camelCase name}}-related functionality including: *
+{{#if entities}}- Entities:
+  {{#each entities}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+*
+{{#if services}}- Services:
+  {{#each services}}{{this.name}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+*
+{{#if controllers}}- Controllers:
+  {{#each controllers}}{{this.name}}{{#unless @last}},
+    {{/unless}}{{/each}}{{/if}}
+*/ @Module({
+{{#if hasTypeORM}}
+  imports: [
+  {{#if entities}}
+    TypeOrmModule.forFeature([
+    {{#each entities}}
+      {{this.className}},
+    {{/each}}
+    ]),
+  {{/if}}
+  {{#each moduleImports}}
+    {{this.name}},
+  {{/each}}
+  ],
+{{else}}
+  {{#if moduleImports}}
+    imports: [
+    {{#each moduleImports}}
+      {{this.name}},
+    {{/each}}
+    ],
+  {{/if}}
+{{/if}}
+{{#if controllers}}
+  controllers: [
+  {{#each controllers}}
+    {{this.className}},
+  {{/each}}
+  ],
+{{/if}}
+{{#if services}}
+  providers: [
+  {{#each services}}
+    {{this.className}},
+  {{/each}}
+  {{#each resolvers}}
+    {{this.className}},
+  {{/each}}
+  {{#each customProviders}}
+    {{this.name}},
+  {{/each}}
+  ],
+{{/if}}
+{{#if exports}}
+  exports: [
+  {{#if hasTypeORM}}
+    TypeOrmModule,
+  {{/if}}
+  {{#each services}}
+    {{this.className}},
+  {{/each}}
+  {{#each customExports}}
+    {{this.name}},
+  {{/each}}
+  ],
+{{/if}}
+}) export class
+{{pascalCase name}}Module {}
