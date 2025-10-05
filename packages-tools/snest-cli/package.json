@@ -37,6 +37,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@solid-nestjs/snest-cli": "file:solid-nestjs-snest-cli-0.2.9.tgz",
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.11.24",
@@ -47,7 +48,8 @@
     "inquirer": "^9.2.12",
     "ora": "^6.3.1",
     "prettier": "^3.2.5",
-    "validate-npm-package-name": "^5.0.0"
+    "validate-npm-package-name": "^5.0.0",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
