@@ -351,7 +351,32 @@ TypeOrmModule.forRoot({
   entities: [Product],
   synchronize: process.env.NODE_ENV !== 'production',
 });
+
+// For MSSQL with SSL configuration
+TypeOrmModule.forRoot({
+  type: 'mssql',
+  host: process.env.DB_HOST,
+  port: +process.env.DB_PORT,
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+  options: {
+    encrypt: process.env.DB_ENCRYPT === 'true', // For local development
+    trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE !== 'false', // For self-signed certificates
+  },
+  entities: [Product],
+  synchronize: process.env.NODE_ENV !== 'production',
+});
 ```
+
+#### MSSQL Specific Configuration
+
+When creating a project with `--database mssql`, the CLI automatically includes MSSQL-specific configuration options:
+
+- **`DB_ENCRYPT`**: Controls SSL encryption (default: `false` for local development)
+- **`DB_TRUST_SERVER_CERTIFICATE`**: Trusts self-signed certificates (default: `true` for local development)
+
+These options are configurable via environment variables and are set to development-friendly defaults.
 
 ## Features
 

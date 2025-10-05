@@ -441,6 +441,10 @@ export class NewCommand extends BaseCommand {
           'DB_USERNAME=sa',
           'DB_PASSWORD=Password123!',
           'DB_DATABASE=solid_nestjs_dev',
+          '',
+          '# MSSQL specific options',
+          'DB_ENCRYPT=false',
+          'DB_TRUST_SERVER_CERTIFICATE=true',
         );
         break;
       case 'sqlite':
@@ -755,13 +759,22 @@ export class AppService {
   }
 
   private generateDatabaseConfig(options: NewCommandOptions): string {
+    const mssqlOptions =
+      options.database === 'mssql'
+        ? `
+      options: {
+        encrypt: configService.get('DB_ENCRYPT') === 'true',
+        trustServerCertificate: configService.get('DB_TRUST_SERVER_CERTIFICATE') !== 'false',
+      },`
+        : '';
+
     return `import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const databaseConfig: TypeOrmModuleAsyncOptions = {
   useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
     const dbType = configService.get('DB_TYPE') || '${options.database}';
-    
+
     return {
       type: dbType as any,
       ${
@@ -771,7 +784,7 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
       port: parseInt(configService.get('DB_PORT')) || ${this.getDefaultPort(options.database)},
       username: configService.get('DB_USERNAME'),
       password: configService.get('DB_PASSWORD'),
-      database: configService.get('DB_DATABASE'),`
+      database: configService.get('DB_DATABASE'),${mssqlOptions}`
       }
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       synchronize: configService.get('NODE_ENV') !== 'production',
