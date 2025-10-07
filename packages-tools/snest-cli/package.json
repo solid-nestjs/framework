@@ -1,5 +1,5 @@
 {
-  "name": "@solid-nestjs/snest-cli",
+  "name": "@solid-nestjs/cli",
   "version": "0.2.9",
   "description": "CLI tool for generating SOLID NestJS applications and components",
   "keywords": [
@@ -37,7 +37,6 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@solid-nestjs/snest-cli": "file:solid-nestjs-snest-cli-0.2.9.tgz",
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.11.24",
@@ -69,10 +68,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/solid-nestjs/framework.git",
-    "directory": "packages-tools/snest-cli"
+    "directory": "packages-tools/cli"
   },
   "bugs": {
     "url": "https://github.com/solid-nestjs/framework/issues"
   },
-  "homepage": "https://github.com/solid-nestjs/framework/tree/main/packages-tools/snest-cli#readme"
+  "homepage": "https://github.com/solid-nestjs/framework/tree/main/packages-tools/cli#readme"
 }

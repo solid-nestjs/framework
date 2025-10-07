@@ -10,12 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Core Infrastructure
+
 - ✨ Complete CLI infrastructure with Commander.js
 - ✨ TypeScript configuration and build system
-- ✨ Monorepo workspace integration (`packages-tools/snest-cli`)
+- ✨ Monorepo workspace integration (`packages-tools/cli`)
 - ✨ Professional CLI interface with colored output and spinners
 
 #### Project Generation (`snest new`)
+
 - ✨ Complete SOLID NestJS project scaffolding
 - ✨ Multi-database support (SQLite, PostgreSQL, MySQL, SQL Server)
 - ✨ API type selection (REST, GraphQL, Hybrid)
@@ -24,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Docker Compose configuration for development databases
 
 #### Entity Generator (`snest generate entity`)
+
 - ✨ SOLID decorators (`@SolidEntity`, `@SolidId`, `@SolidField`)
 - ✨ Field definition with types and modifiers (`name:string:optional`)
 - ✨ Automatic soft deletion support with `@DeleteDateColumn()`
@@ -32,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Custom output paths and file overwrite protection
 
 #### Service Generator (`snest generate service`)
+
 - ✨ CRUD service structure with SOLID patterns
 - ✨ `CrudServiceStructure` configuration objects
 - ✨ Bulk operations support (bulkInsert, bulkUpdate, bulkRemove)
@@ -41,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Automatic DTO imports (CreateDto, UpdateDto, FindArgs)
 
 #### Controller Generator (`snest generate controller`)
+
 - ✨ REST API controller with SOLID patterns
 - ✨ `CrudControllerStructure` configuration objects
 - ✨ Automatic CRUD endpoints (GET, POST, PATCH, DELETE)
@@ -51,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Authentication guard placeholders
 
 #### Module Generator (`snest generate module`)
+
 - ✨ Complete NestJS module generation
 - ✨ Automatic imports (TypeORM, entities, services, controllers)
 - ✨ TypeORM.forFeature configuration for entities
@@ -59,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Documentation with component descriptions
 
 #### Template System
+
 - ✨ Handlebars template engine with custom helpers
 - ✨ String manipulation helpers (pascalCase, camelCase, kebabCase, snakeCase)
 - ✨ TypeScript type conversion helpers
@@ -67,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Conditional rendering based on options
 
 #### AST-based Module Updates
+
 - ✨ TypeScript AST manipulation for automatic module updates
 - ✨ Intelligent module detection and relevance checking
 - ✨ Automatic import statement insertion
@@ -76,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Code format preservation
 
 #### Interactive Mode
+
 - ✨ Step-by-step component generation wizard
 - ✨ Input validation and smart defaults
 - ✨ Component type selection menu
@@ -83,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ Preview and confirmation before generation
 
 #### CLI Features
+
 - ✨ Comprehensive help system with examples
 - ✨ Command aliases for faster usage (`g` for `generate`, `e` for `entity`)
 - ✨ Option validation and error handling
@@ -93,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Implementation
 
 #### Dependencies
+
 - 🔧 **Commander.js** - CLI framework and command parsing
 - 🔧 **Handlebars** - Template rendering engine
 - 🔧 **TypeScript** - AST manipulation and code generation
@@ -103,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 **validate-npm-package-name** - Package name validation
 
 #### Architecture
+
 - 📁 **Command Pattern** - Structured command organization
 - 📁 **Template Strategy** - Flexible template system
 - 📁 **AST Visitor Pattern** - Safe code modification
@@ -110,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📁 **Factory Pattern** - Component generation
 
 #### Code Quality
+
 - ✅ **TypeScript** - Full type safety and IntelliSense
 - ✅ **ESLint** - Code style and quality enforcement
 - ✅ **Prettier** - Consistent code formatting
@@ -119,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Generated Code Features
 
 #### Entities
+
 - 🎯 SOLID decorators for automatic CRUD generation
 - 🎯 TypeORM column type mapping
 - 🎯 Soft deletion support with deletedAt columns
@@ -127,6 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎯 Custom field options configuration
 
 #### Services
+
 - 🎯 SOLID CrudService mixins for automatic operations
 - 🎯 Bulk operation methods (bulkInsert, bulkUpdate, bulkRemove)
 - 🎯 Soft deletion methods (remove, recover, hardRemove)
@@ -135,6 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎯 Type-safe CRUD operations
 
 #### Controllers
+
 - 🎯 SOLID CrudController mixins for automatic endpoints
 - 🎯 REST API endpoints with proper HTTP methods
 - 🎯 Request validation with DTOs
@@ -143,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎯 Authentication guard integration points
 
 #### Modules
+
 - 🎯 Complete NestJS module configuration
 - 🎯 TypeORM entity registration
 - 🎯 Dependency injection setup
@@ -152,13 +169,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### CLI Commands
 
 #### Available Commands
+
 ```bash
 # Project creation
 snest new <project-name> [options]
 
 # Component generation
 snest generate entity <name> [options]
-snest generate service <name> [options]  
+snest generate service <name> [options]
 snest generate controller <name> [options]
 snest generate module <name> [options]
 
@@ -168,6 +186,7 @@ snest generate --interactive
 ```
 
 #### Command Options
+
 - 🎛️ **Database Selection** - SQLite, PostgreSQL, MySQL, SQL Server
 - 🎛️ **API Type** - REST, GraphQL, Hybrid
 - 🎛️ **Package Manager** - npm, yarn, pnpm
@@ -178,6 +197,7 @@ snest generate --interactive
 ### Documentation
 
 #### Complete Documentation Suite
+
 - 📖 **README.md** - Overview and quick start guide
 - 📖 **getting-started.md** - Step-by-step tutorial
 - 📖 **api-reference.md** - Complete command reference
@@ -185,6 +205,7 @@ snest generate --interactive
 - 📖 **CHANGELOG.md** - Version history and changes
 
 #### Examples Included
+
 - 🏪 **E-commerce API** - Complete online store backend
 - 📝 **Blog Platform** - Content management system
 - ✅ **Task Manager** - Project management tool
@@ -193,12 +214,14 @@ snest generate --interactive
 ### Performance & Optimization
 
 #### Generation Speed
+
 - ⚡ Fast template rendering with Handlebars
 - ⚡ Efficient file I/O operations
 - ⚡ Parallel AST processing where possible
 - ⚡ Smart caching of parsed templates
 
 #### Code Quality
+
 - 🏗️ Clean, readable generated code
 - 🏗️ Consistent naming conventions
 - 🏗️ Proper TypeScript types throughout
@@ -207,12 +230,14 @@ snest generate --interactive
 ### Developer Experience
 
 #### User Interface
+
 - 🎨 Beautiful CLI with colors and icons
 - 🎨 Progress indicators for long operations
 - 🎨 Clear error messages with suggestions
 - 🎨 Helpful success messages with next steps
 
 #### Error Handling
+
 - 🛡️ Graceful failure handling
 - 🛡️ File permission checks
 - 🛡️ Input validation with helpful messages
@@ -221,6 +246,7 @@ snest generate --interactive
 ### Future Roadmap Items (Not in this release)
 
 #### Planned Features
+
 - 🔮 **GraphQL Resolver Generation** - Complete GraphQL support
 - 🔮 **DTO Generator** - Automatic DTO creation with validation
 - 🔮 **Test Generator** - Unit and E2E test scaffolding
@@ -233,12 +259,15 @@ snest generate --interactive
 - 🔮 **Docker Support** - Container generation
 
 ### Breaking Changes
+
 - None (initial release)
 
 ### Migration Guide
+
 - None (initial release)
 
 ### Known Issues
+
 - AST module updates may fail with complex module structures (use `--skip-module-update`)
 - Template copying required after build (automated in npm scripts)
 - Interactive mode requires TTY support (not available in CI environments)
@@ -246,11 +275,13 @@ snest generate --interactive
 ### Credits
 
 #### Development Team
+
 - **Core Team** - SOLID NestJS Framework maintainers
 - **CLI Development** - Built with TypeScript and modern Node.js practices
 - **Template Design** - Handlebars templates with SOLID patterns
 
 #### Special Thanks
+
 - NestJS community for inspiration
 - TypeORM team for database integration patterns
 - Commander.js and Inquirer.js for excellent CLI libraries
@@ -260,10 +291,12 @@ snest generate --interactive
 ## Pre-release Versions
 
 ### [0.2.9] - Framework Version
+
 - Framework core packages development
 - Initial planning and specification phase
 
 ### [0.1.0] - Initial Concept
+
 - Project inception and architecture design
 - Technology stack selection
 - Development environment setup

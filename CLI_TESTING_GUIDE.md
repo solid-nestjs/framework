@@ -8,10 +8,10 @@ Esta guía te mostrará cómo probar el CLI del framework SOLID NestJS para crea
 
 ```bash
 # Ir al directorio de pruebas
-cd packages-tools/snest-cli/test-output
+cd packages-tools/cli/test-output
 
 # Crear nueva aplicación REST con SQLite
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" new mi-tienda --type rest --database sqlite --skip-install
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" new mi-tienda --type rest --database sqlite --skip-install
 ```
 
 ### **2. Instalar Dependencias**
@@ -28,39 +28,39 @@ npm install
 
 ```bash
 # Generar entidad Product con campos
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate entity Product --fields "name:string,price:number,description:string:optional,category:string"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate entity Product --fields "name:string,price:number,description:string:optional,category:string"
 
 # Generar entidad Category
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate entity Category --fields "name:string,code:string,active:boolean"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate entity Category --fields "name:string,code:string,active:boolean"
 
 # Generar entidad Order
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate entity Order --fields "total:number,status:string,customerEmail:string"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate entity Order --fields "total:number,status:string,customerEmail:string"
 ```
 
 ### **4. Generar Servicios (con DTOs automáticos)**
 
 ```bash
 # Generar servicio Products (creará automáticamente los DTOs)
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate service Products
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate service Products
 
 # Generar servicio Categories
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate service Categories
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate service Categories
 
-# Generar servicio Orders  
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate service Orders
+# Generar servicio Orders
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate service Orders
 ```
 
 ### **5. Generar Controladores REST**
 
 ```bash
 # Generar controlador Products
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate controller Products
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate controller Products
 
 # Generar controlador Categories
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate controller Categories
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate controller Categories
 
 # Generar controlador Orders
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate controller Orders
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate controller Orders
 ```
 
 ### **6. Generar Recursos Completos (🆕 NUEVO)**
@@ -69,30 +69,30 @@ El comando `resource` genera todo de una vez (entity + service + controller + mo
 
 ```bash
 # Generar recurso completo en módulo separado (recomendado)
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Product --fields "name:string,price:number,description:string:optional"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Product --fields "name:string,price:number,description:string:optional"
 
 # Generar recurso con módulo simple anidado (1 nivel)
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Order --fields "total:number,status:string,customerEmail:string" --module-path "e-commerce/orders"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Order --fields "total:number,status:string,customerEmail:string" --module-path "e-commerce/orders"
 
 # ⭐ NUEVO: Generar recursos con módulos anidados padre-hijo
 # Esto crea una jerarquía como: ContabilidadModule > FacturasModule
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Facturas --fields "numero:string,total:number,fecha:string" --module-path "contabilidad/facturas"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Facturas --fields "numero:string,total:number,fecha:string" --module-path "contabilidad/facturas"
 
 # Agregar más recursos al mismo módulo padre
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Clientes --fields "nombre:string,email:string,telefono:string" --module-path "contabilidad/clientes"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Clientes --fields "nombre:string,email:string,telefono:string" --module-path "contabilidad/clientes"
 
 # Generar recurso con opciones avanzadas
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource User --fields "email:string,name:string,active:boolean" --with-soft-delete --with-bulk-operations --module-path "auth/users"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource User --fields "email:string,name:string,active:boolean" --with-soft-delete --with-bulk-operations --module-path "auth/users"
 ```
 
 ### **7. Generar Solo Módulos (🆕 NUEVO)**
 
 ```bash
 # Generar módulo para agrupar componentes existentes
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate module Inventory --entities "Product,Category" --services "Products,Categories" --controllers "Products,Categories"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate module Inventory --entities "Product,Category" --services "Products,Categories" --controllers "Products,Categories"
 
 # Generar módulo básico
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate module Auth
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate module Auth
 ```
 
 ### **8. Compilar y Ejecutar**
@@ -185,21 +185,21 @@ La nueva funcionalidad crea una jerarquía correcta de módulos (igual que NestJ
 // app.module.ts - Solo importa módulos padre
 @Module({
   imports: [
-    ProductModule,      // Módulo simple directo
+    ProductModule, // Módulo simple directo
     ContabilidadModule, // ⭐ Módulo PADRE (NO FacturasModule ni ClientesModule)
-    AuthModule          // Módulo por dominio
-  ]
+    AuthModule, // Módulo por dominio
+  ],
 })
 export class AppModule {}
 
 // contabilidad.module.ts - Módulo PADRE que agrupa módulos hijo
 @Module({
   imports: [
-    FacturasModule,   // Módulo hijo 1
-    ClientesModule    // Módulo hijo 2
+    FacturasModule, // Módulo hijo 1
+    ClientesModule, // Módulo hijo 2
   ],
-  controllers: [],    // Sin controladores propios
-  providers: []       // Sin servicios propios
+  controllers: [], // Sin controladores propios
+  providers: [], // Sin servicios propios
 })
 export class ContabilidadModule {}
 
@@ -207,7 +207,7 @@ export class ContabilidadModule {}
 @Module({
   imports: [TypeOrmModule.forFeature([Facturas])],
   controllers: [FacturassController],
-  providers: [FacturassService]
+  providers: [FacturassService],
 })
 export class FacturasModule {}
 ```
@@ -221,7 +221,7 @@ mi-tienda/
 ├── src/
 │   ├── entities/
 │   │   ├── product.entity.ts      # @SolidEntity con decoradores SOLID
-│   │   ├── category.entity.ts     # @SolidEntity con decoradores SOLID  
+│   │   ├── category.entity.ts     # @SolidEntity con decoradores SOLID
 │   │   └── order.entity.ts        # @SolidEntity con decoradores SOLID
 │   ├── dto/
 │   │   └── inputs/
@@ -244,6 +244,7 @@ mi-tienda/
 ## 🔥 Características que Verás
 
 ### **Entidades con SOLID (Obligatorio)**
+
 ```typescript
 @SolidEntity()
 export class Product {
@@ -252,11 +253,11 @@ export class Product {
 
   @SolidField()
   name: string;
-  
+
   @SolidField()
   price: number;
 
-  @SolidField({nullable: true})
+  @SolidField({ nullable: true })
   description?: string;
 
   @SolidField()
@@ -271,6 +272,7 @@ export class Product {
 ```
 
 ### **DTOs con GenerateDtoFromEntity (Obligatorio)**
+
 ```typescript
 // Create DTO - Inferencia automática de campos desde la entidad
 export class CreateProductDto extends GenerateDtoFromEntity(Product) {}
@@ -280,6 +282,7 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {}
 ```
 
 ### **Servicios con Mixins SOLID**
+
 ```typescript
 /**
  * Service structure configuration for Products
@@ -292,7 +295,7 @@ export const productsServiceStructure = CrudServiceStructure({
 
 /**
  * Service for Products entity operations
- * 
+ *
  * This service extends the SOLID framework's CrudService with automatic CRUD operations.
  * It provides type-safe CRUD operations for Product entities.
  */
@@ -303,6 +306,7 @@ export class ProductsService extends CrudServiceFrom(productsServiceStructure) {
 ```
 
 ### **Controladores con Mixins SOLID**
+
 ```typescript
 /**
  * Controller structure configuration for Products
@@ -321,12 +325,14 @@ export const productsControllerStructure = CrudControllerStructure({
 
 /**
  * REST Controller for Products entities
- * 
+ *
  * This controller extends the SOLID framework's CrudController with automatic REST endpoints.
  * It provides type-safe CRUD operations for Product entities.
  */
 @Controller('products')
-export class ProductsController extends CrudControllerFrom(productsControllerStructure) {
+export class ProductsController extends CrudControllerFrom(
+  productsControllerStructure,
+) {
   // Automáticamente tiene todos los endpoints REST
 }
 ```
@@ -336,6 +342,7 @@ export class ProductsController extends CrudControllerFrom(productsControllerStr
 Una vez que la aplicación esté corriendo, tendrás automáticamente estos endpoints para cada entidad:
 
 ### **Products Endpoints**
+
 - **GET** `/products` - Obtener todos los productos
 - **GET** `/products/paginated` - Obtener productos paginados
 - **GET** `/products/:id` - Obtener producto por ID
@@ -344,6 +351,7 @@ Una vez que la aplicación esté corriendo, tendrás automáticamente estos endp
 - **DELETE** `/products/:id` - Eliminar producto
 
 ### **Categories Endpoints**
+
 - **GET** `/categories` - Obtener todas las categorías
 - **GET** `/categories/paginated` - Obtener categorías paginadas
 - **GET** `/categories/:id` - Obtener categoría por ID
@@ -352,6 +360,7 @@ Una vez que la aplicación esté corriendo, tendrás automáticamente estos endp
 - **DELETE** `/categories/:id` - Eliminar categoría
 
 ### **Orders Endpoints**
+
 - **GET** `/orders` - Obtener todas las órdenes
 - **GET** `/orders/paginated` - Obtener órdenes paginadas
 - **GET** `/orders/:id` - Obtener orden por ID
@@ -377,7 +386,7 @@ Los módulos anidados te permiten crear una jerarquía organizacional como la de
 ```bash
 # ❌ Sin módulos padre-hijo (todos los módulos van al app.module.ts)
 ProductModule
-OrderModule  
+OrderModule
 ClientModule
 InvoiceModule
 PaymentModule
@@ -398,20 +407,21 @@ ContabilidadModule
 
 ```bash
 # Paso 1: Genera el primer recurso del dominio (crea módulo padre automáticamente)
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Facturas --fields "numero:string,total:number,fecha:string" --module-path "contabilidad/facturas"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Facturas --fields "numero:string,total:number,fecha:string" --module-path "contabilidad/facturas"
 # Resultado: Crea ContabilidadModule + FacturasModule
 
 # Paso 2: Agrega más recursos al mismo dominio (reutiliza módulo padre)
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Clientes --fields "nombre:string,email:string" --module-path "contabilidad/clientes"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Clientes --fields "nombre:string,email:string" --module-path "contabilidad/clientes"
 # Resultado: Actualiza ContabilidadModule + agrega ClientesModule
 
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Pagos --fields "monto:number,metodo:string" --module-path "contabilidad/pagos"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Pagos --fields "monto:number,metodo:string" --module-path "contabilidad/pagos"
 # Resultado: Actualiza ContabilidadModule + agrega PagosModule
 ```
 
 ### **¿Qué Sucede Automáticamente?**
 
 1. **Primera vez** (`contabilidad/facturas`):
+
    - ✅ Crea `ContabilidadModule` (módulo padre vacío)
    - ✅ Crea `FacturasModule` (módulo hijo con entidades/servicios/controladores)
    - ✅ `ContabilidadModule` importa `FacturasModule`
@@ -457,24 +467,24 @@ El CLI ahora detecta automáticamente en qué directorio te encuentras y genera 
 
 ```bash
 # Ejemplo: Crear aplicación e-commerce completa con módulos anidados automáticos
-cd packages-tools/snest-cli
+cd packages-tools/cli
 node dist/cli.js new ecommerce-app --type rest --database sqlite
 
 # Navegar y generar recursos automáticamente según la ubicación
 cd ecommerce-app/src/modules/catalog/products
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Product --fields "name:string,price:number,description:string:optional,stock:number,categoryId:number"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Product --fields "name:string,price:number,description:string:optional,stock:number,categoryId:number"
 # → Detecta automáticamente: src\modules\catalog\products\product
 
-cd ../categories  
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Category --fields "name:string,description:string:optional,parentId:number:optional"
+cd ../categories
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Category --fields "name:string,description:string:optional,parentId:number:optional"
 # → Detecta automáticamente: src\modules\catalog\categories\category
 
 cd ../../sales/orders
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Order --fields "customerId:number,total:number,status:string,orderDate:string"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Order --fields "customerId:number,total:number,status:string,orderDate:string"
 # → Detecta automáticamente: src\modules\sales\orders\order
 
 cd ../../users
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Customer --fields "email:string,name:string,phone:string:optional,address:string:optional"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Customer --fields "email:string,name:string,phone:string:optional,address:string:optional"
 # → Detecta automáticamente: src\modules\users\customer
 ```
 
@@ -492,7 +502,7 @@ ecommerce-app/
 ├── src/
 │   ├── modules/
 │   │   ├── catalog/                    # Módulo padre automático
-│   │   │   ├── catalog.module.ts       # Importa ProductsModule, CategoriesModule  
+│   │   │   ├── catalog.module.ts       # Importa ProductsModule, CategoriesModule
 │   │   │   ├── products/               # Navegaste aquí → detecta automáticamente
 │   │   │   │   ├── products.module.ts  # Módulo padre para Product
 │   │   │   │   └── product/
@@ -513,7 +523,7 @@ ecommerce-app/
 │   │   │           ├── entities/
 │   │   │           │   └── category.entity.ts
 │   │   │           └── ... (estructura completa)
-│   │   ├── sales/                      # Módulo padre automático  
+│   │   ├── sales/                      # Módulo padre automático
 │   │   │   ├── sales.module.ts         # Importa OrdersModule
 │   │   │   └── orders/                 # Navegaste aquí → detecta automáticamente
 │   │   │       ├── orders.module.ts    # Módulo padre para Order
@@ -538,23 +548,23 @@ ecommerce-app/
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync(databaseConfig),
-    CatalogModule,     // ← Detectado automáticamente desde catalog/
-    SalesModule,       // ← Detectado automáticamente desde sales/
-    UsersModule        // ← Detectado automáticamente desde users/
+    CatalogModule, // ← Detectado automáticamente desde catalog/
+    SalesModule, // ← Detectado automáticamente desde sales/
+    UsersModule, // ← Detectado automáticamente desde users/
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService],
 })
 export class AppModule {}
 
 // catalog.module.ts - Generado automáticamente
 @Module({
   imports: [
-    ProductsModule,    // ← Detectado desde products/
-    CategoriesModule   // ← Detectado desde categories/
+    ProductsModule, // ← Detectado desde products/
+    CategoriesModule, // ← Detectado desde categories/
   ],
   controllers: [],
-  providers: []
+  providers: [],
 })
 export class CatalogModule {}
 ```
@@ -572,24 +582,24 @@ export class CatalogModule {}
 
 ```bash
 # 1. Crear aplicación base
-cd packages-tools/snest-cli  
+cd packages-tools/cli
 node dist/cli.js new ecommerce-app --type rest --database sqlite
 
 # 2. Generar módulo de catálogo (productos)
 cd ecommerce-app/src/modules/catalog/products
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Product --fields "name:string,price:number,description:string:optional,stock:number,categoryId:number"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Product --fields "name:string,price:number,description:string:optional,stock:number,categoryId:number"
 
 # 3. Generar categorías (mismo dominio catalog)
 cd ../categories
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Category --fields "name:string,description:string:optional,parentId:number:optional"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Category --fields "name:string,description:string:optional,parentId:number:optional"
 
 # 4. Generar módulo de ventas (órdenes)
-cd ../../sales/orders  
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Order --fields "customerId:number,total:number,status:string,orderDate:string"
+cd ../../sales/orders
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Order --fields "customerId:number,total:number,status:string,orderDate:string"
 
 # 5. Generar módulo de usuarios (clientes)
 cd ../../users
-"D:\NodeJS\solid-nestjs\framework\packages-tools\snest-cli\dist\cli.js" generate resource Customer --fields "email:string,name:string,phone:string:optional,address:string:optional"
+"D:\NodeJS\solid-nestjs\framework\packages-tools\cli\dist\cli.js" generate resource Customer --fields "email:string,name:string,phone:string:optional,address:string:optional"
 
 # 6. Compilar y ejecutar
 cd ../../..
@@ -602,7 +612,7 @@ npm run start:dev
 Al ejecutar, obtienes automáticamente una API REST completa con:
 
 - **Products API**: `/products` (GET, POST, PUT, DELETE, GET paginated)
-- **Categories API**: `/categories` (GET, POST, PUT, DELETE, GET paginated)  
+- **Categories API**: `/categories` (GET, POST, PUT, DELETE, GET paginated)
 - **Orders API**: `/orders` (GET, POST, PUT, DELETE, GET paginated)
 - **Customers API**: `/customers` (GET, POST, PUT, DELETE, GET paginated)
 - **Swagger UI**: `http://localhost:3000/api` con documentación completa
@@ -615,16 +625,18 @@ Al ejecutar, obtienes automáticamente una API REST completa con:
 **Problema Resuelto**: Los DTOs se generaban incorrectamente con imports de GraphQL incluso en proyectos REST.
 
 **Antes (❌)**:
+
 ```typescript
 // update-product.dto.ts - INCORRECTO
 import { PartialType } from '@nestjs/swagger';
-import { PartialType as GraphQLPartialType } from '@nestjs/graphql';  // ← GraphQL innecesario
+import { PartialType as GraphQLPartialType } from '@nestjs/graphql'; // ← GraphQL innecesario
 import { CreateProductDto } from './create-product.dto';
 
 export class UpdateProductDto extends GraphQLPartialType(CreateProductDto) {} // ← Usando GraphQL
 ```
 
 **Después (✅)**:
+
 ```typescript
 // update-product.dto.ts - CORRECTO
 import { PartialType } from '@nestjs/swagger';

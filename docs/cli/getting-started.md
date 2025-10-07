@@ -17,7 +17,7 @@ Before you begin, ensure you have the following installed:
 Install the SNEST CLI globally to use it from anywhere:
 
 ```bash
-npm install -g @solid-nestjs/snest-cli
+npm install -g @solid-nestjs/cli
 ```
 
 Verify the installation:
@@ -32,7 +32,7 @@ snest --version
 For project-specific installation:
 
 ```bash
-npm install --save-dev @solid-nestjs/snest-cli
+npm install --save-dev @solid-nestjs/cli
 ```
 
 Use with npx:
@@ -52,6 +52,7 @@ snest new my-first-app
 ```
 
 This creates a complete project structure with:
+
 - 📁 **src/** - Source code directory
 - 📁 **src/entities/** - Database entities
 - 📁 **src/services/** - Business logic services
@@ -103,13 +104,13 @@ export class User {
   @SolidId()
   id: number;
 
-  @SolidField({"type":"varchar"})
+  @SolidField({ type: 'varchar' })
   name: string;
 
-  @SolidField({"type":"varchar"})
+  @SolidField({ type: 'varchar' })
   email: string;
 
-  @SolidField({"type":"integer"})
+  @SolidField({ type: 'integer' })
   age: number;
 }
 ```
@@ -156,7 +157,10 @@ This generates a REST controller with automatic CRUD endpoints:
 ```typescript
 // src/controllers/users.controller.ts
 import { Controller } from '@nestjs/common';
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/rest-api';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/rest-api';
 import { UsersService } from '../services/users.service';
 import { User } from '../entities/user.entity';
 
@@ -178,7 +182,9 @@ export const usersControllerStructure = CrudControllerStructure({
 });
 
 @Controller('users')
-export class UsersController extends CrudControllerFrom(usersControllerStructure) {
+export class UsersController extends CrudControllerFrom(
+  usersControllerStructure,
+) {
   // Custom endpoints can be added here
 }
 ```
@@ -202,21 +208,10 @@ import { UsersService } from '../services/users.service';
 import { UsersController } from '../controllers/users.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      User,
-    ]),
-  ],
-  controllers: [
-    UsersController,
-  ],
-  providers: [
-    UsersService,
-  ],
-  exports: [
-    TypeOrmModule,
-    UsersService,
-  ],
+  imports: [TypeOrmModule.forFeature([User])],
+  controllers: [UsersController],
+  providers: [UsersService],
+  exports: [TypeOrmModule, UsersService],
 })
 export class UsersModule {}
 ```
@@ -226,6 +221,7 @@ export class UsersModule {}
 Notice that when you generated the service and controller, the CLI automatically updated existing modules! This is the **AST-based module updating system** in action.
 
 The CLI:
+
 - ✅ Found relevant modules in your project
 - ✅ Added necessary import statements
 - ✅ Updated the module's arrays (providers, controllers, etc.)
@@ -292,6 +288,7 @@ After generating your User components, your API automatically includes these end
 ### API Documentation
 
 Your API automatically includes Swagger documentation at:
+
 - **Swagger UI:** `http://localhost:3000/api`
 - **OpenAPI JSON:** `http://localhost:3000/api-json`
 
@@ -489,6 +486,7 @@ snest g controller Users --entity-name User --with-validation --with-guards
 ### 4. Leverage Interactive Mode
 
 Use interactive mode when:
+
 - Learning the CLI
 - Exploring options
 - Generating complex components
@@ -503,7 +501,7 @@ snest g -i
 ### Common Issues
 
 **Q: "Command not found: snest"**
-A: Install the CLI globally: `npm install -g @solid-nestjs/snest-cli`
+A: Install the CLI globally: `npm install -g @solid-nestjs/cli`
 
 **Q: "Template not found" error**
 A: Rebuild the CLI: `npm run build && cp -r src/templates/* dist/templates/`

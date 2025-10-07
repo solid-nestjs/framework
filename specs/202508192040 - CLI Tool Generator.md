@@ -1,6 +1,7 @@
 # SNEST - SOLID NestJS CLI Tool Generator Specification
 
 ## Document Information
+
 - **Date**: August 19, 2025
 - **Version**: 1.1
 - **Status**: Draft
@@ -15,12 +16,14 @@ This specification defines the implementation of a Command Line Interface (CLI) 
 ## Goals and Objectives
 
 ### Primary Goals
+
 1. **Accelerate Development**: Reduce boilerplate code creation time by 80-90%
 2. **Enforce Best Practices**: Generate code following SOLID principles and framework patterns
 3. **Lower Entry Barrier**: Make the framework more accessible to new developers
 4. **Maintain Consistency**: Ensure generated code follows established conventions
 
 ### Key Objectives
+
 - Provide intuitive command-line interface for code generation
 - Support all framework features (REST, GraphQL, Hybrid)
 - Generate production-ready code with proper typing and validation
@@ -32,10 +35,13 @@ This specification defines the implementation of a Command Line Interface (CLI) 
 ### Core Commands
 
 #### 1. Project Initialization
+
 ```bash
 snest new <project-name> [options]
 ```
+
 **Options:**
+
 - `--package-manager` (npm|yarn|pnpm) - Default: npm
 - `--database` (sqlite|postgres|mysql|mssql) - Default: sqlite
 - `--type` (rest|graphql|hybrid) - Default: hybrid
@@ -45,6 +51,7 @@ snest new <project-name> [options]
 - `--skip-docker` - Skip Docker files generation
 
 **Generated Structure:**
+
 ```
 project-name/
 ├── src/
@@ -68,24 +75,31 @@ project-name/
 ```
 
 #### 2. Module Generation
+
 ```bash
 snest generate module <name> [options]
 snest g mo <name> [options]  # Alias
 ```
+
 **Options:**
+
 - `--path` - Custom path for module
 - `--flat` - No dedicated folder
 - `--no-spec` - Skip test file generation
 
 **Generated Files:**
+
 - `<name>.module.ts` - Module definition with imports
 
 #### 3. Entity Generation
+
 ```bash
 snest generate entity <name> [options]
 snest g e <name> [options]  # Alias
 ```
+
 **Options:**
+
 - `--fields` - Comma-separated field definitions
 - `--with-solid` - Use SOLID decorators (default: true)
 - `--soft-delete` - Include soft deletion column
@@ -93,14 +107,21 @@ snest g e <name> [options]  # Alias
 - `--path` - Custom path
 
 **Field Definition Format:**
+
 ```bash
 --fields "name:string:required,price:number,description:string:optional,supplier:relation:manyToOne:Supplier"
 ```
 
 **Generated Example:**
+
 ```typescript
 import { SolidEntity, SolidId, SolidField } from '@solid-nestjs/common';
-import { Entity, PrimaryGeneratedColumn, Column, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  DeleteDateColumn,
+} from 'typeorm';
 
 @SolidEntity()
 export class Product {
@@ -122,11 +143,14 @@ export class Product {
 ```
 
 #### 4. Service Generation
+
 ```bash
 snest generate service <name> [options]
 snest g s <name> [options]  # Alias
 ```
+
 **Options:**
+
 - `--entity` - Associated entity name
 - `--type` (crud|custom) - Default: crud
 - `--with-bulk` - Include bulk operations
@@ -134,6 +158,7 @@ snest g s <name> [options]  # Alias
 - `--path` - Custom path
 
 **Generated Example:**
+
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { CrudServiceStructure, CrudServiceFrom } from '@solid-nestjs/typeorm';
@@ -156,11 +181,14 @@ export class ProductsService extends CrudServiceFrom(productServiceStructure) {
 ```
 
 #### 5. Controller Generation
+
 ```bash
 snest generate controller <name> [options]
 snest g co <name> [options]  # Alias
 ```
+
 **Options:**
+
 - `--type` (rest|graphql|hybrid) - Default: rest
 - `--service` - Associated service name
 - `--path` - Custom path
@@ -168,11 +196,18 @@ snest g co <name> [options]  # Alias
 - `--with-guards` - Add authentication guards
 
 **REST Controller Example:**
+
 ```typescript
 import { Controller } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CrudControllerStructure, CrudControllerFrom } from '@solid-nestjs/rest-api';
-import { ProductsService, productServiceStructure } from '../services/products.service';
+import {
+  CrudControllerStructure,
+  CrudControllerFrom,
+} from '@solid-nestjs/rest-api';
+import {
+  ProductsService,
+  productServiceStructure,
+} from '../services/products.service';
 
 const controllerStructure = CrudControllerStructure({
   ...productServiceStructure,
@@ -193,15 +228,20 @@ const controllerStructure = CrudControllerStructure({
 
 @Controller('products')
 @ApiTags('Products')
-export class ProductsController extends CrudControllerFrom(controllerStructure) {}
+export class ProductsController extends CrudControllerFrom(
+  controllerStructure,
+) {}
 ```
 
 #### 6. DTO Generation
+
 ```bash
 snest generate dto <entity-name> [options]
 snest g d <entity-name> [options]  # Alias
 ```
+
 **Options:**
+
 - `--type` (create|update|find|all) - Default: all
 - `--from-entity` - Generate from existing entity
 - `--with-validation` - Add validation decorators
@@ -209,6 +249,7 @@ snest g d <entity-name> [options]  # Alias
 - `--path` - Custom path
 
 **Generated Structure:**
+
 ```
 dto/
 ├── inputs/
@@ -219,9 +260,14 @@ dto/
 ```
 
 **Using Args Helpers Example:**
+
 ```typescript
 import { ArgsType } from '@nestjs/graphql';
-import { GroupByArgsFrom, createWhereFields, createOrderByFields } from '@solid-nestjs/graphql';
+import {
+  GroupByArgsFrom,
+  createWhereFields,
+  createOrderByFields,
+} from '@solid-nestjs/graphql';
 import { Product } from '../../entities/product.entity';
 
 @ArgsType()
@@ -232,17 +278,21 @@ export class FindProductArgs extends GroupByArgsFrom(Product) {
 ```
 
 #### 7. Resource Generation (All-in-One)
+
 ```bash
 snest generate resource <name> [options]
 snest g res <name> [options]  # Alias
 ```
+
 **Options:**
+
 - `--type` (rest|graphql|hybrid) - Default: hybrid
 - `--fields` - Entity field definitions
 - `--with-tests` - Generate test files
 - `--crud` - Generate full CRUD operations
 
 **Generates:**
+
 - Entity
 - DTOs (Create, Update, Find)
 - Service
@@ -251,11 +301,14 @@ snest g res <name> [options]  # Alias
 - Test files (optional)
 
 #### 8. Docker Configuration Generation
+
 ```bash
 snest generate docker [options]
 snest g docker [options]  # Alias
 ```
+
 **Options:**
+
 - `--database` (postgres|mysql|mssql|redis|all) - Default: detected from project
 - `--dev-only` - Generate only development configuration
 - `--production` - Include production-ready configuration
@@ -264,6 +317,7 @@ snest g docker [options]  # Alias
 - `--override` - Override existing Docker files
 
 **Generated Files:**
+
 ```bash
 docker/
 ├── docker-compose.yml           # Production configuration
@@ -275,6 +329,7 @@ docker/
 ```
 
 **Database-Specific Services:**
+
 - **PostgreSQL**: Latest with persistent volume and health checks
 - **MySQL**: Latest with charset configuration
 - **SQL Server**: Latest with accept EULA and SA password
@@ -291,7 +346,9 @@ snest g -i  # Alias
 Provides intelligent step-by-step wizard that adapts to the current project environment:
 
 #### Project Context Detection
+
 The wizard automatically detects and adapts based on:
+
 - **Package.json analysis** - Detects installed dependencies
 - **Framework version** - SOLID NestJS packages and versions
 - **Project structure** - Existing entities, services, controllers
@@ -301,50 +358,49 @@ The wizard automatically detects and adapts based on:
 #### Smart Generation Options
 
 **Dependency-Based Options:**
+
 ```typescript
 interface ProjectContext {
   // Framework detection
   hasSolidNestjs: boolean;
   solidVersion: string;
-  
+
   // API capabilities
-  hasGraphQL: boolean;          // @nestjs/graphql detected
-  hasSwagger: boolean;          // @nestjs/swagger detected  
-  hasTypeORM: boolean;          // typeorm detected
-  
+  hasGraphQL: boolean; // @nestjs/graphql detected
+  hasSwagger: boolean; // @nestjs/swagger detected
+  hasTypeORM: boolean; // typeorm detected
+
   // Database type
   databaseType: 'sqlite' | 'postgres' | 'mysql' | 'mssql';
-  
+
   // Existing structure
   existingEntities: string[];
   existingServices: string[];
   existingControllers: string[];
-  
+
   // Framework features
-  hasSolidDecorators: boolean;  // @solid-nestjs/common detected
-  hasArgsHelpers: boolean;      // Args helper packages
+  hasSolidDecorators: boolean; // @solid-nestjs/common detected
+  hasArgsHelpers: boolean; // Args helper packages
   hasEntityGeneration: boolean; // Entity-to-DTO packages
 }
 ```
 
 **Context-Aware Prompts:**
+
 1. **What would you like to generate?** (Filtered by capabilities)
    - ✅ Entity (always available)
-   - ✅ Service (always available) 
+   - ✅ Service (always available)
    - ✅ REST Controller (if @nestjs/swagger or basic REST)
    - ✅ GraphQL Resolver (only if @nestjs/graphql detected)
    - ✅ Hybrid Controller (only if both REST + GraphQL available)
    - ✅ Complete Resource (with detected API types)
-   
 2. **Select target entity** (if generating service/controller)
    - Shows existing entities from project scan
    - Option to create new entity
-   
 3. **Choose API type** (based on available dependencies)
    - REST API (if Swagger available)
-   - GraphQL API (if GraphQL available)  
+   - GraphQL API (if GraphQL available)
    - Hybrid (if both available)
-   
 4. **Select framework features** (based on installed packages)
    - ✅ Use SOLID decorators (if @solid-nestjs/common available)
    - ✅ Use Args helpers (if args helper packages available)
@@ -360,7 +416,7 @@ $ snest generate --interactive
 🔍 Analyzing project context...
 ✓ Found SOLID NestJS v0.2.9
 ✓ GraphQL support detected (@nestjs/graphql)
-✓ Swagger support detected (@nestjs/swagger)  
+✓ Swagger support detected (@nestjs/swagger)
 ✓ SOLID decorators available
 ✓ Args helpers available
 ✓ Database: PostgreSQL
@@ -388,7 +444,7 @@ $ snest generate --interactive
 
 ? Framework features: (Smart: Pre-selected based on available packages)
 ❯◉ Use SOLID decorators      ← Auto-selected: @solid-nestjs/common found
- ◉ Use Args helpers          ← Auto-selected: Args packages found  
+ ◉ Use Args helpers          ← Auto-selected: Args packages found
  ◉ Auto-generate DTOs        ← Auto-selected: Generation packages found
  ◉ Soft deletion support     ← Available: TypeORM detected
  ◉ Bulk operations           ← Available: Bulk packages found
@@ -404,6 +460,7 @@ snest config list               # List all configurations
 ```
 
 **Configuration Options:**
+
 - `defaultDatabase` - Default database type
 - `defaultPackageManager` - Default package manager
 - `generateTests` - Auto-generate test files
@@ -413,6 +470,7 @@ snest config list               # List all configurations
 ## Technical Architecture
 
 ### Technology Stack
+
 - **Core**: Node.js with TypeScript
 - **CLI Framework**: Commander.js or Yargs
 - **Template Engine**: Handlebars or EJS
@@ -430,7 +488,7 @@ D:\NodeJS\solid-nestjs\framework/
 ├── packages-core/
 ├── packages-bundles/
 ├── packages-tools/          # New category for tooling
-│   └── snest-cli/           # CLI package as workspace
+│   └── cli/           # CLI package as workspace
 │       ├── src/
 │       │   ├── commands/
 │       │   │   ├── new.command.ts
@@ -471,33 +529,40 @@ class ProjectAnalyzer {
   async analyzeProject(projectPath: string): Promise<ProjectContext> {
     const context: ProjectContext = {
       // Analyze package.json
-      ...await this.analyzePackageJson(projectPath),
-      
-      // Scan project structure  
-      ...await this.scanProjectStructure(projectPath),
-      
+      ...(await this.analyzePackageJson(projectPath)),
+
+      // Scan project structure
+      ...(await this.scanProjectStructure(projectPath)),
+
       // Detect database configuration
-      ...await this.detectDatabaseConfig(projectPath),
-      
+      ...(await this.detectDatabaseConfig(projectPath)),
+
       // Analyze existing code
-      ...await this.analyzeExistingCode(projectPath),
+      ...(await this.analyzeExistingCode(projectPath)),
     };
-    
+
     return context;
   }
 
-  private async analyzePackageJson(projectPath: string): Promise<Partial<ProjectContext>> {
+  private async analyzePackageJson(
+    projectPath: string,
+  ): Promise<Partial<ProjectContext>> {
     const packageJson = await this.readPackageJson(projectPath);
-    const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
-    
+    const dependencies = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
+
     return {
-      hasSolidNestjs: Object.keys(dependencies).some(dep => dep.startsWith('@solid-nestjs')),
+      hasSolidNestjs: Object.keys(dependencies).some(dep =>
+        dep.startsWith('@solid-nestjs'),
+      ),
       hasGraphQL: !!dependencies['@nestjs/graphql'],
       hasSwagger: !!dependencies['@nestjs/swagger'],
       hasTypeORM: !!dependencies['typeorm'],
       hasSolidDecorators: !!dependencies['@solid-nestjs/common'],
       hasArgsHelpers: !!(
-        dependencies['@solid-nestjs/graphql'] || 
+        dependencies['@solid-nestjs/graphql'] ||
         dependencies['@solid-nestjs/rest-api'] ||
         dependencies['@solid-nestjs/rest-graphql']
       ),
@@ -506,7 +571,9 @@ class ProjectAnalyzer {
     };
   }
 
-  private async scanProjectStructure(projectPath: string): Promise<Partial<ProjectContext>> {
+  private async scanProjectStructure(
+    projectPath: string,
+  ): Promise<Partial<ProjectContext>> {
     return {
       existingEntities: await this.findEntities(projectPath),
       existingServices: await this.findServices(projectPath),
@@ -514,15 +581,24 @@ class ProjectAnalyzer {
     };
   }
 
-  private async detectDatabaseConfig(projectPath: string): Promise<Partial<ProjectContext>> {
+  private async detectDatabaseConfig(
+    projectPath: string,
+  ): Promise<Partial<ProjectContext>> {
     // Check ormconfig.js/ts, .env, app.module.ts for database configuration
-    const configFiles = ['ormconfig.json', 'ormconfig.js', '.env', 'src/app.module.ts'];
-    
+    const configFiles = [
+      'ormconfig.json',
+      'ormconfig.js',
+      '.env',
+      'src/app.module.ts',
+    ];
+
     for (const configFile of configFiles) {
-      const dbType = await this.extractDatabaseType(`${projectPath}/${configFile}`);
+      const dbType = await this.extractDatabaseType(
+        `${projectPath}/${configFile}`,
+      );
       if (dbType) return { databaseType: dbType };
     }
-    
+
     return { databaseType: 'sqlite' }; // Default fallback
   }
 }
@@ -530,22 +606,23 @@ class ProjectAnalyzer {
 
 **Detection Capabilities:**
 
-| Feature | Detection Method | Fallback Behavior |
-|---------|------------------|-------------------|
-| **GraphQL Support** | `@nestjs/graphql` in package.json | Hide GraphQL options |
-| **Swagger Support** | `@nestjs/swagger` in package.json | Hide Swagger decorators |
-| **SOLID Decorators** | `@solid-nestjs/common` in package.json | Use standard decorators |
-| **Args Helpers** | SOLID packages in dependencies | Manual DTO creation |
-| **Database Type** | ormconfig/env analysis | Default to SQLite |
-| **Existing Entities** | File system scan for `*.entity.ts` | Empty list |
-| **Soft Delete** | `@DeleteDateColumn` usage detected | Don't offer option |
-| **Bulk Operations** | SOLID packages with bulk support | Standard CRUD only |
+| Feature               | Detection Method                       | Fallback Behavior       |
+| --------------------- | -------------------------------------- | ----------------------- |
+| **GraphQL Support**   | `@nestjs/graphql` in package.json      | Hide GraphQL options    |
+| **Swagger Support**   | `@nestjs/swagger` in package.json      | Hide Swagger decorators |
+| **SOLID Decorators**  | `@solid-nestjs/common` in package.json | Use standard decorators |
+| **Args Helpers**      | SOLID packages in dependencies         | Manual DTO creation     |
+| **Database Type**     | ormconfig/env analysis                 | Default to SQLite       |
+| **Existing Entities** | File system scan for `*.entity.ts`     | Empty list              |
+| **Soft Delete**       | `@DeleteDateColumn` usage detected     | Don't offer option      |
+| **Bulk Operations**   | SOLID packages with bulk support       | Standard CRUD only      |
 
 ### Docker Compose Templates
 
 The CLI will generate Docker configurations optimized for SOLID NestJS applications:
 
 #### PostgreSQL Development Setup
+
 ```yaml
 # docker-compose.dev.yml
 version: '3.8'
@@ -555,7 +632,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.dev
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - '${APP_PORT:-3000}:3000'
     volumes:
       - .:/app
       - /app/node_modules
@@ -574,7 +651,7 @@ services:
   postgres:
     image: postgres:15-alpine
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - '${DB_PORT:-5432}:5432'
     environment:
       POSTGRES_DB: ${DB_DATABASE:-solid_dev}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
@@ -583,7 +660,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-postgres}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -593,6 +670,7 @@ volumes:
 ```
 
 #### Multi-Database Support Template
+
 ```yaml
 # docker-compose.yml (Production-ready)
 version: '3.8'
@@ -732,17 +810,17 @@ interface DockerContext {
 class DockerGenerator {
   async generateDockerConfig(context: DockerContext): Promise<DockerFiles> {
     const services = this.determineServices(context);
-    
+
     return {
       'docker-compose.yml': this.generateProdCompose(services),
       'docker-compose.dev.yml': this.generateDevCompose(services),
-      'Dockerfile': this.generateDockerfile(context),
+      Dockerfile: this.generateDockerfile(context),
       'Dockerfile.dev': this.generateDevDockerfile(),
       '.dockerignore': this.generateDockerIgnore(),
       '.env.docker': this.generateDockerEnv(services),
     };
   }
-  
+
   private determineServices(context: DockerContext) {
     return {
       database: context.currentDatabase !== 'sqlite',
@@ -785,7 +863,7 @@ export class {{pascalCase name}} {
   {{/if}}
   {{/if}}
   {{this.name}}: {{this.type}};
-  
+
   {{/each}}
 }
 ```
@@ -800,11 +878,14 @@ export class ModuleUpdater {
     modulePath: string,
     importClass: string,
     importPath: string,
-    arrayProperty: 'imports' | 'controllers' | 'providers'
+    arrayProperty: 'imports' | 'controllers' | 'providers',
   ): Promise<void> {
     const sourceFile = this.parseSourceFile(modulePath);
     const moduleDecorator = this.findModuleDecorator(sourceFile);
-    const property = this.findOrCreateArrayProperty(moduleDecorator, arrayProperty);
+    const property = this.findOrCreateArrayProperty(
+      moduleDecorator,
+      arrayProperty,
+    );
     this.addToArray(property, importClass);
     this.addImportStatement(sourceFile, importClass, importPath);
     await this.saveSourceFile(sourceFile, modulePath);
@@ -818,8 +899,10 @@ export class ModuleUpdater {
 **Total Duration**: 8 weeks
 
 ### Phase 1: Core Infrastructure (Week 1-2)
+
 **Focus**: Foundation for code generation
-- Create `packages-tools/snest-cli` workspace in monorepo
+
+- Create `packages-tools/cli` workspace in monorepo
 - Update root package.json to include `packages-tools/*` in workspaces
 - CLI package setup with version 0.3.0-alpha.1
 - Command parsing system
@@ -828,7 +911,9 @@ export class ModuleUpdater {
 - Basic project scaffolding (`snest new`)
 
 ### Phase 2: Essential Generators (Week 3-4)
+
 **Focus**: Core NestJS components with SOLID framework features
+
 - Entity generator with SOLID decorators
 - Service generator with CRUD operations
 - REST Controller generator
@@ -837,7 +922,9 @@ export class ModuleUpdater {
 - Version bump to 0.3.0-beta.1
 
 ### Phase 3: Advanced NestJS Generators (Week 5-6)
+
 **Focus**: Complete SOLID framework capabilities
+
 - DTO generator with Args helpers and entity-to-DTO generation
 - GraphQL resolver generator
 - Hybrid controller generator (REST + GraphQL)
@@ -846,7 +933,9 @@ export class ModuleUpdater {
 - Version bump to 0.3.0-rc.1
 
 ### Phase 4: Interactive Mode & Polish (Week 7)
+
 **Focus**: Developer experience and usability
+
 - Context-aware interactive wizard with dependency detection
 - Configuration management (.snestrc)
 - Enhanced error handling with suggestions
@@ -854,7 +943,9 @@ export class ModuleUpdater {
 - Performance optimization
 
 ### Phase 5: Testing & Documentation (Week 8)
+
 **Focus**: Production readiness
+
 - Comprehensive unit and integration tests
 - CLI documentation and tutorials
 - Example projects showcasing generated code
@@ -864,14 +955,18 @@ export class ModuleUpdater {
 ## Future Enhancements (Post 0.3.0)
 
 ### Version 0.4.0 - Docker & DevOps Support
+
 **Estimated Release**: Q1 2026 (aligned with framework roadmap)
+
 - Docker Compose generation for different databases
 - Dockerfile templates for development and production
 - Database service configurations
 - Nginx and Redis integration
 
 ### Version 0.5.0 - Advanced Features
+
 **Estimated Release**: Q2 2026
+
 - Custom template system
 - Plugin architecture for extensions
 - Migration tools for existing projects
@@ -880,26 +975,29 @@ export class ModuleUpdater {
 ## Testing Strategy
 
 ### Unit Tests
+
 - Test each generator in isolation
 - Verify template rendering
 - Validate file operations
 - Test AST manipulations
 
 ### Integration Tests
+
 - End-to-end CLI command testing
 - Verify generated code compiles
 - Test module updates
 - Validate generated code works with framework
 
 ### Test Structure
+
 ```typescript
 describe('EntityGenerator', () => {
   it('should generate entity with SOLID decorators', async () => {
     const result = await generator.generate('Product', {
       fields: 'name:string,price:number',
-      withSolid: true
+      withSolid: true,
     });
-    
+
     expect(result).toContain('@SolidEntity()');
     expect(result).toContain('@SolidField()');
   });
@@ -919,12 +1017,14 @@ describe('EntityGenerator', () => {
 ## Future Enhancements
 
 ### Version 1.1
+
 - Plugin system for custom generators
 - Code migration tools
 - Database schema synchronization
 - GraphQL schema generation from entities
 
 ### Version 1.2
+
 - AI-powered code suggestions
 - Visual Studio Code extension
 - Web-based generator UI
@@ -933,6 +1033,7 @@ describe('EntityGenerator', () => {
 ## Dependencies
 
 ### Required Packages
+
 ```json
 {
   "dependencies": {
@@ -951,11 +1052,13 @@ describe('EntityGenerator', () => {
 ## Risk Assessment
 
 ### Technical Risks
+
 - **AST Manipulation Complexity**: Mitigate with robust testing
 - **Template Maintenance**: Use versioned templates
 - **Cross-platform Compatibility**: Test on Windows, macOS, Linux
 
 ### Adoption Risks
+
 - **Learning Curve**: Provide comprehensive documentation
 - **Migration Path**: Offer migration guides from NestJS CLI
 - **Backward Compatibility**: Maintain support for manual code
@@ -966,4 +1069,4 @@ describe('EntityGenerator', () => {
 
 ---
 
-*This specification is subject to revision based on feedback and technical discoveries during implementation.*
+_This specification is subject to revision based on feedback and technical discoveries during implementation._

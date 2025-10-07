@@ -27,13 +27,13 @@ SNEST CLI is a powerful command-line interface for generating SOLID NestJS appli
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g @solid-nestjs/snest-cli
+npm install -g @solid-nestjs/cli
 ```
 
 ### Local Installation
 
 ```bash
-npm install @solid-nestjs/snest-cli
+npm install @solid-nestjs/cli
 npx snest --help
 ```
 
@@ -42,7 +42,7 @@ npx snest --help
 ```bash
 # Clone the repository
 git clone https://github.com/solid-nestjs/framework.git
-cd framework/packages-tools/snest-cli
+cd framework/packages-tools/cli
 
 # Install dependencies
 npm install
@@ -106,6 +106,7 @@ snest new <project-name> [options]
 ```
 
 **Options:**
+
 - `--package-manager <manager>` - Package manager (npm, yarn, pnpm)
 - `--database <type>` - Database type (sqlite, postgres, mysql, mssql)
 - `--type <api-type>` - API type (rest, graphql, hybrid)
@@ -121,6 +122,7 @@ snest generate <component> <name> [options]
 ```
 
 **Available Components:**
+
 - `entity` - Database entity with SOLID decorators
 - `service` - CRUD service with operations
 - `controller` - REST API controller
@@ -137,6 +139,7 @@ snest generate entity <name> [options]
 ```
 
 **Options:**
+
 - `--fields <fields>` - Entity fields (format: `name:type:modifier`)
 - `--with-soft-delete` - Enable soft deletion
 - `--with-solid` - Use SOLID decorators (default: true)
@@ -145,6 +148,7 @@ snest generate entity <name> [options]
 - `--overwrite` - Overwrite existing files
 
 **Field Format:**
+
 ```
 name:type[:modifier]
 ```
@@ -153,11 +157,13 @@ name:type[:modifier]
 **Modifiers:** `optional`, `required` (default)
 
 **Example:**
+
 ```bash
 snest generate entity Product --fields "name:string,price:number,description:string:optional,createdAt:Date"
 ```
 
 **Generated Code:**
+
 ```typescript
 import { SolidEntity, SolidId, SolidField } from '@solid-nestjs/common';
 
@@ -166,16 +172,16 @@ export class Product {
   @SolidId()
   id: number;
 
-  @SolidField({"type":"varchar"})
+  @SolidField({ type: 'varchar' })
   name: string;
 
-  @SolidField({"type":"integer"})
+  @SolidField({ type: 'integer' })
   price: number;
 
-  @SolidField({"nullable":true,"type":"varchar"})
+  @SolidField({ nullable: true, type: 'varchar' })
   description?: string;
 
-  @SolidField({"type":"timestamp"})
+  @SolidField({ type: 'timestamp' })
   createdAt: Date;
 }
 ```
@@ -189,6 +195,7 @@ snest generate service <name> [options]
 ```
 
 **Options:**
+
 - `--entity-name <name>` - Associated entity name
 - `--relations <relations>` - Entity relations
 - `--with-solid` - Use SOLID decorators (default: true)
@@ -199,16 +206,19 @@ snest generate service <name> [options]
 - `--path <path>` - Custom output path
 
 **Relations Format:**
+
 ```
 name:type:target[:options]
 ```
 
 **Example:**
+
 ```bash
 snest generate service Products --entity-name Product --with-bulk-operations --relations "supplier:manyToOne:Supplier:eager"
 ```
 
 **Generated Code:**
+
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { CrudServiceFrom, CrudServiceStructure } from '@solid-nestjs/typeorm';
@@ -236,6 +246,7 @@ snest generate controller <name> [options]
 ```
 
 **Options:**
+
 - `--entity-name <name>` - Associated entity name
 - `--service-name <name>` - Associated service name
 - `--type <type>` - API type (rest, graphql, hybrid)
@@ -249,6 +260,7 @@ snest generate controller <name> [options]
 - `--path <path>` - Custom output path
 
 **Example:**
+
 ```bash
 snest generate controller Products --entity-name Product --service-name Products --with-validation --with-bulk-operations
 ```
@@ -262,6 +274,7 @@ snest generate module <name> [options]
 ```
 
 **Options:**
+
 - `--entities <entities>` - Entities to include (comma-separated)
 - `--services <services>` - Services to include (comma-separated)
 - `--controllers <controllers>` - Controllers to include (comma-separated)
@@ -269,11 +282,13 @@ snest generate module <name> [options]
 - `--path <path>` - Custom output path
 
 **Example:**
+
 ```bash
 snest generate module Products --entities "Product" --services "Products" --controllers "Products"
 ```
 
 **Generated Code:**
+
 ```typescript
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -282,21 +297,10 @@ import { ProductsService } from '../services/products.service';
 import { ProductsController } from '../controllers/products.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Product,
-    ]),
-  ],
-  controllers: [
-    ProductsController,
-  ],
-  providers: [
-    ProductsService,
-  ],
-  exports: [
-    TypeOrmModule,
-    ProductsService,
-  ],
+  imports: [TypeOrmModule.forFeature([Product])],
+  controllers: [ProductsController],
+  providers: [ProductsService],
+  exports: [TypeOrmModule, ProductsService],
 })
 export class ProductsModule {}
 ```
@@ -332,6 +336,7 @@ snest generate service Orders --entity-name Order
 ```
 
 The CLI automatically:
+
 1. Adds `import { OrdersService } from '../services/orders.service';`
 2. Adds `OrdersService` to the module's `providers` array
 3. Adds `OrdersService` to the module's `exports` array
@@ -368,6 +373,7 @@ snest g -i
 ### Example Flow
 
 1. **Select Component Type**
+
    ```
    ? What would you like to generate?
    ❯ Entity - Database entity with SOLID decorators
@@ -377,6 +383,7 @@ snest g -i
    ```
 
 2. **Configure Options**
+
    ```
    ? Entity name: Product
    ? Entity fields: name:string,price:number,description:string:optional
@@ -386,12 +393,13 @@ snest g -i
    ```
 
 3. **Generate Component**
+
    ```
    ✓ Entity 'Product' generated successfully
-   
+
    Generated files:
      - src/entities/product.entity.ts
-   
+
    Next steps:
      1. Add the entity to your module's TypeORM forFeature array
    ```
@@ -412,7 +420,7 @@ The CLI reads configuration from multiple sources:
 {
   "paths": {
     "entities": "src/entities",
-    "services": "src/services", 
+    "services": "src/services",
     "controllers": "src/controllers",
     "modules": "src/modules",
     "dto": "src/dto"
@@ -424,7 +432,7 @@ The CLI reads configuration from multiple sources:
 
 You can customize the templates used by the CLI:
 
-1. Copy default templates: `cp -r node_modules/@solid-nestjs/snest-cli/templates ./custom-templates`
+1. Copy default templates: `cp -r node_modules/@solid-nestjs/cli/templates ./custom-templates`
 2. Modify templates as needed
 3. Use with `--template-path ./custom-templates`
 
@@ -438,7 +446,7 @@ Generate a complete resource (entity + service + controller + module):
 # Step 1: Generate entity
 snest generate entity Product --fields "name:string,price:number,description:string:optional,categoryId:number"
 
-# Step 2: Generate service  
+# Step 2: Generate service
 snest generate service Products --entity-name Product --with-bulk-operations
 
 # Step 3: Generate controller
@@ -459,7 +467,7 @@ cd ecommerce-api
 # Generate User entity
 snest g entity User --fields "email:string,password:string,firstName:string,lastName:string,role:string"
 
-# Generate Product entity  
+# Generate Product entity
 snest g entity Product --fields "name:string,description:string,price:number,stock:number,categoryId:number" --with-soft-delete
 
 # Generate Order entity
@@ -467,7 +475,7 @@ snest g entity Order --fields "userId:number,totalAmount:number,status:string,or
 
 # Generate services
 snest g service Users --entity-name User --with-args-helpers
-snest g service Products --entity-name Product --with-bulk-operations --with-soft-delete  
+snest g service Products --entity-name Product --with-bulk-operations --with-soft-delete
 snest g service Orders --entity-name Order --with-bulk-operations --with-soft-delete
 
 # Generate controllers
@@ -477,7 +485,7 @@ snest g controller Orders --entity-name Order --with-validation --with-guards
 
 # Generate modules
 snest g module Users --entities "User" --services "Users" --controllers "Users"
-snest g module Products --entities "Product" --services "Products" --controllers "Products"  
+snest g module Products --entities "Product" --services "Products" --controllers "Products"
 snest g module Orders --entities "Order" --services "Orders" --controllers "Orders"
 ```
 
@@ -488,7 +496,8 @@ snest g module Orders --entities "Order" --services "Orders" --controllers "Orde
 #### 1. Module Not Found Errors
 
 **Problem:** TypeScript can't find generated modules
-**Solution:** 
+**Solution:**
+
 ```bash
 # Rebuild the project
 npm run build
@@ -500,18 +509,20 @@ npm run build
 
 **Problem:** CLI can't find template files
 **Solution:**
+
 ```bash
 # Copy templates to dist directory
 cp -r src/templates/* dist/templates/
 
 # Or reinstall the CLI
-npm install -g @solid-nestjs/snest-cli
+npm install -g @solid-nestjs/cli
 ```
 
 #### 3. AST Update Failures
 
 **Problem:** Module updates fail with syntax errors
 **Solution:**
+
 ```bash
 # Use skip-module-update flag
 snest generate service Products --skip-module-update
@@ -523,6 +534,7 @@ snest generate service Products --skip-module-update
 
 **Problem:** Cannot write files to directory
 **Solution:**
+
 ```bash
 # Check directory permissions
 chmod 755 src/
@@ -553,7 +565,7 @@ DEBUG=snest:* snest generate entity Product
 ```bash
 # Clone repository
 git clone https://github.com/solid-nestjs/framework.git
-cd framework/packages-tools/snest-cli
+cd framework/packages-tools/cli
 
 # Install dependencies
 npm install
@@ -581,24 +593,24 @@ cp -r src/templates/* dist/templates/
 Templates use Handlebars with custom helpers:
 
 ```handlebars
-{{!-- Entity template example --}}
+{{! Entity template example }}
 import { SolidEntity, SolidId, SolidField } from '@solid-nestjs/common';
+@SolidEntity() export class
+{{pascalCase name}}
+{ @SolidId() id: number;
 
-@SolidEntity()
-export class {{pascalCase name}} {
-  @SolidId()
-  id: number;
-
-  {{#each fields}}
+{{#each fields}}
   @SolidField({{jsonOptions this.options}})
-  {{this.name}}{{#unless this.required}}?{{/unless}}: {{typeScriptType this.type}};
-  {{/each}}
+  {{this.name}}{{#unless this.required}}?{{/unless}}:
+  {{typeScriptType this.type}};
+{{/each}}
 }
 ```
 
 **Available Helpers:**
+
 - `pascalCase` - Convert to PascalCase
-- `camelCase` - Convert to camelCase  
+- `camelCase` - Convert to camelCase
 - `kebabCase` - Convert to kebab-case
 - `snakeCase` - Convert to snake_case
 - `pluralize` - Pluralize string
@@ -610,6 +622,7 @@ export class {{pascalCase name}} {
 ### v0.3.0-alpha.1 (Latest)
 
 #### Added
+
 - ✨ Complete Entity Generator with SOLID decorators
 - ✨ Service Generator with CRUD operations
 - ✨ Controller Generator with REST API support
@@ -625,6 +638,7 @@ export class {{pascalCase name}} {
 - ✨ Validation and Swagger integration
 
 #### Technical Details
+
 - 🔧 Commander.js for CLI framework
 - 🔧 Handlebars for templating
 - 🔧 TypeScript AST for code manipulation

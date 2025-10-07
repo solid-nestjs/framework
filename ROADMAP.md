@@ -31,7 +31,7 @@ The framework currently provides:
 
 #### 🛠️ Enhanced CLI Tools
 
-- ✅ **SOLID CLI Generator (snest-cli)** - Complete CLI tool for scaffolding entities, DTOs, services, controllers, resolvers, and modules using SOLID decorators
+- ✅ **SOLID CLI Generator (cli)** - Complete CLI tool for scaffolding entities, DTOs, services, controllers, resolvers, and modules using SOLID decorators
   - **Project Generation** - Create new projects with pre-configured dependencies (REST, GraphQL, Hybrid)
   - **Resource Generation** - Generate complete CRUD resources with advanced query capabilities
   - **Module Generation** - Create NestJS modules with proper structure and imports

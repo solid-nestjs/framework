@@ -6,10 +6,10 @@ Complete reference for all SNEST CLI commands, options, and configurations.
 
 Available for all commands:
 
-| Option | Alias | Description | Default |
-|--------|-------|-------------|---------|
-| `--version` | `-v` | Output the current version | - |
-| `--help` | `-h` | Display help for command | - |
+| Option      | Alias | Description                | Default |
+| ----------- | ----- | -------------------------- | ------- |
+| `--version` | `-v`  | Output the current version | -       |
+| `--help`    | `-h`  | Display help for command   | -       |
 
 ## Commands
 
@@ -23,19 +23,19 @@ snest new <project-name> [options]
 
 #### Arguments
 
-| Argument | Type | Required | Description |
-|----------|------|----------|-------------|
-| `project-name` | string | Yes | Name of the project to create |
+| Argument       | Type   | Required | Description                   |
+| -------------- | ------ | -------- | ----------------------------- |
+| `project-name` | string | Yes      | Name of the project to create |
 
 #### Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--package-manager` | `npm\|yarn\|pnpm` | `npm` | Package manager to use |
-| `--database` | `sqlite\|postgres\|mysql\|mssql` | `sqlite` | Database type |
-| `--type` | `rest\|graphql\|hybrid` | `hybrid` | API type |
-| `--skip-install` | boolean | `false` | Skip package installation |
-| `--skip-git` | boolean | `false` | Skip git initialization |
+| Option              | Type                             | Default  | Description               |
+| ------------------- | -------------------------------- | -------- | ------------------------- |
+| `--package-manager` | `npm\|yarn\|pnpm`                | `npm`    | Package manager to use    |
+| `--database`        | `sqlite\|postgres\|mysql\|mssql` | `sqlite` | Database type             |
+| `--type`            | `rest\|graphql\|hybrid`          | `hybrid` | API type                  |
+| `--skip-install`    | boolean                          | `false`  | Skip package installation |
+| `--skip-git`        | boolean                          | `false`  | Skip git initialization   |
 
 #### Examples
 
@@ -62,9 +62,9 @@ snest generate [options] [command]
 
 #### Global Generate Options
 
-| Option | Alias | Description |
-|--------|-------|-------------|
-| `--interactive` | `-i` | Run in interactive mode |
+| Option          | Alias | Description             |
+| --------------- | ----- | ----------------------- |
+| `--interactive` | `-i`  | Run in interactive mode |
 
 #### Subcommands
 
@@ -86,20 +86,20 @@ snest generate entity <name> [options]
 
 #### Arguments
 
-| Argument | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Entity name (PascalCase recommended) |
+| Argument | Type   | Required | Description                          |
+| -------- | ------ | -------- | ------------------------------------ |
+| `name`   | string | Yes      | Entity name (PascalCase recommended) |
 
 #### Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--fields` | string | - | Entity fields definition |
-| `--path` | string | `src/entities` | Custom output path |
-| `--with-soft-delete` | boolean | `false` | Enable soft deletion |
-| `--with-solid` | boolean | `true` | Use SOLID decorators |
-| `--skip-module-update` | boolean | `false` | Skip automatic module updates |
-| `--overwrite` | boolean | `false` | Overwrite existing files |
+| Option                 | Type    | Default        | Description                   |
+| ---------------------- | ------- | -------------- | ----------------------------- |
+| `--fields`             | string  | -              | Entity fields definition      |
+| `--path`               | string  | `src/entities` | Custom output path            |
+| `--with-soft-delete`   | boolean | `false`        | Enable soft deletion          |
+| `--with-solid`         | boolean | `true`         | Use SOLID decorators          |
+| `--skip-module-update` | boolean | `false`        | Skip automatic module updates |
+| `--overwrite`          | boolean | `false`        | Overwrite existing files      |
 
 #### Field Definition Format
 
@@ -108,12 +108,14 @@ name:type[:modifier][,name:type[:modifier]]...
 ```
 
 **Types:**
+
 - `string` - Text field
-- `number` - Numeric field  
+- `number` - Numeric field
 - `boolean` - Boolean field
 - `Date` - Date/timestamp field
 
 **Modifiers:**
+
 - `optional` - Nullable field
 - `required` - Non-nullable field (default)
 
@@ -143,10 +145,10 @@ export class User {
   @SolidId()
   id: number;
 
-  @SolidField({"type":"varchar"})
+  @SolidField({ type: 'varchar' })
   name: string;
 
-  @SolidField({"type":"varchar"})
+  @SolidField({ type: 'varchar' })
   email: string;
 }
 ```
@@ -163,23 +165,23 @@ snest generate service <name> [options]
 
 #### Arguments
 
-| Argument | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Service name (PascalCase recommended) |
+| Argument | Type   | Required | Description                           |
+| -------- | ------ | -------- | ------------------------------------- |
+| `name`   | string | Yes      | Service name (PascalCase recommended) |
 
 #### Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--entity-name` | string | - | Associated entity name |
-| `--relations` | string | - | Entity relations definition |
-| `--path` | string | `src/services` | Custom output path |
-| `--with-solid` | boolean | `true` | Use SOLID decorators |
-| `--with-args-helpers` | boolean | `false` | Include Args helpers |
-| `--with-bulk-operations` | boolean | `false` | Enable bulk operations |
-| `--with-soft-delete` | boolean | `false` | Enable soft deletion support |
-| `--skip-module-update` | boolean | `false` | Skip automatic module updates |
-| `--overwrite` | boolean | `false` | Overwrite existing files |
+| Option                   | Type    | Default        | Description                   |
+| ------------------------ | ------- | -------------- | ----------------------------- |
+| `--entity-name`          | string  | -              | Associated entity name        |
+| `--relations`            | string  | -              | Entity relations definition   |
+| `--path`                 | string  | `src/services` | Custom output path            |
+| `--with-solid`           | boolean | `true`         | Use SOLID decorators          |
+| `--with-args-helpers`    | boolean | `false`        | Include Args helpers          |
+| `--with-bulk-operations` | boolean | `false`        | Enable bulk operations        |
+| `--with-soft-delete`     | boolean | `false`        | Enable soft deletion support  |
+| `--skip-module-update`   | boolean | `false`        | Skip automatic module updates |
+| `--overwrite`            | boolean | `false`        | Overwrite existing files      |
 
 #### Relations Definition Format
 
@@ -188,12 +190,14 @@ name:type:target[:options][,name:type:target[:options]]...
 ```
 
 **Relation Types:**
+
 - `oneToOne` - One-to-one relationship
 - `oneToMany` - One-to-many relationship
 - `manyToOne` - Many-to-one relationship
 - `manyToMany` - Many-to-many relationship
 
 **Options:**
+
 - `eager` - Eager loading
 - `cascade` - Cascade operations
 
@@ -245,26 +249,26 @@ snest generate controller <name> [options]
 
 #### Arguments
 
-| Argument | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Controller name (PascalCase recommended) |
+| Argument | Type   | Required | Description                              |
+| -------- | ------ | -------- | ---------------------------------------- |
+| `name`   | string | Yes      | Controller name (PascalCase recommended) |
 
 #### Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--entity-name` | string | - | Associated entity name |
-| `--service-name` | string | - | Associated service name |
-| `--path` | string | `src/controllers` | Custom output path |
-| `--type` | `rest\|graphql\|hybrid` | `rest` | API type |
-| `--with-solid` | boolean | `true` | Use SOLID decorators |
-| `--with-validation` | boolean | `true` | Enable request validation |
-| `--with-args-helpers` | boolean | `false` | Include Args helpers |
-| `--with-bulk-operations` | boolean | `false` | Enable bulk operations endpoints |
-| `--with-soft-delete` | boolean | `false` | Enable soft deletion endpoints |
-| `--with-guards` | boolean | `false` | Add authentication guards |
-| `--skip-module-update` | boolean | `false` | Skip automatic module updates |
-| `--overwrite` | boolean | `false` | Overwrite existing files |
+| Option                   | Type                    | Default           | Description                      |
+| ------------------------ | ----------------------- | ----------------- | -------------------------------- |
+| `--entity-name`          | string                  | -                 | Associated entity name           |
+| `--service-name`         | string                  | -                 | Associated service name          |
+| `--path`                 | string                  | `src/controllers` | Custom output path               |
+| `--type`                 | `rest\|graphql\|hybrid` | `rest`            | API type                         |
+| `--with-solid`           | boolean                 | `true`            | Use SOLID decorators             |
+| `--with-validation`      | boolean                 | `true`            | Enable request validation        |
+| `--with-args-helpers`    | boolean                 | `false`           | Include Args helpers             |
+| `--with-bulk-operations` | boolean                 | `false`           | Enable bulk operations endpoints |
+| `--with-soft-delete`     | boolean                 | `false`           | Enable soft deletion endpoints   |
+| `--with-guards`          | boolean                 | `false`           | Add authentication guards        |
+| `--skip-module-update`   | boolean                 | `false`           | Skip automatic module updates    |
+| `--overwrite`            | boolean                 | `false`           | Overwrite existing files         |
 
 #### Examples
 
@@ -286,7 +290,10 @@ snest generate controller Users --entity-name User --type graphql
 
 ```typescript
 import { Controller } from '@nestjs/common';
-import { CrudControllerFrom, CrudControllerStructure } from '@solid-nestjs/rest-api';
+import {
+  CrudControllerFrom,
+  CrudControllerStructure,
+} from '@solid-nestjs/rest-api';
 import { UsersService } from '../services/users.service';
 import { User } from '../entities/user.entity';
 
@@ -305,7 +312,9 @@ export const usersControllerStructure = CrudControllerStructure({
 });
 
 @Controller('users')
-export class UsersController extends CrudControllerFrom(usersControllerStructure) {
+export class UsersController extends CrudControllerFrom(
+  usersControllerStructure,
+) {
   // Custom endpoints can be added here
 }
 ```
@@ -322,20 +331,20 @@ snest generate module <name> [options]
 
 #### Arguments
 
-| Argument | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Module name (PascalCase recommended) |
+| Argument | Type   | Required | Description                          |
+| -------- | ------ | -------- | ------------------------------------ |
+| `name`   | string | Yes      | Module name (PascalCase recommended) |
 
 #### Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--entities` | string | - | Entities to include (comma-separated) |
-| `--services` | string | - | Services to include (comma-separated) |
-| `--controllers` | string | - | Controllers to include (comma-separated) |
-| `--path` | string | `src/modules` | Custom output path |
-| `--with-exports` | boolean | `true` | Export services for other modules |
-| `--overwrite` | boolean | `false` | Overwrite existing files |
+| Option           | Type    | Default       | Description                              |
+| ---------------- | ------- | ------------- | ---------------------------------------- |
+| `--entities`     | string  | -             | Entities to include (comma-separated)    |
+| `--services`     | string  | -             | Services to include (comma-separated)    |
+| `--controllers`  | string  | -             | Controllers to include (comma-separated) |
+| `--path`         | string  | `src/modules` | Custom output path                       |
+| `--with-exports` | boolean | `true`        | Export services for other modules        |
+| `--overwrite`    | boolean | `false`       | Overwrite existing files                 |
 
 #### Examples
 
@@ -363,21 +372,10 @@ import { UsersService } from '../services/users.service';
 import { UsersController } from '../controllers/users.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      User,
-    ]),
-  ],
-  controllers: [
-    UsersController,
-  ],
-  providers: [
-    UsersService,
-  ],
-  exports: [
-    TypeOrmModule,
-    UsersService,
-  ],
+  imports: [TypeOrmModule.forFeature([User])],
+  controllers: [UsersController],
+  providers: [UsersService],
+  exports: [TypeOrmModule, UsersService],
 })
 export class UsersModule {}
 ```
@@ -434,11 +432,11 @@ The CLI automatically updates existing modules when generating new components.
 
 ### Affected Operations
 
-| Component | Module Updates |
-|-----------|----------------|
-| Entity | Adds to `TypeOrmModule.forFeature([])` |
-| Service | Adds to `providers` and `exports` arrays |
-| Controller | Adds to `controllers` array |
+| Component  | Module Updates                           |
+| ---------- | ---------------------------------------- |
+| Entity     | Adds to `TypeOrmModule.forFeature([])`   |
+| Service    | Adds to `providers` and `exports` arrays |
+| Controller | Adds to `controllers` array              |
 
 ### Disabling Auto-Updates
 
@@ -454,15 +452,15 @@ The CLI uses Handlebars templates with custom helpers.
 
 ### Available Helpers
 
-| Helper | Description | Example |
-|--------|-------------|---------|
-| `pascalCase` | Convert to PascalCase | `{{pascalCase "user name"}}` → `UserName` |
-| `camelCase` | Convert to camelCase | `{{camelCase "user name"}}` → `userName` |
-| `kebabCase` | Convert to kebab-case | `{{kebabCase "user name"}}` → `user-name` |
-| `snakeCase` | Convert to snake_case | `{{snakeCase "user name"}}` → `user_name` |
-| `pluralize` | Pluralize string | `{{pluralize "user"}}` → `users` |
-| `typeScriptType` | Convert to TS type | `{{typeScriptType "string"}}` → `string` |
-| `jsonOptions` | Convert to JSON | `{{jsonOptions options}}` → `{"key":"value"}` |
+| Helper           | Description           | Example                                       |
+| ---------------- | --------------------- | --------------------------------------------- |
+| `pascalCase`     | Convert to PascalCase | `{{pascalCase "user name"}}` → `UserName`     |
+| `camelCase`      | Convert to camelCase  | `{{camelCase "user name"}}` → `userName`      |
+| `kebabCase`      | Convert to kebab-case | `{{kebabCase "user name"}}` → `user-name`     |
+| `snakeCase`      | Convert to snake_case | `{{snakeCase "user name"}}` → `user_name`     |
+| `pluralize`      | Pluralize string      | `{{pluralize "user"}}` → `users`              |
+| `typeScriptType` | Convert to TS type    | `{{typeScriptType "string"}}` → `string`      |
+| `jsonOptions`    | Convert to JSON       | `{{jsonOptions options}}` → `{"key":"value"}` |
 
 ### Template Structure
 
@@ -485,7 +483,7 @@ src/templates/
 3. Use with `--template-path`
 
 ```bash
-cp -r node_modules/@solid-nestjs/snest-cli/templates ./custom-templates
+cp -r node_modules/@solid-nestjs/cli/templates ./custom-templates
 # Modify templates
 snest generate entity User --template-path ./custom-templates
 ```
@@ -507,7 +505,7 @@ The CLI automatically detects:
   "paths": {
     "entities": "src/entities",
     "services": "src/services",
-    "controllers": "src/controllers", 
+    "controllers": "src/controllers",
     "modules": "src/modules",
     "dto": "src/dto"
   }
@@ -516,22 +514,22 @@ The CLI automatically detects:
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SNEST_TEMPLATE_PATH` | Custom template directory | Built-in templates |
-| `SNEST_SKIP_MODULE_UPDATE` | Disable auto-updates | `false` |
-| `DEBUG` | Enable debug logging | - |
+| Variable                   | Description               | Default            |
+| -------------------------- | ------------------------- | ------------------ |
+| `SNEST_TEMPLATE_PATH`      | Custom template directory | Built-in templates |
+| `SNEST_SKIP_MODULE_UPDATE` | Disable auto-updates      | `false`            |
+| `DEBUG`                    | Enable debug logging      | -                  |
 
 ## Error Codes
 
-| Code | Description | Resolution |
-|------|-------------|------------|
-| `E001` | Command not found | Install CLI globally |
-| `E002` | Template not found | Rebuild CLI or check template path |
-| `E003` | File write error | Check permissions |
-| `E004` | Invalid field format | Check field syntax |
-| `E005` | Module update failed | Use `--skip-module-update` |
-| `E006` | TypeScript compilation error | Check generated code syntax |
+| Code   | Description                  | Resolution                         |
+| ------ | ---------------------------- | ---------------------------------- |
+| `E001` | Command not found            | Install CLI globally               |
+| `E002` | Template not found           | Rebuild CLI or check template path |
+| `E003` | File write error             | Check permissions                  |
+| `E004` | Invalid field format         | Check field syntax                 |
+| `E005` | Module update failed         | Use `--skip-module-update`         |
+| `E006` | TypeScript compilation error | Check generated code syntax        |
 
 ## Best Practices
 
@@ -561,12 +559,12 @@ src/
 
 ### Field Types
 
-| CLI Type | TypeScript | Database |
-|----------|------------|----------|
-| `string` | `string` | `varchar` |
-| `number` | `number` | `integer` |
-| `boolean` | `boolean` | `boolean` |
-| `Date` | `Date` | `timestamp` |
+| CLI Type  | TypeScript | Database    |
+| --------- | ---------- | ----------- |
+| `string`  | `string`   | `varchar`   |
+| `number`  | `number`   | `integer`   |
+| `boolean` | `boolean`  | `boolean`   |
+| `Date`    | `Date`     | `timestamp` |
 
 ### Advanced Usage
 
@@ -596,6 +594,7 @@ snest g controller Orders \
 ### Common Issues
 
 **Template not found:**
+
 ```bash
 # Solution: Rebuild and copy templates
 npm run build
@@ -603,21 +602,24 @@ cp -r src/templates/* dist/templates/
 ```
 
 **Module update fails:**
+
 ```bash
 # Solution: Skip auto-updates
 snest generate service Users --skip-module-update
 ```
 
 **Permission denied:**
+
 ```bash
 # Solution: Check directory permissions
 chmod 755 src/
 ```
 
 **Command not found:**
+
 ```bash
 # Solution: Install globally
-npm install -g @solid-nestjs/snest-cli
+npm install -g @solid-nestjs/cli
 ```
 
 ### Debug Mode

@@ -1,6 +1,7 @@
 # Task: Phase 1 - Core Infrastructure
 
 ## Task Information
+
 - **Phase**: 1
 - **Duration**: 2 weeks
 - **Priority**: High
@@ -8,17 +9,20 @@
 - **Status**: Pending
 
 ## Related Documents
+
 - **Specification**: [202508192040 - CLI Tool Generator.md](../../specs/202508192040%20-%20CLI%20Tool%20Generator.md)
 
 ## Objective
+
 Set up the foundational infrastructure for the SNEST CLI tool, including package structure, command parsing system, and basic project scaffolding capability.
 
 ## Subtasks
 
 ### 1.1 Monorepo Integration and Package Setup
-- [ ] Create `packages-tools/snest-cli` directory in monorepo
+
+- [ ] Create `packages-tools/cli` directory in monorepo
 - [ ] Update root package.json to include `packages-tools/*` in workspaces array
-- [ ] Create new package `@solid-nestjs/snest-cli` with proper npm name
+- [ ] Create new package `@solid-nestjs/cli` with proper npm name
 - [ ] Configure TypeScript with strict mode inheriting from root config
 - [ ] Set up build scripts and compilation using monorepo patterns
 - [ ] Configure ESLint and Prettier to inherit from root
@@ -27,6 +31,7 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 - [ ] Add CLI package to lerna configuration for versioning
 
 ### 1.2 CLI Core Architecture
+
 - [ ] Implement main CLI entry point (`src/cli.ts`)
 - [ ] Create binary executable (`bin/snest.js`)
 - [ ] Set up Commander.js for command parsing
@@ -35,6 +40,7 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 - [ ] Set up error handling and logging with chalk
 
 ### 1.3 File System Utilities
+
 - [ ] Create FileManager class for file operations
 - [ ] Implement template path resolver
 - [ ] Create directory structure generator
@@ -43,6 +49,7 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 - [ ] Create backup/rollback mechanism
 
 ### 1.4 Template Engine Setup
+
 - [ ] Integrate Handlebars as template engine
 - [ ] Create custom Handlebars helpers (pascalCase, camelCase, etc.)
 - [ ] Set up template loading system
@@ -50,6 +57,7 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 - [ ] Implement variable injection system
 
 ### 1.5 Configuration Management
+
 - [ ] Create ConfigManager class
 - [ ] Implement `.snestrc` file support
 - [ ] Add environment variable support
@@ -57,6 +65,7 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 - [ ] Implement config validation
 
 ### 1.6 Basic "new" Command Implementation
+
 - [ ] Create NewCommand class extending base command
 - [ ] Implement project name validation
 - [ ] Create project structure generator
@@ -68,6 +77,7 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 - [ ] Add dependency installation (npm/yarn/pnpm)
 
 ### 1.7 Testing Infrastructure
+
 - [ ] Set up unit tests for FileManager
 - [ ] Create tests for template engine
 - [ ] Test command parsing
@@ -75,7 +85,8 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 - [ ] Add CI/CD pipeline configuration
 
 ## Success Criteria
-- [ ] CLI can be installed globally via `npm install -g @solid-nestjs/snest-cli`
+
+- [ ] CLI can be installed globally via `npm install -g @solid-nestjs/cli`
 - [ ] `snest --version` displays version correctly
 - [ ] `snest --help` shows available commands
 - [ ] `snest new my-project` creates a functional SOLID NestJS project
@@ -85,6 +96,7 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 ## Technical Decisions
 
 ### Package Dependencies
+
 ```json
 {
   "dependencies": {
@@ -108,8 +120,9 @@ Set up the foundational infrastructure for the SNEST CLI tool, including package
 ```
 
 ### File Structure (Within Monorepo)
+
 ```
-packages-tools/snest-cli/
+packages-tools/cli/
 ├── bin/
 │   └── snest.js
 ├── src/
@@ -142,15 +155,18 @@ packages-tools/snest-cli/
 ```
 
 ## Notes
+
 - Use semantic versioning starting at 0.1.0
 - Ensure Windows, macOS, and Linux compatibility
 - Follow NestJS CLI patterns for familiarity
 - All user-facing messages should be clear and helpful
 
 ## Blockers
+
 - None identified
 
 ## Completion Checklist
+
 - [ ] All subtasks completed
 - [ ] Code reviewed and tested
 - [ ] Documentation written

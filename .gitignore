@@ -94,9 +94,9 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # CLI Tool Specific
 # Generated test projects from CLI development
-packages-tools/snest-cli/test-*
-packages-tools/snest-cli/demo
-packages-tools/snest-cli/*.tgz
+packages-tools/cli/test-*
+packages-tools/cli/demo
+packages-tools/cli/*.tgz
 # CLI backup files
 packages-tools/**/*.backup.*
 

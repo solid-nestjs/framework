@@ -397,11 +397,11 @@ For complete documentation, see [Entity-to-DTO Generation Guide](docs/DTO_GENERA
 
 ### 🛠️ CLI Tool for Rapid Development
 
-The SOLID NestJS Framework includes a powerful CLI tool (`snest-cli`) for rapid project and code generation:
+The SOLID NestJS Framework includes a powerful CLI tool (`cli`) for rapid project and code generation:
 
 ```bash
 # Install the CLI
-npm install -g @solid-nestjs/snest-cli
+npm install -g @solid-nestjs/cli
 
 # Create a new project
 snest new my-project --type hybrid --database postgres
@@ -422,7 +422,7 @@ snest generate --interactive
 - ✅ **Multi-Database Support** - Pre-configured for PostgreSQL, MySQL, SQL Server, and SQLite
 - ✅ **Protocol Agnostic** - Same code works for REST API, GraphQL, and hybrid applications
 
-For complete CLI documentation, see [snest-cli README](packages-tools/snest-cli/README.md).
+For complete CLI documentation, see [cli README](packages-tools/cli/README.md).
 
 ### � Try Complete Examples
 

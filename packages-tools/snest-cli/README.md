@@ -6,29 +6,29 @@ Official CLI tool for the SOLID NestJS Framework. A powerful code generator that
 
 ```bash
 # Install globally
-npm install -g @solid-nestjs/snest-cli
+npm install -g @solid-nestjs/cli
 
 # Or use npx (recommended)
-npx @solid-nestjs/snest-cli
+npx @solid-nestjs/cli
 
 # Or install locally in your project
-npm install --save-dev @solid-nestjs/snest-cli
+npm install --save-dev @solid-nestjs/cli
 ```
 
 ## Quick Start
 
 ```bash
 # Create a new project
-npx @solid-nestjs/snest-cli new my-project
+npx @solid-nestjs/cli new my-project
 
 # Navigate to your project
 cd my-project
 
 # Generate a complete resource with advanced features
-npx @solid-nestjs/snest-cli generate resource Product --fields "name:string,price:number,category:string" --generate-find-args --generate-group-by
+npx @solid-nestjs/cli generate resource Product --fields "name:string,price:number,category:string" --generate-find-args --generate-group-by
 
 # Generate a module
-npx @solid-nestjs/snest-cli generate module products
+npx @solid-nestjs/cli generate module products
 
 # Start development server
 npm run start:dev
@@ -463,10 +463,10 @@ snest generate resource Comment --fields "content:string,postId:uuid,authorId:uu
 
 ```bash
 # Install globally
-npm install -g @solid-nestjs/snest-cli
+npm install -g @solid-nestjs/cli
 
 # Or use npx
-npx @solid-nestjs/snest-cli
+npx @solid-nestjs/cli
 ```
 
 **"Cannot find module" errors**
