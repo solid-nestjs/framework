@@ -45,13 +45,13 @@ export interface DataProviderStructure<
 export interface CrudProviderStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends DataProviderStructure<IdType, EntityType, FindArgsType, ContextType> {
-  createInputType: Constructable<CreateInputType>;
-  updateInputType: Constructable<UpdateInputType>;
+  createInputType?: Constructable<CreateInputType>;
+  updateInputType?: Constructable<UpdateInputType>;
 }
 
 export function DataProviderStructure<
@@ -68,8 +68,8 @@ export function DataProviderStructure<
 export function CrudProviderStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 >(

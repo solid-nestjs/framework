@@ -108,8 +108,8 @@ export interface BulkRecoverResult {
 export interface CrudService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends DataService<IdType, EntityType, FindArgsType, ContextType>,
@@ -1407,8 +1407,8 @@ export interface CrudService<
 export interface CreateOptions<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  ContextType extends Context,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  ContextType extends Context = Context,
 > {
   eventHandler?: CreateEventsHandler<
     IdType,

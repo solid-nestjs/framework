@@ -13,6 +13,7 @@ import {
   Type,
   ValidationPipe,
   mixin,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
 import {
@@ -90,6 +91,11 @@ export function CrudControllerFrom<
   >
 > {
   const { entityType, createInputType, updateInputType } = controllerStructure;
+
+  if (!createInputType)
+    throw new BadRequestException('createInputType should not be undefined');
+  if (!updateInputType)
+    throw new BadRequestException('updateInputType should not be undefined');
 
   const ContextDecorator =
     controllerStructure.parameterDecorators?.context ?? CurrentContext;

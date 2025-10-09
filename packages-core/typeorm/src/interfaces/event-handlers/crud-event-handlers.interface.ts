@@ -5,8 +5,8 @@ import { Context } from '../misc';
 export interface CreateEventsHandler<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  ContextType extends Context,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  ContextType extends Context = Context,
 > {
   beforeCreate(
     context: ContextType,

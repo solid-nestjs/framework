@@ -141,9 +141,9 @@ export interface CrudControllerStructure<
     ContextType
   > {
   /** The constructable type for creating new entities - defines the shape of data required for creation */
-  createInputType: Constructable<CreateInputType>;
+  createInputType?: Constructable<CreateInputType>;
   /** The constructable type for updating existing entities - defines the shape of data required for updates */
-  updateInputType: Constructable<UpdateInputType>;
+  updateInputType?: Constructable<UpdateInputType>;
   /** Configuration for which CRUD operations should be available and how they should be configured */
   operations?: CrudControllerOperations<
     IdType,

@@ -76,15 +76,15 @@ export interface CrudServiceFunctions<EntityType>
 export interface CrudServiceStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends DataServiceStructure<IdType, EntityType, FindArgsType, ContextType> {
   /** Constructor for the create input type */
-  createInputType: Constructable<CreateInputType>;
+  createInputType?: Constructable<CreateInputType>;
   /** Constructor for the update input type */
-  updateInputType: Constructable<UpdateInputType>;
+  updateInputType?: Constructable<UpdateInputType>;
   /** Optional configuration for CRUD service functions */
   functions?: CrudServiceFunctions<EntityType>;
 }
@@ -123,8 +123,8 @@ export interface CrudServiceStructure<
 export function CrudServiceStructure<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 >(

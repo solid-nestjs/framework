@@ -15,8 +15,8 @@ import { DataService } from './data-service.interface';
 export interface CudService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > {
@@ -70,8 +70,8 @@ export interface CudService<
 export interface SoftDeletableCudService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends CudService<
@@ -130,8 +130,8 @@ export interface SoftDeletableCudService<
 export interface CrudService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends DataService<IdType, EntityType, FindArgsType, ContextType>,
@@ -157,8 +157,8 @@ export interface CrudService<
 export interface SoftDeletableCrudService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 > extends DataService<IdType, EntityType, FindArgsType, ContextType>,
@@ -175,8 +175,8 @@ export interface SoftDeletableCrudService<
 export function isSoftDeletableCrudService<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
 >(

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   ParseIntPipe,
@@ -101,6 +102,11 @@ export function CrudResolverFrom<
   >
 > {
   const { entityType, createInputType, updateInputType } = resolverStructure;
+
+  if (!createInputType)
+    throw new BadRequestException('createInputType should not be undefined');
+  if (!updateInputType)
+    throw new BadRequestException('updateInputType should not be undefined');
 
   const ContextDecorator =
     resolverStructure.parameterDecorators?.context ?? CurrentContext;

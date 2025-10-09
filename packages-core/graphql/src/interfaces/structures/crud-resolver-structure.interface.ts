@@ -140,9 +140,9 @@ export interface CrudResolverStructure<
     ContextType
   > {
   /** The constructable GraphQL input type for creating new entities - defines the shape of data required for creation mutations */
-  createInputType: Constructable<CreateInputType>;
+  createInputType?: Constructable<CreateInputType>;
   /** The constructable GraphQL input type for updating existing entities - defines the shape of data required for update mutations */
-  updateInputType: Constructable<UpdateInputType>;
+  updateInputType?: Constructable<UpdateInputType>;
   /** Configuration for which CRUD mutations should be available and how they should be configured */
   operations?: CrudResolverOperations<
     IdType,

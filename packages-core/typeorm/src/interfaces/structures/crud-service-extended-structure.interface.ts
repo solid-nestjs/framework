@@ -93,8 +93,8 @@ import { CrudServiceStructure } from './crud-service-structure.interface';
 export function CrudServiceStructureEx<
   IdType extends IdTypeFrom<EntityType>,
   EntityType extends Entity<unknown>,
-  CreateInputType extends DeepPartial<EntityType>,
-  UpdateInputType extends DeepPartial<EntityType>,
+  CreateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
+  UpdateInputType extends DeepPartial<EntityType> = DeepPartial<EntityType>,
   FindArgsType extends FindArgs<EntityType> = FindArgs<EntityType>,
   ContextType extends Context = Context,
   PluginArrayType extends ServicePlugin<
