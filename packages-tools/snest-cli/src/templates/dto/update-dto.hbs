@@ -1,12 +1,4 @@
-{{#if (eq apiType 'hybrid')}}
 import { PartialType, SolidInput } from '{{solidBundle}}';
-{{else if (eq apiType 'rest')}}
-import { PartialType } from '@nestjs/swagger';
-import { SolidInput } from '{{solidBundle}}';
-{{else if (eq apiType 'graphql')}}
-import { PartialType } from '@nestjs/graphql';
-import { SolidInput } from '{{solidBundle}}';
-{{/if}}
 import { Create{{pascalCase  entityName}}Dto } from './create-{{kebabCase entityName}}.dto';
 
 @SolidInput()

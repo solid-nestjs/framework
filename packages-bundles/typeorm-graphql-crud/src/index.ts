@@ -5,6 +5,7 @@ export * as GraphQL from '@solid-nestjs/graphql';
 
 //Filtering
 export {
+  PartialType,
   FindArgsFrom,
   getWhereClass,
   getOrderByClass,

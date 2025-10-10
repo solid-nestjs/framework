@@ -5,3 +5,4 @@ export * from './classes';
 export * from './utils';
 export * from './helpers';
 export * from './adapters';
+export { PartialType } from '@nestjs/swagger';

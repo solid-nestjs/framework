@@ -5,6 +5,7 @@ export * as RestApi from '@solid-nestjs/rest-api';
 
 //Filtering
 export {
+  PartialType,
   FindArgsFrom,
   getWhereClass,
   getOrderByClass,
