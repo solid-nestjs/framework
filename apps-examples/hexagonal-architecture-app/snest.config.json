@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/@solid-nestjs/typeorm-hybrid-crud/schemas/snest.config.json",
+  "version": "1.0",
+  "project": {
+    "type": "hybrid",
+    "database": "sqlite",
+    "features": {
+      "hasSwagger": true,
+      "hasGraphQL": true,
+      "hasTypeORM": true
+    },
+    "bundle": "@solid-nestjs/typeorm-hybrid-crud"
+  },
+  "generators": {
+    "defaultModulePath": "src/features",
+    "autoUpdateModules": true
+  }
+}
