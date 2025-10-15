@@ -1,9 +1,15 @@
-import { SolidEntity, SolidId, SolidField, SolidCreatedAt, SolidUpdatedAt } from '@solid-nestjs/typeorm-hybrid-crud';
+import {
+  SolidEntity,
+  SolidId,
+  SolidField,
+  SolidCreatedAt,
+  SolidUpdatedAt,
+} from '@solid-nestjs/typeorm-hybrid-crud';
 
 @SolidEntity()
 export class Product {
-  @SolidId()
-  id: number;
+  @SolidId({ generated: 'uuid' })
+  id: string;
 
   @SolidField()
   name: string;
@@ -13,7 +19,6 @@ export class Product {
 
   @SolidField()
   stock: number;
-
 
   @SolidCreatedAt()
   createdAt: Date;
