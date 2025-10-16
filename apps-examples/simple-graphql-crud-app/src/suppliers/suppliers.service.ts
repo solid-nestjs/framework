@@ -38,7 +38,7 @@ export class SuppliersService extends CrudServiceFrom(serviceStructure) {
   ): TypeOrmSelectQueryBuilder<Supplier> {
     const queryBuilder = super.getQueryBuilder(context, args, options);
 
-    return this.additionalConditions(queryBuilder);
+    return this.additionalConditions(queryBuilder, args);
   }
 
   //this is needed for paginated queries with multiplying relations
@@ -53,12 +53,18 @@ export class SuppliersService extends CrudServiceFrom(serviceStructure) {
 
     const queryBuilder = queryBuilderOrFalse;
 
-    return this.additionalConditions(queryBuilder);
+    return this.additionalConditions(queryBuilder, args);
   }
 
   additionalConditions(
     queryBuilder: TypeOrmSelectQueryBuilder<Supplier>,
+    args?: FindSupplierArgs,
   ): TypeOrmSelectQueryBuilder<Supplier> {
-    return queryBuilder.andWhere('"supplier_products"."id" is not null');
+    if (args.ignoreSuppliersWithoutProducts)
+      queryBuilder = queryBuilder.andWhere(
+        '"supplier_products"."id" is not null',
+      );
+
+    return queryBuilder;
   }
 }

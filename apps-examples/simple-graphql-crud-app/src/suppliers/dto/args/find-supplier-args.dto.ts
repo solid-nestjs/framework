@@ -7,6 +7,7 @@ import {
   Where,
 } from '@solid-nestjs/typeorm-graphql-crud';
 import { Supplier } from '../../entities/supplier.entity';
+import { IsBoolean, IsOptional } from 'class-validator';
 
 @InputType({ isAbstract: true })
 class FindSupplierWhere implements Where<Supplier> {
@@ -30,4 +31,9 @@ class FindSupplierOrderBy implements OrderBy<Supplier> {
 export class FindSupplierArgs extends FindArgsFrom<Supplier>({
   whereType: FindSupplierWhere,
   orderByType: FindSupplierOrderBy,
-}) {}
+}) {
+  @Field(() => Boolean, { nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  ignoreSuppliersWithoutProducts?: Boolean | undefined;
+}
