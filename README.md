@@ -161,6 +161,23 @@ We're excited to share a preview of upcoming features in version 0.3.0:
 
 _Want to influence the roadmap? Check out our [full roadmap](ROADMAP.md) and join the discussion!_
 
+## 📚 Documentation
+
+Full documentation is organized under [`docs/`](docs/README.md):
+
+| Section | Pages |
+|---|---|
+| **Getting Started** | [Installation & First CRUD](docs/getting-started.md) |
+| **Core Concepts** | [Architecture](docs/architecture.md), [SOLID Decorators](docs/solid-decorators.md), [Validation](docs/validation.md) |
+| **Features** | [CRUD Operations](docs/crud-operations.md), [Querying](docs/querying.md), [Group By](docs/group-by.md), [Bulk Operations](docs/bulk-operations.md), [Soft Delete](docs/soft-delete.md), [DTO Generation](docs/dto-generation.md), [GraphQL](docs/graphql.md), [REST API](docs/rest-api.md), [Hybrid](docs/hybrid.md) |
+| **Advanced** | [Context & Transactions](docs/context-transactions.md), [Plugins](docs/plugins.md) |
+| **Database** | [Multi-database Support](docs/database.md) |
+| **Reference** | [API Reference](docs/api-reference.md) |
+| **Guides** | [Migration](docs/migration.md), [Troubleshooting](docs/troubleshooting.md), [Examples](docs/examples.md) |
+| **CLI** | [CLI Documentation](docs/cli/README.md) |
+
+→ [Browse all documentation](docs/README.md)
+
 ## 🚀 Quick Start with SOLID Decorators
 
 ### 📦 Installation
@@ -393,7 +410,7 @@ export class CreateProductDto extends GenerateDtoFromEntity(Product, [
 // Result: Full validation + Swagger docs automatically applied!
 ```
 
-For complete documentation, see [Entity-to-DTO Generation Guide](docs/DTO_GENERATION_FROM_ENTITIES.md).
+For complete documentation, see [DTO Generation Guide](docs/dto-generation.md).
 
 ### 🛠️ CLI Tool for Rapid Development
 
@@ -570,7 +587,7 @@ import {
 
 - **`apps-examples/advanced-hybrid-crud-app`** - Manual DTO implementation for comparison
 
-For complete documentation, see [Args Helpers Guide](docs/ARGS_HELPERS.md).
+For complete documentation, see [DTO Generation Guide](docs/dto-generation.md).
 
 ## 📦 Installation
 
@@ -858,7 +875,7 @@ query {
 
 > **Note:** GROUP BY results return `key` and `aggregates` as JSON objects (not strings), providing direct access to grouped data without requiring JSON parsing.
 
-For complete GROUP BY documentation, see [docs/GROUP_BY.md](docs/GROUP_BY.md).
+For complete GROUP BY documentation, see [Group By Guide](docs/group-by.md).
 
 ### 🔄 Soft Deletion & Recovery Operations
 
